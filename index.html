@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<!--
+  Diraasti – Tawjihi Generation 2008
+  This is the entry point for the static single‑page application.
+  It includes metadata for search engines, links to the PWA manifest,
+  and registers the service worker for offline support.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Diraasti – Tawjihi Generation 2008</title>
+    <!-- Search engine optimisation -->
+    <meta
+      name="description"
+      content="Diraasti is a study platform for Tawjihi Generation 2008 students in Jordan. It provides a study planner, resource hub, quizzes, flashcards, revision tools and an AI assistant powered by Google Gemini."
+    />
+    <meta
+      name="keywords"
+      content="Diraasti,Tawjihi,Generation 2008,Jordan,study planner,AI quizzes,flashcards,revision,PDF resources"
+    />
+    <meta name="author" content="Diraasti Team" />
+    <meta name="robots" content="index,follow" />
+
+    <!-- Favicon and icons -->
+    <link rel="icon" href="assets/favicon.png" />
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <!-- Theme colour for browsers -->
+    <meta name="theme-color" content="#3b82f6" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf library for planner exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </head>
+
+  <body class="bg-gray-50 text-gray-900 antialiased">
+    <!-- The React root -->
+    <div id="root"></div>
+
+    <!-- Entry point for the React application -->
+    <script type="module">
+      import './src/main.js';
+    </script>
+
+    <!-- Register the service worker for PWA offline support -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('./service-worker.js')
+            .catch((err) => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
+
+    <noscript>
+      This application requires JavaScript to run. Please enable JavaScript in your
+      browser settings.
+    </noscript>
+  </body>
+</html>

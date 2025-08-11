@@ -1,0 +1,22 @@
+{
+  "name": "Diraasti – Tawjihi Generation 2008",
+  "short_name": "Diraasti",
+  "description": "Study platform for Tawjihi Generation 2008 students in Jordan, providing a planner, resources, quizzes, AI assistance and revision tools.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#3b82f6",
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
