@@ -3,116 +3,410 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>اختبار عارض PDF — Drive خارجي + Mozilla داخلي</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+<title>دِراسْتي — مكتبة + عارض داخل الإطار + ذكاء/اختبارات من الكتاب</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0e1116;--card:#151b24;--b:#2b3342;--txt:#e8edf6;--mut:#a7b4c4;--pri:#4cc9f0}
+:root{--bg:#0e1116;--bg2:#0c1016;--card:#151b24;--b:#2b3342;--txt:#e8edf6;--mut:#a7b4c4;--pri:#4cc9f0;--ok:#57d19a;--warn:#ffd166;--r:14px}
 *{box-sizing:border-box}html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--txt);font-family:"Cairo",system-ui,sans-serif}
-.wrap{max-width:1100px;margin:0 auto;padding:12px}
-.card{background:var(--card);border:1px solid var(--b);border-radius:12px;padding:12px}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.input{flex:1;min-width:320px;padding:10px;border:1px solid var(--b);border-radius:10px;background:#10141c;color:var(--txt)}
-.btn{padding:10px 12px;border-radius:10px;border:1px solid var(--b);background:#10141c;color:var(--txt);cursor:pointer}
-.btn.primary{background:var(--pri);color:#001018;border-color:transparent}
-.small{color:var(--mut);font-size:12px}
-.viewer{height:78vh;border:1px solid var(--b);border-radius:12px;overflow:hidden;background:#0b0f16;margin-top:10px}
-iframe{width:100%;height:100%;border:0;display:block}
-.note{margin-top:8px;padding:8px;border:1px dashed var(--b);border-radius:10px;background:#10141c}
-.err{position:sticky;top:0;background:#2b1111;color:#ffb2b2;padding:6px;display:none;z-index:999}
-.badge{padding:3px 8px;border-radius:999px;border:1px solid var(--b);background:#10141c}
+.header{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+.brand{display:flex;gap:10px;align-items:center}.brand h1{margin:0;font-size:18px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--b);background:var(--bg2)}
+.tab{padding:8px 12px;border:1px solid var(--b);border-radius:999px;background:#10141c;color:var(--txt);cursor:pointer}
+.tab.active{outline:2px solid var(--pri)}
+.container{max-width:1200px;margin:12px auto;padding:0 12px}
+.view{display:none}.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:12px}
+.grid{display:grid;gap:10px}.cards{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.input,.select,.ta{width:100%;padding:10px;border-radius:12px;border:1px solid var(--b);background:#10141c;color:var(--txt)}.input.sm{width:110px}.ta{resize:vertical}
+.btn{display:inline-flex;gap:8px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid var(--b);background:#10141c;color:var(--txt);cursor:pointer}
+.btn.primary{background:var(--pri);color:#001018;border-color:transparent}.btn.ok{background:var(--ok);color:#00140a;border-color:transparent}.btn.warn{background:var(--warn);color:#2b1f00;border-color:transparent}
+.small{font-size:12px;color:var(--mut)}.badge{padding:3px 8px;border-radius:999px;border:1px solid var(--b);background:#10141c}
+.notice{margin-top:10px;padding:10px;border:1px dashed var(--b);border-radius:12px;background:#10141c}
+.viewerWrap{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:980px){.viewerWrap{grid-template-columns:1fr 420px}}
+.viewer{height:74vh;border:1px solid var(--b);border-radius:12px;overflow:hidden;background:#0b0f16;position:relative}
+iframe.embed{width:100%;height:100%;border:0;display:block}
+#loadmask{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(to bottom,rgba(14,17,22,.7),rgba(14,17,22,.8))}
+.spinner{width:26px;height:26px;border:3px solid #2b3342;border-top-color:var(--pri);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tbl{width:100%;border-collapse:separate;border-spacing:0 8px}.tbl td,.tbl th{padding:10px;border:1px solid var(--b)}.tbl th{background:#10141c}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.kpi{padding:12px;border:1px solid var(--b);background:#10141c;border-radius:12px}.kpi .val{font-size:26px;font-weight:900}
+#toasts{position:fixed;inset-inline:10px;bottom:10px;display:grid;gap:8px;z-index:200}.toast{background:#10141c;border:1px solid var(--b);border-inline-start:4px solid var(--pri);padding:10px;border-radius:12px}
+.errbar{position:sticky;top:0;z-index:999;background:#2b1111;border-bottom:1px solid #7a2b2b;color:#ffb2b2;padding:8px;display:none}
+.badge.gray{background:#19202b;color:#9fb0c3;border-color:#2e3949}
+.badge.red{background:#2a1515;color:#ffb2b2;border-color:#6a2a2a}
 </style>
 </head>
 <body>
-<div id="err" class="err"></div>
+<div id="errbar" class="errbar"></div>
 
-<div class="wrap">
-  <div class="card">
-    <b>اختبار عرض PDF</b>
-    <div class="small">
-      • روابط <span class="badge">Google Drive</span> تُفتح خارجيًا في المتصفّح لأن WebView الخاص بـ SPCK يمنع معاينتها داخل iframe.<br>
-      • الروابط <span class="badge">المباشرة</span> تُعرض هنا عبر Mozilla PDF.js.
-    </div>
-
-    <!-- أزرار كتبك -->
-    <div class="row" style="margin-top:8px">
-      <button class="btn" data-demo="https://drive.google.com/file/d/1f62kK7mk4tD8Twefwmz4NhlnZlzaiOJ1/view?usp=drivesdk">كتاب 1 (Drive)</button>
-      <button class="btn" data-demo="https://drive.google.com/file/d/147XMRq9zp7kDHCmIFqDIaWd0bEJ_nlRa/view?usp=drivesdk">كتاب 2 (Drive)</button>
-      <button class="btn" data-demo="https://drive.google.com/file/d/1blO1gFn8YJdSj9M1wLL4Jne0ciDjb9K-/view?usp=drivesdk">كتاب 3 (Drive)</button>
-      <button class="btn" data-demo="https://drive.google.com/file/d/1SyKIaepETaqS7CdapWn5pdUbyo8s4Ml1/view?usp=drivesdk">كتاب 4 (Drive)</button>
-      <button class="btn" data-demo="https://drive.google.com/file/d/1Ry0lMuUkJ8UbqHs_MdDTzEAQ0VRLdVBU/view?usp=drivesdk">كتاب 5 (Drive)</button>
-      <button class="btn" data-demo="https://drive.google.com/file/d/1MLC_EFceJtB5Xm8ZbJ-kF-SYcahOnVjP/view?usp=drivesdk">كتاب 6 (Drive)</button>
-    </div>
-
-    <!-- إدخال رابط يدوي -->
-    <div class="row" style="margin-top:8px">
-      <input id="pdfUrl" class="input" placeholder="ضع رابط PDF هنا (Drive أو مباشر)" value="https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf">
-      <button id="openBtn" class="btn primary">فتح</button>
-      <button id="forceDriveBtn" class="btn">فتح كـ Drive</button>
-      <button id="forceMozBtn" class="btn">فتح كـ Mozilla</button>
-    </div>
-
-    <!-- العارض الداخلي (لمباشر فقط) -->
-    <div class="viewer"><iframe id="frame" title="PDF"></iframe></div>
-    <div id="note" class="note"></div>
+<header class="header">
+  <div class="brand">
+    <div style="width:10px;height:10px;background:var(--pri);border-radius:50%"></div>
+    <div><h1>دِراسْتي</h1><div class="small">الكتب داخل الإطار • ذكاء وامتحانات من نص الكتاب تلقائيًا</div></div>
   </div>
-</div>
+  <div style="display:flex;gap:8px">
+    <button id="helpBtn" class="btn">مساعدة</button>
+    <button id="exportBtn" class="btn">تصدير</button>
+    <label class="btn">استيراد<input id="importInput" type="file" accept="application/json" style="display:none"></label>
+  </div>
+</header>
+
+<nav class="nav">
+  <button class="tab active" data-route="library">المكتبة</button>
+  <button class="tab" data-route="viewer">عارض PDF</button>
+  <button class="tab" data-route="qa">ذكاء</button>
+  <button class="tab" data-route="quiz">اختبارات</button>
+  <button class="tab" data-route="dashboard">لوحة التحكم</button>
+  <button class="tab" data-route="tasks">مهام</button>
+  <button class="tab" data-route="planner">مخطِّط</button>
+  <button class="tab" data-route="settings">الإعدادات</button>
+</nav>
+
+<main class="container">
+  <!-- المكتبة -->
+  <section class="view active" data-view="library">
+    <div class="card">
+      <div class="grid" style="grid-template-columns:1fr 220px 220px">
+        <input id="libSearch" class="input" placeholder="ابحث عن كتاب…">
+        <select id="libGrade" class="select"><option value="">جميع الصفوف</option><option value="12">12</option></select>
+        <button id="addLocalBtn" class="btn">إضافة PDF محلي</button>
+      </div>
+      <div class="small" style="margin-top:6px">
+        ملاحظة: بعض الكتب “غير منشور حتى 9 أغسطس 2025” حسب موقع المركز — ستظهر معطّلة.
+      </div>
+    </div>
+
+    <div id="libraryGrid" class="grid cards" style="margin-top:12px"></div>
+
+    <details class="card" style="margin-top:12px">
+      <summary><b>إضافة كتاب بالرابط المباشر</b></summary>
+      <form id="addBookForm" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px">
+        <input name="id" class="input" placeholder="id" required>
+        <input name="title" class="input" placeholder="العنوان" required>
+        <input name="grade" class="input" placeholder="الصف" value="12">
+        <input name="url" class="input" placeholder="رابط PDF (Drive/مباشر)">
+        <input name="notes" class="input" placeholder="ملاحظات (اختياري)">
+        <div style="grid-column:1/-1"><button class="btn primary">حفظ</button></div>
+      </form>
+    </details>
+  </section>
+
+  <!-- العارض + الذكاء -->
+  <section class="view" data-view="viewer">
+    <div class="viewerWrap">
+      <div class="card">
+        <div class="grid" style="grid-template-columns:1fr auto auto auto">
+          <select id="pdfSelect" class="select"></select>
+          <button id="openInside" class="btn primary">فتح داخل الصندوق</button>
+          <button id="reExtract" class="btn">إعادة استخراج</button>
+          <button id="srcBtn" class="btn">المصدر</button>
+        </div>
+        <div id="pdfMeta" class="small" style="margin-top:6px"></div>
+        <div class="viewer" style="margin-top:10px">
+          <div id="loadmask"><div class="spinner" role="progressbar" aria-label="جارٍ التحميل"></div></div>
+          <iframe id="pdfFrame" class="embed" title="PDF"></iframe>
+        </div>
+        <div id="pdfNote" class="notice"></div>
+        <div class="notice" id="ctxInfo"></div>
+      </div>
+      <div class="card">
+        <b>اسأل الذكاء (من نص الكتاب المخزَّن)</b>
+        <div class="small">لا حاجة للّصق — سنستخدم النص المُستخرَج تلقائيًا.</div>
+        <textarea id="qaQuestion" class="ta" rows="4" placeholder="اكتب سؤالك بالعربية…"></textarea>
+        <div class="grid" style="grid-template-columns:auto 1fr;align-items:center;gap:8px;margin-top:6px">
+          <button id="qaAskBtn" class="btn ok">اسأل</button>
+          <span id="qaStatus" class="small"></span>
+        </div>
+        <div id="qaAnswer" class="notice" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- الذكاء -->
+  <section class="view" data-view="qa">
+    <div class="card">
+      <b>اسأل بالعربية</b>
+      <div class="small">المصدر: النص المُستخرَج تلقائيًا من الكتاب الحالي.</div>
+      <textarea id="qaQuestion2" class="ta" rows="3" placeholder="اكتب سؤالك…"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <button id="qaAskBtn2" class="btn ok">اسأل</button>
+        <span id="qaStatus2" class="small"></span>
+      </div>
+      <div id="qaAnswer2" class="notice" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <!-- الاختبارات -->
+  <section class="view" data-view="quiz">
+    <div class="card">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label>عدد الأسئلة <input id="quizCount" class="input sm" type="number" min="5" max="50" value="10"></label>
+        <label>الصعوبة <select id="quizDiff" class="select"><option>سهل</option><option selected>متوسط</option><option>صعب</option></select></label>
+        <button id="quizGenBtn" class="btn primary">توليد من الكتاب</button>
+      </div>
+      <div id="quizArea" style="margin-top:10px"></div>
+      <div id="quizActions" style="display:none;gap:8px;margin-top:10px">
+        <button id="quizGradeBtn" class="btn ok">تصحيح</button>
+        <button id="quizResetBtn" class="btn">إعادة</button>
+      </div>
+      <div id="quizResult" class="card" style="margin-top:10px;display:none"></div>
+    </div>
+  </section>
+
+  <!-- لوحة التحكم -->
+  <section class="view" data-view="dashboard">
+    <div class="kpis">
+      <div class="kpi"><div class="small">عدد الكتب</div><div id="kBooks" class="val">0</div></div>
+      <div class="kpi"><div class="small">متوسط الدرجات</div><div id="kAvg" class="val">—</div></div>
+      <div class="kpi"><div class="small">إجمالي وقت الدراسة</div><div id="kTime" class="val">0د</div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <b>أداء الاختبارات</b>
+      <canvas id="scoresCanvas" width="900" height="200" style="width:100%;background:#10141c;border:1px solid var(--b);border-radius:12px"></canvas>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <b>السجلات</b>
+      <table id="resTable" class="tbl"></table>
+    </div>
+  </section>
+
+  <!-- مهام/مخطط/إعدادات مبسطة -->
+  <section class="view" data-view="tasks">
+    <div class="card">
+      <form id="taskForm" style="display:grid;gap:8px;grid-template-columns:1fr 1fr 150px 230px">
+        <input name="title" class="input" placeholder="عنوان المهمة" required>
+        <input name="desc" class="input" placeholder="وصف">
+        <select name="priority" class="select"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select>
+        <input name="due" class="input" type="datetime-local">
+        <div style="grid-column:1/-1"><button class="btn primary">إضافة</button></div>
+      </form>
+      <div id="tasksList" class="grid" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="planner">
+    <div class="card"><div class="small">أسبوعي</div><textarea class="input" rows="8" id="planArea"></textarea></div>
+  </section>
+
+  <section class="view" data-view="settings">
+    <div class="card">
+      <div class="grid" style="max-width:720px">
+        <input id="geminiKey" class="input" value="AIzaSyC832CDl3HkVVxxYmop4svwwEOII3zjREs" placeholder="مفتاح Gemini">
+        <label><input id="mockToggle" type="checkbox" checked> محاكاة عند الفشل</label>
+        <label><input id="rlToggle" type="checkbox" checked> حدّ معدّل (5 طلبات/دقيقة)</label>
+        <button id="saveSettings" class="btn primary">حفظ</button>
+        <button id="resetAll" class="btn warn">مسح كل البيانات</button>
+        <div class="small" id="settingsInfo"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toasts" aria-live="polite"></div>
 
 <script>
-window.onerror=function(m,s,l,c){var b=document.getElementById('err');b.style.display='block';b.textContent='JS Error: '+m+' @'+l+':'+c};
+/* ========== أدوات صغيرة ========== */
+window.onerror=function(msg,src,line,col){var b=document.getElementById('errbar');b.style.display='block';b.textContent='JS Error: '+msg+' @'+line+':'+col;};
+function $(s){return document.querySelector(s);}function $all(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
+function toast(m){var d=document.createElement('div');d.className='toast';d.innerHTML=m;$('#toasts').appendChild(d);setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},3800);}
+var LS={LIB:'dir.lib',RES:'dir.res',TASK:'dir.task',PLAN:'dir.plan',SET:'dir.set',TIME:'dir.time',ROUTE:'dir.route',CTX:'dir.ctx'};
+var Store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set:function(k,v){localStorage.setItem(k,JSON.stringify(v));}};
+function isDrive(u){return /drive\.google\.com/i.test(u);}
+function sourceViewURL(preview){return preview.replace('/preview','/view');}
+function jinaWrap(u){return 'https://r.jina.ai/https/'+u.replace(/^https?:\/\//,'');}
+function mozURL(u){return 'https://mozilla.github.io/pdf.js/web/viewer.html?file='+encodeURIComponent(u)+'#zoom=page-fit';}
+function gdocsEmbed(u){return 'https://docs.google.com/gview?embedded=1&url='+encodeURIComponent(u);}
 
-function isDrive(u){return /drive\.google\.com/i.test(u)}
-function driveId(u){var m=u.match(/\/d\/([\w-]+)\//);if(m)return m[1];m=u.match(/[?&]id=([\w-]+)/);if(m)return m[1];return null}
-function drivePreview(u){var id=driveId(u);return id?('https://drive.google.com/file/d/'+id+'/preview'):u}
-function mozURL(u){return 'https://mozilla.github.io/pdf.js/web/viewer.html?file='+encodeURIComponent(u)+'#zoom=page-fit'}
+/* ========== مكتبة: الروابط الرسمية (NCCD) مع الحالة ========== */
+var LIB_SEED=[
+  // الأحياء
+  {id:'bio-g12-s1', title:'الأحياء (العلوم الحياتية) — الفصل الأول', grade:'12',
+   url:'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/G12/1/%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%A3%D9%88%D9%84%20%D8%AC%D8%AF%D9%8A%D8%AF.pdf',
+   status:'available', notes:'مصدر: موقع المركز الوطني لتطوير المناهج'},
+  {id:'bio-g12-s2', title:'الأحياء (العلوم الحياتية) — الفصل الثاني', grade:'12',
+   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/part%20%282%29%2010.12.2024/%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1/%20%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%2012%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC%D9%A2%20.pdf',
+   status:'available', notes:'مصدر: NCC Development'},
 
-var frame=document.getElementById('frame'), note=document.getElementById('note'), inp=document.getElementById('pdfUrl');
+  // الكيمياء
+  {id:'chem-g12-s1', title:'الكيمياء — الفصل الأول', grade:'12',
+   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/G12/1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%A3%D9%88%D9%84%20%D8%AC%D8%AF%D9%8A%D8%AF%20M%20.pdf',
+   status:'available', notes:'مصدر: موقع المركز الوطني لتطوير المناهج'},
+  {id:'chem-g12-s2', title:'الكيمياء — الفصل الثاني', grade:'12',
+   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/part%20%282%29%2010.12.2024/%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
+   status:'available', notes:'مصدر: NCC Development'},
 
-/* فتح خارجي (يستخدم المتصفح الأصلي خارج SPCK) */
-function openExternal(url){ try{ window.top.location.href=url; }catch(e){ window.location.href=url; } }
+  // الإنجليزي المتقدم
+  {id:'eng-highnote-g12-s1-sb', title:'الإنجليزي المتقدم (Jordan High Note – G12) — الفصل الأول SB', grade:'12',
+   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G12/1/Jordan-High%20Note-G12-S1-SB.pdf',
+   status:'available', notes:'الفصل الثاني غير منشور حتى 9 أغسطس 2025'},
+  {id:'eng-highnote-g12-s2-sb', title:'الإنجليزي المتقدم — الفصل الثاني SB', grade:'12',
+   url:'', status:'unpublished', notes:'غير منشور على موقع المركز حتى 9 أغسطس 2025'},
 
-function openSmart(){
-  var u=inp.value||''; if(!u){note.textContent='ضع رابط PDF أولًا.';return;}
-  if(isDrive(u)){
-    note.textContent='رابط Drive سيُفتح خارجيًا في المتصفّح (هذا هو الحل الذي يعمل على أندرويد داخل SPCK).';
-    openExternal(drivePreview(u));
-  }else{
-    frame.src=mozURL(u);
-    note.textContent='تم فتحه عبر Mozilla PDF.js داخل الصفحة.';
+  // الثقافة المالية
+  {id:'fin-lit-g12-s1', title:'الثقافة المالية — الفصل الأول', grade:'12',
+   url:'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D9%85%D8%A7%D9%84%D9%8A%D8%A9/G12/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2012%20%D9%811%20small%20file.pdf',
+   status:'available', notes:'الفصل الثاني غير منشور حتى 9 أغسطس 2025'},
+  {id:'fin-lit-g12-s2', title:'الثقافة المالية — الفصل الثاني', grade:'12',
+   url:'', status:'unpublished', notes:'غير منشور على موقع المركز حتى 9 أغسطس 2025'}
+];
+
+/* ========== راوتر ========== */
+var Router=(function(){function go(r){$all('[data-view]').forEach(function(v){v.classList.toggle('active',v.getAttribute('data-view')===r);});$all('.tab').forEach(function(t){t.classList.toggle('active',t.getAttribute('data-route')===r);});Store.set(LS.ROUTE,r);}function restore(){go(Store.get(LS.ROUTE,'library'));}return {go:go,restore:restore};})();
+
+/* ========== مكتبة ========== */
+var Library=(function(){
+  function ensure(){if(!Store.get(LS.LIB,null)){Store.set(LS.LIB,LIB_SEED);}}
+  function list(){return Store.get(LS.LIB,[]);}
+  function saveAll(a){Store.set(LS.LIB,a);}
+  function find(id){var a=list();for(var i=0;i<a.length;i++){if(a[i].id===id){return a[i];}}return null;}
+  function dedupAdd(b){var a=list();if(a.some(function(x){return x.id===b.id;}))return;a.unshift(b);saveAll(a);}
+  function render(){
+    var grid=$('#libraryGrid');var q=($('#libSearch').value||'').toLowerCase();var g=$('#libGrade').value;grid.innerHTML='';
+    list().forEach(function(b){
+      if(q && b.title.toLowerCase().indexOf(q)===-1){return;}
+      if(g && b.grade!==g){return;}
+      var disabled = (b.status==='unpublished' || !b.url);
+      var el=document.createElement('div');el.className='card';
+      el.innerHTML='<b>'+b.title+'</b>'+
+        (b.notes?'<div class="small">'+b.notes+'</div>':'')+
+        '<div class="small" style="margin-top:4px">'+(b.status==='unpublished'
+           ?'<span class="badge red">غير متاح حاليًا</span>'
+           :'<span class="badge gray">'+(isDrive(b.url)?'Google Drive/NCCD':'Direct')+'</span>')+
+        '</div>'+
+        '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn '+(disabled?'':'primary')+' open" '+(disabled?'disabled':'')+'>'+(disabled?'غير متاح':'فتح')+'</button>'+
+        '<button class="btn src" '+(!b.url?'disabled':'')+'>المصدر</button></div>';
+      grid.appendChild(el);
+      el.querySelector('.open').onclick=function(){ if(disabled){toast('الكتاب غير منشور بعد.');return;} Router.go('viewer');$('#pdfSelect').value=b.id;Viewer.openInside(b);AutoContext.ensure(b); };
+      el.querySelector('.src').onclick=function(){ if(!b.url){toast('لا يوجد رابط.');return;} window.open(isDrive(b.url)?sourceViewURL(b.url):b.url,'_blank'); };
+    });
+    populateSelect();
   }
-}
-function openDrive(){
-  var u=inp.value||''; if(!u){note.textContent='ضع رابط PDF أولًا.';return;}
-  note.textContent='فتح خارجي في Google Drive Preview…';
-  openExternal(drivePreview(u));
-}
-function openMozilla(){
-  var u=inp.value||''; if(!u){note.textContent='ضع رابط PDF أولًا.';return;}
-  if(isDrive(u)){
-    note.textContent='لا يمكن عرض Drive داخل Mozilla بسبب CORS — تم إلغاء العملية.';
-    return;
+  function populateSelect(){
+    var s=$('#pdfSelect');var cur=s.value;s.innerHTML='';
+    list().forEach(function(b){
+      var o=document.createElement('option');o.value=b.id;o.textContent=b.title+(b.status==='unpublished'?' — (غير منشور)':'');
+      if(b.status==='unpublished' || !b.url){o.disabled=true;}
+      s.appendChild(o);
+    });
+    if(cur) s.value=cur;
   }
-  frame.src=mozURL(u);
-  note.textContent='تم فتحه عبر Mozilla PDF.js.';
+  function bindAdd(){
+    $('#addBookForm').addEventListener('submit',function(e){
+      e.preventDefault();var fd=new FormData(e.target);
+      var obj={id:fd.get('id'),title:fd.get('title'),grade:fd.get('grade')||'',url:fd.get('url')||'',notes:fd.get('notes')||'',status:fd.get('url')?'available':'unpublished'};
+      dedupAdd(obj);render();toast('أُضيف الكتاب');e.target.reset();
+    });
+    $('#addLocalBtn').onclick=function(){var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf';inp.onchange=function(){var f=inp.files&&inp.files[0];if(!f){return;}var url=URL.createObjectURL(f);dedupAdd({id:'local-'+Date.now(),title:f.name,grade:'',url:url,notes:'محلي',status:'available'});render();toast('تمت إضافة ملف محلي');};inp.click();};
+  }
+  return {ensure:ensure,list:list,render:render,find:find,bindAdd:bindAdd};
+})();
+
+/* ========== دراسة/سجل ========== */
+var StudyClock=(function(){function add(sec){Store.set(LS.TIME,(Store.get(LS.TIME,0)+sec));}function total(){return Store.get(LS.TIME,0);}return {add:add,total:total};})();
+
+/* ========== سياق النص (Jina Reader) ========== */
+var AutoContext=(function(){
+  function ctxMap(){return Store.get(LS.CTX,{});}
+  function saveCtx(id,text){var m=ctxMap();m[id]={ts:Date.now(),len:text.length,text:text.slice(0,120000)};Store.set(LS.CTX,m);}
+  function getCtx(id){var m=ctxMap();return m[id]&&m[id].text||'';}
+  function looksValidText(t){return t && t.length>400 && (/[اأإآبتثجحخدذرزسشصضطظعغفقكلمنهوي]/.test(t)||/[A-Za-z]/.test(t));}
+  function fetchViaJina(u){return fetch(jinaWrap(u)).then(function(r){if(!r.ok)throw 0;return r.text();});}
+  function ensure(book){
+    if(!book || !book.url){ $('#ctxInfo').innerHTML='لا يمكن تجهيز نص لكتاب غير منشور.'; return; }
+    if(getCtx(book.id)){ $('#ctxInfo').innerHTML='النص جاهز من الكاش ('+getCtx(book.id).length+' حرف).'; return; }
+    $('#ctxInfo').innerHTML='استخراج النص…';
+    fetchViaJina(book.url).then(function(t){
+      if(looksValidText(t)){ saveCtx(book.id,t); $('#ctxInfo').innerHTML='تم استخراج النص تلقائيًا ('+t.length+' حرف).'; toast('تم تجهيز نص الكتاب'); }
+      else { $('#ctxInfo').innerHTML='تعذّر استخراج نص كافٍ. افتح المصدر ثم اضغط «إعادة استخراج».';
+             toast('تعذّر تجهيز النص'); }
+    }).catch(function(){ $('#ctxInfo').innerHTML='تعذّر الاتصال بالمصدر. جرب لاحقًا.'; toast('تعذّر الاتصال'); });
+  }
+  function forceReExtract(book){var m=ctxMap();delete m[book.id];Store.set(LS.CTX,m);ensure(book);}
+  return {ensure:ensure,forceReExtract:forceReExtract,getCtx:getCtx};
+})();
+
+/* ========== العارض داخل الإطار ========== */
+var Viewer=(function(){
+  var frame=$('#pdfFrame'), note=$('#pdfNote'), meta=$('#pdfMeta'), mask=$('#loadmask'), tick=null;
+  function setNote(html){note.className='notice';note.innerHTML=html||'';}
+  function startClock(){if(tick)clearInterval(tick);tick=setInterval(function(){StudyClock.add(5);},5000);}
+  function openInside(b){
+    if(!b || !b.url){ setNote('الكتاب غير منشور أو بلا رابط.'); return; }
+    mask.style.display='flex'; frame.removeAttribute('src'); meta.textContent=b.title;
+    if(isDrive(b.url)){ frame.src=b.url; setNote('العرض عبر <span class="badge">Google Drive Preview</span> داخل الإطار.'); }
+    else if((b.url||'').startsWith('blob:')){ frame.src=mozURL(b.url); setNote('العرض عبر <span class="badge">Mozilla PDF.js</span> لملف محلي.'); }
+    else { frame.src=gdocsEmbed(b.url); setNote('العرض عبر <span class="badge">Google Docs Viewer</span> داخل الإطار (تخطّي CORS).'); }
+    var loaded=false; setTimeout(function(){ if(!loaded){ setNote(note.innerHTML+'<div style="margin-top:6px;color:#ffd166">إن لم يظهر المحتوى، افتح «المصدر» أو جرّب لاحقًا.</div>'); mask.style.display='none'; } },6000);
+    frame.onload=function(){loaded=true;mask.style.display='none';}; startClock();
+  }
+  return {openInside:openInside};
+})();
+
+/* ========== Gemini (يعتمد فقط على النص) ========== */
+var RateLimiter=(function(){var W=60000,L=5,MAP={},ON=true;return{set:function(on){ON=on;},ok:function(tag){if(!ON)return true;var now=Date.now();var a=(MAP[tag]||[]).filter(function(t){return now-t<W;});if(a.length>=L)return false;a.push(now);MAP[tag]=a;return true;}};})();
+var Gemini=(function(){
+  function settings(){var s=Store.get(LS.SET,{key:$('#geminiKey').value||'',mock:true});return s;}
+  function context(){var id=$('#pdfSelect').value;return AutoContext.getCtx(id)||'';}
+  function ask(q,cbOK,cbErr){
+    var ctx=context();if(!ctx){cbErr(new Error('no_ctx'));return;}
+    var st=settings();if(!RateLimiter.ok('g')){cbErr(new Error('rate'));return;}
+    if(!st.key){cbErr(new Error('no_key'));return;}
+    var prompt='أجب بالعربية اعتمادًا فقط على النص التالي من كتاب دراسي:\n---\n'+ctx.slice(0,12000)+'\n---\nالسؤال: '+q+'\nقاعدة إلزامية: إذا لم توجد الإجابة في النص فقل: لا أعلم.';
+    var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+encodeURIComponent(st.key);
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]})})
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .then(function(j){var t=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text;cbOK((t||'').trim());})
+    .catch(function(){cbOK('لا أعلم.\n(تعذّر الاتصال — أعد المحاولة)')});
+  }
+  function genMCQ(count,diff,cbOK,cbErr){
+    var ctx=context();if(!ctx){cbErr(new Error('no_ctx'));return;}
+    var st=settings();if(!RateLimiter.ok('g')){cbErr(new Error('rate'));return;}
+    if(!st.key){cbErr(new Error('no_key'));return;}
+    var p='«اقرأ النص التالي (مقتطف من كتاب)، ثم أنشئ '+count+' أسئلة اختيار من متعدد بالعربية، كل سؤال 4 خيارات، خَرِّج بصيغة JSON: [ { "question": "...", "options": ["...","...","...","..."], "correctIndex": 0..3, "explanation": "..." } ]. اعتمد فقط على النص. المستوى: '+diff+'.»\n---\n'+ctx.slice(0,12000)+'\n---\nقاعدة إلزامية: إذا لم يحتوي النص على معلومة كافية فقل: لا أعلم.';
+    var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+encodeURIComponent(st.key);
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:p}]}]})})
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .then(function(j){var t=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text||'';var m=t.match(/\[[\s\S]*\]/);var str=m?m[0]:t;var arr=JSON.parse(str);if(Object.prototype.toString.call(arr)==='[object Array]')cbOK(arr);else throw 0;})
+    .catch(function(){cbErr(new Error('fail'));});
+  }
+  return {ask:ask,genMCQ:genMCQ};
+})();
+
+/* ========== اختبارات ولوحة ========== */
+var Results=(function(){function list(){return Store.get(LS.RES,[]);}function add(r){var a=list();a.unshift(r);Store.set(LS.RES,a);}return {list:list,add:add};})();
+var Quiz=(function(){var cur=null;function render(qs){var a=$('#quizArea');a.innerHTML='';for(var i=0;i<qs.length;i++){var q=qs[i];var box=document.createElement('div');box.className='card';box.innerHTML='<b>س'+(i+1)+': '+q.question+'</b>';for(var j=0;j<q.options.length;j++){var l=document.createElement('label');l.style.display='block';l.innerHTML='<input type="radio" name="q'+i+'" value="'+j+'"> '+q.options[j];box.appendChild(l);}a.appendChild(box);}$('#quizActions').style.display='flex';cur=qs;}function grade(){if(!cur)return;var s=0,res='';for(var i=0;i<cur.length;i++){var q=cur[i];var chk=document.querySelector('input[name="q'+i+'"]:checked');var v=chk?+chk.value:-1;var ok=v===q.correctIndex;if(ok)s++;res+='<div class="small">س'+(i+1)+': '+(ok?'✔ صحيح':'❌ خطأ')+' — '+q.explanation+'</div>';}var p=Math.round(100*s/cur.length);var box=$('#quizResult');box.style.display='block';box.innerHTML='<b>النتيجة: '+s+'/'+cur.length+' ('+p+'%)</b>'+res;Results.add({ts:Date.now(),score:p,count:cur.length});Dashboard.refresh();}function reset(){cur=null;$('#quizArea').innerHTML='';$('#quizActions').style.display='none';$('#quizResult').style.display='none';}return {render:render,grade:grade,reset:reset};})();
+var Dashboard=(function(){function KPIs(){$('#kBooks').textContent=Library.list().length;var r=Results.list();var avg=r.length?Math.round(r.reduce(function(a,b){return a+b.score;},0)/r.length):'—';$('#kAvg').textContent=(avg==='—')?'—':(avg+'%');var mins=Math.floor(Store.get(LS.TIME,0)/60);$('#kTime').textContent=mins+'د';}function table(){var t=$('#resTable'),rows=Results.list();if(!rows.length){t.innerHTML='<tr><td class="small">لا توجد نتائج بعد</td></tr>';return;}var html='<tr><th>التاريخ</th><th>النتيجة</th><th>الأسئلة</th></tr>';for(var i=0;i<rows.length;i++){var r=rows[i];html+='<tr><td>'+new Date(r.ts).toLocaleString('ar-JO')+'</td><td>'+r.score+'%</td><td>'+r.count+'</td></tr>'; }t.innerHTML=html;}function chartDraw(){var c=$('#scoresCanvas'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#0b0f16';ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle='#2b3342';ctx.beginPath();ctx.moveTo(40,10);ctx.lineTo(40,180);ctx.lineTo(880,180);ctx.stroke();var rows=Results.list().slice().reverse();if(!rows.length){ctx.fillStyle='#a7b4c4';ctx.fillText('لا توجد بيانات',420,100);return;}var max=100,min=0,stepX=(c.width-60)/Math.max(rows.length-1,1);ctx.strokeStyle='#4cc9f0';ctx.beginPath();for(var i=0;i<rows.length;i++){var x=40+i*stepX;var y=180-(rows[i].score-min)/(max-min)*160;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();ctx.fillStyle='#e8edf6';for(i=0;i<rows.length;i++){var xx=40+i*stepX;var yy=180-(rows[i].score-min)/(max-min)*160;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();}}function refresh(){KPIs();table();chartDraw();}return {refresh:refresh};})();
+
+/* ========== ربط الواجهات ========== */
+$('#openInside').onclick=function(){var b=Library.find($('#pdfSelect').value);if(b){Viewer.openInside(b);AutoContext.ensure(b);} };
+$('#reExtract').onclick=function(){var b=Library.find($('#pdfSelect').value);if(b){AutoContext.forceReExtract(b);} };
+$('#srcBtn').onclick=function(){var b=Library.find($('#pdfSelect').value);if(b){ if(!b.url){toast('لا يوجد رابط.');return;} window.open(isDrive(b.url)?sourceViewURL(b.url):b.url,'_blank');} };
+$('#quizGenBtn').onclick=function(){var n=+($('#quizCount').value||10);var d=$('#quizDiff').value;$('#quizArea').innerHTML='';$('#quizResult').style.display='none';Gemini.genMCQ(n,d,function(qs){Quiz.render(qs);},function(){toast('تعذّر التوليد — أعد الاستخراج');});};
+$('#quizGradeBtn').onclick=function(){Quiz.grade();};$('#quizResetBtn').onclick=function(){Quiz.reset();};
+$('#qaAskBtn').onclick=function(){var q=$('#qaQuestion').value||'';if(!q){toast('اكتب سؤالًا');return;}$('#qaStatus').textContent='جارٍ…';Gemini.ask(q,function(ans){$('#qaAnswer').textContent=ans;$('#qaStatus').textContent='تم.';},function(){ $('#qaStatus').textContent='فشل.';});};
+$('#qaAskBtn2').onclick=function(){var q=$('#qaQuestion2').value||'';if(!q){toast('اكتب سؤالًا');return;}$('#qaStatus2').textContent='جارٍ…';Gemini.ask(q,function(ans){$('#qaAnswer2').textContent=ans;$('#qaStatus2').textContent='تم.';},function(){ $('#qaStatus2').textContent='فشل.';});};
+$all('.tab').forEach(function(t){t.addEventListener('click',function(){Router.go(t.getAttribute('data-route'));});});
+$('#libSearch').addEventListener('input',function(){Library.render();});
+$('#libGrade').addEventListener('change',function(){Library.render();});
+$('#exportBtn').onclick=function(){var blob=new Blob([JSON.stringify({lib:Library.list(),res:Results.list(),tasks:Store.get(LS.TASK,[]),plan:$('#planArea').value,set:Store.get(LS.SET,{}),time:Store.get(LS.TIME,0),ctx:Store.get(LS.CTX,{})},null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dirassti-data.json';a.click();};
+document.getElementById('importInput').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(!f){return;}var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result||'{}');if(d.lib)Store.set(LS.LIB,d.lib);if(d.res)Store.set(LS.RES,d.res);if(d.tasks)Store.set(LS.TASK,d.tasks);if(d.plan!=null)$('#planArea').value=d.plan;if(d.set)Store.set(LS.SET,d.set);if(d.time!=null)Store.set(LS.TIME,d.time);if(d.ctx)Store.set(LS.CTX,d.ctx);location.reload();}catch(err){toast('ملف غير صالح');}};r.readAsText(f);});
+$('#saveSettings').onclick=function(){var st=Store.get(LS.SET,{});st.key=$('#geminiKey').value||'';st.mock=$('#mockToggle').checked;Store.set(LS.SET,st);$('#settingsInfo').textContent='تم الحفظ.';};
+$('#resetAll').onclick=function(){localStorage.clear();location.reload();};
+$('#helpBtn').onclick=function(){toast('روابط NCCD — بعضها غير منشور بعد حسب الموقع. العارض داخل الإطار، والنص يُستخرج تلقائيًا للذكاء والاختبارات.');};
+
+/* ========== إقلاع ========== */
+function boot(){
+  Library.ensure();Library.bindAdd();Library.render();
+  // اختر أول كتاب متاح تلقائيًا
+  var first = Library.list().find(function(b){return b.status!=='unpublished' && b.url;});
+  if(first){ $('#pdfSelect').value=first.id; Viewer.openInside(first); AutoContext.ensure(first); }
+  $('#planArea').value=Store.get(LS.PLAN,'');
+  Router.restore();Dashboard.refresh();
 }
-
-/* أزرار */
-document.getElementById('openBtn').onclick=openSmart;
-document.getElementById('forceDriveBtn').onclick=openDrive;
-document.getElementById('forceMozBtn').onclick=openMozilla;
-
-/* أزرار الكتب */
-var demos=document.querySelectorAll('[data-demo]');
-for(var i=0;i<demos.length;i++){
-  demos[i].onclick=function(){
-    inp.value=this.getAttribute('data-demo');
-    openSmart();
-  };
-}
-
-/* افتح مثال مباشر افتراضيًا داخل العارض */
-frame.src=mozURL(inp.value);
-note.textContent='ملف مباشر عبر Mozilla PDF.js.';
+document.addEventListener('DOMContentLoaded',boot);
 </script>
 </body>
 </html>
