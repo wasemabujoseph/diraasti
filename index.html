@@ -1,412 +1,1093 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>دِراسْتي — مكتبة + عارض داخل الإطار + ذكاء/اختبارات من الكتاب</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0e1116;--bg2:#0c1016;--card:#151b24;--b:#2b3342;--txt:#e8edf6;--mut:#a7b4c4;--pri:#4cc9f0;--ok:#57d19a;--warn:#ffd166;--r:14px}
-*{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:"Cairo",system-ui,sans-serif}
-.header{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
-.brand{display:flex;gap:10px;align-items:center}.brand h1{margin:0;font-size:18px}
-.nav{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--b);background:var(--bg2)}
-.tab{padding:8px 12px;border:1px solid var(--b);border-radius:999px;background:#10141c;color:var(--txt);cursor:pointer}
-.tab.active{outline:2px solid var(--pri)}
-.container{max-width:1200px;margin:12px auto;padding:0 12px}
-.view{display:none}.view.active{display:block}
-.card{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:12px}
-.grid{display:grid;gap:10px}.cards{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-.input,.select,.ta{width:100%;padding:10px;border-radius:12px;border:1px solid var(--b);background:#10141c;color:var(--txt)}.input.sm{width:110px}.ta{resize:vertical}
-.btn{display:inline-flex;gap:8px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid var(--b);background:#10141c;color:var(--txt);cursor:pointer}
-.btn.primary{background:var(--pri);color:#001018;border-color:transparent}.btn.ok{background:var(--ok);color:#00140a;border-color:transparent}.btn.warn{background:var(--warn);color:#2b1f00;border-color:transparent}
-.small{font-size:12px;color:var(--mut)}.badge{padding:3px 8px;border-radius:999px;border:1px solid var(--b);background:#10141c}
-.notice{margin-top:10px;padding:10px;border:1px dashed var(--b);border-radius:12px;background:#10141c}
-.viewerWrap{display:grid;grid-template-columns:1fr;gap:12px}
-@media(min-width:980px){.viewerWrap{grid-template-columns:1fr 420px}}
-.viewer{height:74vh;border:1px solid var(--b);border-radius:12px;overflow:hidden;background:#0b0f16;position:relative}
-iframe.embed{width:100%;height:100%;border:0;display:block}
-#loadmask{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(to bottom,rgba(14,17,22,.7),rgba(14,17,22,.8))}
-.spinner{width:26px;height:26px;border:3px solid #2b3342;border-top-color:var(--pri);border-radius:50%;animation:sp 1s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-.tbl{width:100%;border-collapse:separate;border-spacing:0 8px}.tbl td,.tbl th{padding:10px;border:1px solid var(--b)}.tbl th{background:#10141c}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.kpi{padding:12px;border:1px solid var(--b);background:#10141c;border-radius:12px}.kpi .val{font-size:26px;font-weight:900}
-#toasts{position:fixed;inset-inline:10px;bottom:10px;display:grid;gap:8px;z-index:200}.toast{background:#10141c;border:1px solid var(--b);border-inline-start:4px solid var(--pri);padding:10px;border-radius:12px}
-.errbar{position:sticky;top:0;z-index:999;background:#2b1111;border-bottom:1px solid #7a2b2b;color:#ffb2b2;padding:8px;display:none}
-.badge.gray{background:#19202b;color:#9fb0c3;border-color:#2e3949}
-.badge.red{background:#2a1515;color:#ffb2b2;border-color:#6a2a2a}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>دراستي</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef7ff',
+              100: '#d9ecff',
+              200: '#baddff',
+              300: '#8bc8ff',
+              400: '#54a9ff',
+              500: '#2e88ff',
+              600: '#176af5',
+              700: '#1556e1',
+              800: '#1847b6',
+              900: '#193d8f'
+            }
+          },
+          boxShadow: {
+            glow: '0 20px 60px rgba(23, 106, 245, 0.18)',
+            soft: '0 10px 30px rgba(15, 23, 42, 0.08)'
+          },
+          backgroundImage: {
+            grid: 'radial-gradient(circle at 1px 1px, rgba(148,163,184,0.14) 1px, transparent 0)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: Tahoma, Arial, sans-serif; }
+    .bg-grid { background-size: 26px 26px; }
+    .safe-pb { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+    .hide-scrollbar::-webkit-scrollbar { width: 0; height: 0; }
+  </style>
 </head>
-<body>
-<div id="errbar" class="errbar"></div>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+  <div id="root"></div>
 
-<header class="header">
-  <div class="brand">
-    <div style="width:10px;height:10px;background:var(--pri);border-radius:50%"></div>
-    <div><h1>دِراسْتي</h1><div class="small">الكتب داخل الإطار • ذكاء وامتحانات من نص الكتاب تلقائيًا</div></div>
-  </div>
-  <div style="display:flex;gap:8px">
-    <button id="helpBtn" class="btn">مساعدة</button>
-    <button id="exportBtn" class="btn">تصدير</button>
-    <label class="btn">استيراد<input id="importInput" type="file" accept="application/json" style="display:none"></label>
-  </div>
-</header>
+  <script type="text/babel">
+    const { useEffect, useMemo, useRef, useState } = React;
 
-<nav class="nav">
-  <button class="tab active" data-route="library">المكتبة</button>
-  <button class="tab" data-route="viewer">عارض PDF</button>
-  <button class="tab" data-route="qa">ذكاء</button>
-  <button class="tab" data-route="quiz">اختبارات</button>
-  <button class="tab" data-route="dashboard">لوحة التحكم</button>
-  <button class="tab" data-route="tasks">مهام</button>
-  <button class="tab" data-route="planner">مخطِّط</button>
-  <button class="tab" data-route="settings">الإعدادات</button>
-</nav>
+    const CONFIG = {
+      APP_NAME: 'دراستي',
+      APP_TAGLINE: 'منصة محاكاة امتحانات التوجيهي وإدارة النتائج',
+      API_BASE: 'PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE',
+      ADMIN_PASSWORD: 'admin',
+      STORAGE_KEYS: {
+        user: 'derasti_user_v2',
+        theme: 'derasti_theme_v2'
+      }
+    };
 
-<main class="container">
-  <!-- المكتبة -->
-  <section class="view active" data-view="library">
-    <div class="card">
-      <div class="grid" style="grid-template-columns:1fr 220px 220px">
-        <input id="libSearch" class="input" placeholder="ابحث عن كتاب…">
-        <select id="libGrade" class="select"><option value="">جميع الصفوف</option><option value="12">12</option></select>
-        <button id="addLocalBtn" class="btn">إضافة PDF محلي</button>
-      </div>
-      <div class="small" style="margin-top:6px">
-        ملاحظة: بعض الكتب “غير منشور حتى 9 أغسطس 2025” حسب موقع المركز — ستظهر معطّلة.
-      </div>
-    </div>
+    const SAMPLE_EXAM = {
+      subject: 'كيمياء - نموذج 1',
+      duration: 7200,
+      questions: [
+        {
+          id: 1,
+          text: 'ما قيمة $pH$ لمحلول متعادل؟',
+          options: ['5', '6', '7', '8'],
+          correctIndex: 2,
+          explanation: 'المحلول المتعادل عند 25°C يكون $pH = 7$.'
+        },
+        {
+          id: 2,
+          text: 'الصيغة الكيميائية للماء هي:',
+          options: ['$H_2O$', '$CO_2$', '$NaCl$', '$O_2$'],
+          correctIndex: 0,
+          explanation: 'الماء يتكون من ذرتي هيدروجين وذرة أكسجين.'
+        }
+      ],
+      openQuestions: [
+        {
+          id: 'oq1',
+          prompt: 'اشرح آلية تكوّن الرابطة التساهمية.',
+          idealAnswer: 'تنشأ الرابطة التساهمية من تشارك الذرات بأزواج إلكترونية لتحقيق الاستقرار.',
+          explanation: 'يُراعى تعريف الرابطة وذكر مفهوم مشاركة الإلكترونات والاستقرار.'
+        }
+      ]
+    };
 
-    <div id="libraryGrid" class="grid cards" style="margin-top:12px"></div>
+    function cls(...items) {
+      return items.filter(Boolean).join(' ');
+    }
 
-    <details class="card" style="margin-top:12px">
-      <summary><b>إضافة كتاب بالرابط المباشر</b></summary>
-      <form id="addBookForm" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px">
-        <input name="id" class="input" placeholder="id" required>
-        <input name="title" class="input" placeholder="العنوان" required>
-        <input name="grade" class="input" placeholder="الصف" value="12">
-        <input name="url" class="input" placeholder="رابط PDF (Drive/مباشر)">
-        <input name="notes" class="input" placeholder="ملاحظات (اختياري)">
-        <div style="grid-column:1/-1"><button class="btn primary">حفظ</button></div>
-      </form>
-    </details>
-  </section>
+    function saveLocal(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
 
-  <!-- العارض + الذكاء -->
-  <section class="view" data-view="viewer">
-    <div class="viewerWrap">
-      <div class="card">
-        <div class="grid" style="grid-template-columns:1fr auto auto auto">
-          <select id="pdfSelect" class="select"></select>
-          <button id="openInside" class="btn primary">فتح داخل الصندوق</button>
-          <button id="reExtract" class="btn">إعادة استخراج</button>
-          <button id="srcBtn" class="btn">المصدر</button>
+    function loadLocal(key, fallback = null) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function formatDate(value) {
+      try {
+        return new Date(value).toLocaleString('ar-JO');
+      } catch {
+        return value || '-';
+      }
+    }
+
+    function formatDuration(seconds) {
+      const mins = Math.round((Number(seconds || 0) / 60));
+      if (mins < 60) return `${mins} دقيقة`;
+      const hours = Math.floor(mins / 60);
+      const rem = mins % 60;
+      return rem ? `${hours} س ${rem} د` : `${hours} ساعة`;
+    }
+
+    async function api(action, payload = {}) {
+      if (!CONFIG.API_BASE || CONFIG.API_BASE.includes('PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE')) {
+        throw new Error('ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولاً.');
+      }
+
+      const res = await fetch(CONFIG.API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...payload })
+      });
+
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'فشل الاتصال بالخادم');
+      return data;
+    }
+
+    function useToast() {
+      const [toast, setToast] = useState(null);
+      useEffect(() => {
+        if (!toast) return;
+        const timer = setTimeout(() => setToast(null), 3500);
+        return () => clearTimeout(timer);
+      }, [toast]);
+      return { toast, setToast };
+    }
+
+    function Toast({ toast }) {
+      if (!toast) return null;
+      const tone = toast.type === 'error'
+        ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300'
+        : toast.type === 'success'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-300'
+          : 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900/40 dark:bg-brand-950/40 dark:text-brand-300';
+      return (
+        <div className="fixed inset-x-0 bottom-4 z-[80] px-4">
+          <div className={cls('mx-auto max-w-md rounded-2xl border px-4 py-3 shadow-glow backdrop-blur', tone)}>
+            <div className="font-bold">{toast.title}</div>
+            {toast.message ? <div className="mt-1 text-sm">{toast.message}</div> : null}
+          </div>
         </div>
-        <div id="pdfMeta" class="small" style="margin-top:6px"></div>
-        <div class="viewer" style="margin-top:10px">
-          <div id="loadmask"><div class="spinner" role="progressbar" aria-label="جارٍ التحميل"></div></div>
-          <iframe id="pdfFrame" class="embed" title="PDF"></iframe>
+      );
+    }
+
+    function Card({ children, className = '' }) {
+      return (
+        <div className={cls(
+          'rounded-3xl border border-slate-200/80 bg-white/90 shadow-soft backdrop-blur',
+          'dark:border-slate-800 dark:bg-slate-900/85',
+          className
+        )}>
+          {children}
         </div>
-        <div id="pdfNote" class="notice"></div>
-        <div class="notice" id="ctxInfo"></div>
-      </div>
-      <div class="card">
-        <b>اسأل الذكاء (من نص الكتاب المخزَّن)</b>
-        <div class="small">لا حاجة للّصق — سنستخدم النص المُستخرَج تلقائيًا.</div>
-        <textarea id="qaQuestion" class="ta" rows="4" placeholder="اكتب سؤالك بالعربية…"></textarea>
-        <div class="grid" style="grid-template-columns:auto 1fr;align-items:center;gap:8px;margin-top:6px">
-          <button id="qaAskBtn" class="btn ok">اسأل</button>
-          <span id="qaStatus" class="small"></span>
+      );
+    }
+
+    function SectionTitle({ title, subtitle, action }) {
+      return (
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">{title}</h2>
+            {subtitle ? <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p> : null}
+          </div>
+          {action}
         </div>
-        <div id="qaAnswer" class="notice" style="margin-top:8px"></div>
-      </div>
-    </div>
-  </section>
+      );
+    }
 
-  <!-- الذكاء -->
-  <section class="view" data-view="qa">
-    <div class="card">
-      <b>اسأل بالعربية</b>
-      <div class="small">المصدر: النص المُستخرَج تلقائيًا من الكتاب الحالي.</div>
-      <textarea id="qaQuestion2" class="ta" rows="3" placeholder="اكتب سؤالك…"></textarea>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-        <button id="qaAskBtn2" class="btn ok">اسأل</button>
-        <span id="qaStatus2" class="small"></span>
-      </div>
-      <div id="qaAnswer2" class="notice" style="margin-top:8px"></div>
-    </div>
-  </section>
+    function Button({ variant = 'primary', className = '', children, ...props }) {
+      const variants = {
+        primary: 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100',
+        brand: 'bg-brand-600 text-white hover:bg-brand-700 shadow-glow',
+        ghost: 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800',
+        danger: 'bg-red-600 text-white hover:bg-red-700'
+      };
+      return (
+        <button
+          {...props}
+          className={cls(
+            'rounded-2xl px-4 py-3 font-bold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60',
+            variants[variant],
+            className
+          )}
+        >
+          {children}
+        </button>
+      );
+    }
 
-  <!-- الاختبارات -->
-  <section class="view" data-view="quiz">
-    <div class="card">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <label>عدد الأسئلة <input id="quizCount" class="input sm" type="number" min="5" max="50" value="10"></label>
-        <label>الصعوبة <select id="quizDiff" class="select"><option>سهل</option><option selected>متوسط</option><option>صعب</option></select></label>
-        <button id="quizGenBtn" class="btn primary">توليد من الكتاب</button>
-      </div>
-      <div id="quizArea" style="margin-top:10px"></div>
-      <div id="quizActions" style="display:none;gap:8px;margin-top:10px">
-        <button id="quizGradeBtn" class="btn ok">تصحيح</button>
-        <button id="quizResetBtn" class="btn">إعادة</button>
-      </div>
-      <div id="quizResult" class="card" style="margin-top:10px;display:none"></div>
-    </div>
-  </section>
+    function Input({ className = '', ...props }) {
+      return (
+        <input
+          {...props}
+          className={cls(
+            'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100',
+            'dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-brand-600 dark:focus:ring-brand-950',
+            className
+          )}
+        />
+      );
+    }
 
-  <!-- لوحة التحكم -->
-  <section class="view" data-view="dashboard">
-    <div class="kpis">
-      <div class="kpi"><div class="small">عدد الكتب</div><div id="kBooks" class="val">0</div></div>
-      <div class="kpi"><div class="small">متوسط الدرجات</div><div id="kAvg" class="val">—</div></div>
-      <div class="kpi"><div class="small">إجمالي وقت الدراسة</div><div id="kTime" class="val">0د</div></div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <b>أداء الاختبارات</b>
-      <canvas id="scoresCanvas" width="900" height="200" style="width:100%;background:#10141c;border:1px solid var(--b);border-radius:12px"></canvas>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <b>السجلات</b>
-      <table id="resTable" class="tbl"></table>
-    </div>
-  </section>
+    function TextArea({ className = '', ...props }) {
+      return (
+        <textarea
+          {...props}
+          className={cls(
+            'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100',
+            'dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-brand-600 dark:focus:ring-brand-950',
+            className
+          )}
+        />
+      );
+    }
 
-  <!-- مهام/مخطط/إعدادات مبسطة -->
-  <section class="view" data-view="tasks">
-    <div class="card">
-      <form id="taskForm" style="display:grid;gap:8px;grid-template-columns:1fr 1fr 150px 230px">
-        <input name="title" class="input" placeholder="عنوان المهمة" required>
-        <input name="desc" class="input" placeholder="وصف">
-        <select name="priority" class="select"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option></select>
-        <input name="due" class="input" type="datetime-local">
-        <div style="grid-column:1/-1"><button class="btn primary">إضافة</button></div>
-      </form>
-      <div id="tasksList" class="grid" style="margin-top:10px"></div>
-    </div>
-  </section>
+    function Badge({ children, tone = 'default' }) {
+      const tones = {
+        default: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        brand: 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300',
+        green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+        red: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+      };
+      return <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-bold', tones[tone])}>{children}</span>;
+    }
 
-  <section class="view" data-view="planner">
-    <div class="card"><div class="small">أسبوعي</div><textarea class="input" rows="8" id="planArea"></textarea></div>
-  </section>
+    function Modal({ children, onClose }) {
+      useEffect(() => {
+        function onKey(e) {
+          if (e.key === 'Escape') onClose?.();
+        }
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [onClose]);
 
-  <section class="view" data-view="settings">
-    <div class="card">
-      <div class="grid" style="max-width:720px">
-        <input id="geminiKey" class="input" value="AIzaSyC832CDl3HkVVxxYmop4svwwEOII3zjREs" placeholder="مفتاح Gemini">
-        <label><input id="mockToggle" type="checkbox" checked> محاكاة عند الفشل</label>
-        <label><input id="rlToggle" type="checkbox" checked> حدّ معدّل (5 طلبات/دقيقة)</label>
-        <button id="saveSettings" class="btn primary">حفظ</button>
-        <button id="resetAll" class="btn warn">مسح كل البيانات</button>
-        <div class="small" id="settingsInfo"></div>
-      </div>
-    </div>
-  </section>
-</main>
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={onClose}>
+          <div className="w-full max-w-5xl" onClick={e => e.stopPropagation()}>{children}</div>
+        </div>
+      );
+    }
 
-<div id="toasts" aria-live="polite"></div>
+    function RichText({ text }) {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (ref.current && window.renderMathInElement) {
+          window.renderMathInElement(ref.current, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false
+          });
+        }
+      }, [text]);
+      return <div ref={ref} className="whitespace-pre-wrap leading-8">{text}</div>;
+    }
 
-<script>
-/* ========== أدوات صغيرة ========== */
-window.onerror=function(msg,src,line,col){var b=document.getElementById('errbar');b.style.display='block';b.textContent='JS Error: '+msg+' @'+line+':'+col;};
-function $(s){return document.querySelector(s);}function $all(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
-function toast(m){var d=document.createElement('div');d.className='toast';d.innerHTML=m;$('#toasts').appendChild(d);setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},3800);}
-var LS={LIB:'dir.lib',RES:'dir.res',TASK:'dir.task',PLAN:'dir.plan',SET:'dir.set',TIME:'dir.time',ROUTE:'dir.route',CTX:'dir.ctx'};
-var Store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set:function(k,v){localStorage.setItem(k,JSON.stringify(v));}};
-function isDrive(u){return /drive\.google\.com/i.test(u);}
-function sourceViewURL(preview){return preview.replace('/preview','/view');}
-function jinaWrap(u){return 'https://r.jina.ai/https/'+u.replace(/^https?:\/\//,'');}
-function mozURL(u){return 'https://mozilla.github.io/pdf.js/web/viewer.html?file='+encodeURIComponent(u)+'#zoom=page-fit';}
-function gdocsEmbed(u){return 'https://docs.google.com/gview?embedded=1&url='+encodeURIComponent(u);}
+    function LoginScreen({ onLogin }) {
+      const [name, setName] = useState('');
+      return (
+        <div className="relative min-h-screen overflow-hidden bg-grid bg-grid p-4">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(46,136,255,0.12),transparent_35%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.08),transparent_35%)] dark:bg-[radial-gradient(circle_at_top,rgba(46,136,255,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(96,165,250,0.08),transparent_35%)]"></div>
+          <div className="relative mx-auto flex min-h-screen max-w-6xl items-center">
+            <div className="grid w-full gap-6 lg:grid-cols-[1.2fr_0.85fr]">
+              <div className="hidden lg:flex">
+                <Card className="w-full overflow-hidden p-8">
+                  <Badge tone="brand">جاهز للربط مع Google Sheets وGoogle Drive</Badge>
+                  <h1 className="mt-5 text-4xl font-black leading-tight text-slate-900 dark:text-white">دراستي</h1>
+                  <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+                    واجهة عربية حديثة لمحاكاة امتحانات التوجيهي، تصحيح فوري، أسئلة مقالية، نتائج مفصلة، ولوحة إدارة احترافية.
+                  </p>
+                  <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                    <Card className="p-4">
+                      <div className="text-2xl">📱</div>
+                      <div className="mt-2 font-bold">متجاوب بالكامل</div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">Android, iPhone, iPad, PC</div>
+                    </Card>
+                    <Card className="p-4">
+                      <div className="text-2xl">🧠</div>
+                      <div className="mt-2 font-bold">دعم المعادلات</div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">KaTeX للأسئلة العلمية</div>
+                    </Card>
+                    <Card className="p-4">
+                      <div className="text-2xl">📊</div>
+                      <div className="mt-2 font-bold">نتائج منظمة</div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">حفظ النتائج ونقاط الضعف</div>
+                    </Card>
+                  </div>
+                </Card>
+              </div>
 
-/* ========== مكتبة: الروابط الرسمية (NCCD) مع الحالة ========== */
-var LIB_SEED=[
-  // الأحياء
-  {id:'bio-g12-s1', title:'الأحياء (العلوم الحياتية) — الفصل الأول', grade:'12',
-   url:'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/G12/1/%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1%20%D8%AC%D8%B2%D8%A1%20%D8%A3%D9%88%D9%84%20%D8%AC%D8%AF%D9%8A%D8%AF.pdf',
-   status:'available', notes:'مصدر: موقع المركز الوطني لتطوير المناهج'},
-  {id:'bio-g12-s2', title:'الأحياء (العلوم الحياتية) — الفصل الثاني', grade:'12',
-   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/part%20%282%29%2010.12.2024/%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1/%20%D8%B9%D9%84%D9%88%D9%85%20%D8%AD%D9%8A%D8%A7%D8%AA%D9%8A%D8%A9%2012%20%D8%B7%D8%A7%D9%84%D8%A8%20%D8%AC%D9%A2%20.pdf',
-   status:'available', notes:'مصدر: NCC Development'},
+              <Card className="p-6 sm:p-8">
+                <div className="mx-auto max-w-md">
+                  <Badge tone="brand">الإصدار الجاهز للتشغيل</Badge>
+                  <h2 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">ابدأ الآن</h2>
+                  <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+                    أدخل اسم الطالب للبدء. النظام سيحفظ دخولك محليًا على الجهاز لتجربة أسرع لاحقًا.
+                  </p>
 
-  // الكيمياء
-  {id:'chem-g12-s1', title:'الكيمياء — الفصل الأول', grade:'12',
-   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/2025/G12/1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%A3%D9%88%D9%84%20%D8%AC%D8%AF%D9%8A%D8%AF%20M%20.pdf',
-   status:'available', notes:'مصدر: موقع المركز الوطني لتطوير المناهج'},
-  {id:'chem-g12-s2', title:'الكيمياء — الفصل الثاني', grade:'12',
-   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/AR/Science/part%20%282%29%2010.12.2024/%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1/%D9%83%D9%8A%D9%85%D9%8A%D8%A7%D8%A1%20%D8%AB%D8%A7%D9%86%D9%8A%20%D8%B9%D8%B4%D8%B1%20%D8%A7%D9%84%D8%AC%D8%B2%D8%A1%20%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A.pdf',
-   status:'available', notes:'مصدر: NCC Development'},
+                  <div className="mt-8 space-y-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-300">الاسم الكامل</label>
+                      <Input
+                        placeholder="مثال: أحمد خالد"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const clean = name.trim();
+                            if (!clean) return;
+                            onLogin({ id: clean.replace(/\s+/g, '_'), name: clean });
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button
+                      variant="brand"
+                      className="w-full"
+                      onClick={() => {
+                        const clean = name.trim();
+                        if (!clean) return alert('أدخل الاسم أولاً');
+                        onLogin({ id: clean.replace(/\s+/g, '_'), name: clean });
+                      }}
+                    >
+                      دخول إلى دراستي
+                    </Button>
+                  </div>
 
-  // الإنجليزي المتقدم
-  {id:'eng-highnote-g12-s1-sb', title:'الإنجليزي المتقدم (Jordan High Note – G12) — الفصل الأول SB', grade:'12',
-   url:'https://nccd.gov.jo/EBV4.0/Root_Storage/EN/2025/G12/1/Jordan-High%20Note-G12-S1-SB.pdf',
-   status:'available', notes:'الفصل الثاني غير منشور حتى 9 أغسطس 2025'},
-  {id:'eng-highnote-g12-s2-sb', title:'الإنجليزي المتقدم — الفصل الثاني SB', grade:'12',
-   url:'', status:'unpublished', notes:'غير منشور على موقع المركز حتى 9 أغسطس 2025'},
+                  <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+                    <div className="font-bold text-slate-800 dark:text-white">مهم قبل التشغيل الحقيقي</div>
+                    بدّل رابط <span className="font-mono">API_BASE</span> داخل الملف برابط Google Apps Script Web App.
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-  // الثقافة المالية
-  {id:'fin-lit-g12-s1', title:'الثقافة المالية — الفصل الأول', grade:'12',
-   url:'https://www.nccd.gov.jo/EBV4.0/Root_Storage/AR/%D9%85%D8%A7%D9%84%D9%8A%D8%A9/G12/1/%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9%2012%20%D9%811%20small%20file.pdf',
-   status:'available', notes:'الفصل الثاني غير منشور حتى 9 أغسطس 2025'},
-  {id:'fin-lit-g12-s2', title:'الثقافة المالية — الفصل الثاني', grade:'12',
-   url:'', status:'unpublished', notes:'غير منشور على موقع المركز حتى 9 أغسطس 2025'}
-];
+    function TopBar({ user, darkMode, setDarkMode, onOpenAdmin, onLogout, onlineState }) {
+      return (
+        <div className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/75">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-slate-900 text-lg font-black text-white shadow-glow dark:from-brand-500 dark:to-brand-800">
+                د
+              </div>
+              <div className="min-w-0">
+                <div className="truncate text-lg font-black text-slate-900 dark:text-white">{CONFIG.APP_NAME}</div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>{user.name}</span>
+                  <span>•</span>
+                  <span>{onlineState}</span>
+                </div>
+              </div>
+            </div>
 
-/* ========== راوتر ========== */
-var Router=(function(){function go(r){$all('[data-view]').forEach(function(v){v.classList.toggle('active',v.getAttribute('data-view')===r);});$all('.tab').forEach(function(t){t.classList.toggle('active',t.getAttribute('data-route')===r);});Store.set(LS.ROUTE,r);}function restore(){go(Store.get(LS.ROUTE,'library'));}return {go:go,restore:restore};})();
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" className="px-3 py-2" onClick={() => setDarkMode(!darkMode)}>{darkMode ? '☀️' : '🌙'}</Button>
+              <Button variant="ghost" className="hidden sm:inline-flex px-3 py-2" onClick={onOpenAdmin}>الإدارة</Button>
+              <Button variant="danger" className="px-3 py-2" onClick={onLogout}>خروج</Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-/* ========== مكتبة ========== */
-var Library=(function(){
-  function ensure(){if(!Store.get(LS.LIB,null)){Store.set(LS.LIB,LIB_SEED);}}
-  function list(){return Store.get(LS.LIB,[]);}
-  function saveAll(a){Store.set(LS.LIB,a);}
-  function find(id){var a=list();for(var i=0;i<a.length;i++){if(a[i].id===id){return a[i];}}return null;}
-  function dedupAdd(b){var a=list();if(a.some(function(x){return x.id===b.id;}))return;a.unshift(b);saveAll(a);}
-  function render(){
-    var grid=$('#libraryGrid');var q=($('#libSearch').value||'').toLowerCase();var g=$('#libGrade').value;grid.innerHTML='';
-    list().forEach(function(b){
-      if(q && b.title.toLowerCase().indexOf(q)===-1){return;}
-      if(g && b.grade!==g){return;}
-      var disabled = (b.status==='unpublished' || !b.url);
-      var el=document.createElement('div');el.className='card';
-      el.innerHTML='<b>'+b.title+'</b>'+
-        (b.notes?'<div class="small">'+b.notes+'</div>':'')+
-        '<div class="small" style="margin-top:4px">'+(b.status==='unpublished'
-           ?'<span class="badge red">غير متاح حاليًا</span>'
-           :'<span class="badge gray">'+(isDrive(b.url)?'Google Drive/NCCD':'Direct')+'</span>')+
-        '</div>'+
-        '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">'+
-        '<button class="btn '+(disabled?'':'primary')+' open" '+(disabled?'disabled':'')+'>'+(disabled?'غير متاح':'فتح')+'</button>'+
-        '<button class="btn src" '+(!b.url?'disabled':'')+'>المصدر</button></div>';
-      grid.appendChild(el);
-      el.querySelector('.open').onclick=function(){ if(disabled){toast('الكتاب غير منشور بعد.');return;} Router.go('viewer');$('#pdfSelect').value=b.id;Viewer.openInside(b);AutoContext.ensure(b); };
-      el.querySelector('.src').onclick=function(){ if(!b.url){toast('لا يوجد رابط.');return;} window.open(isDrive(b.url)?sourceViewURL(b.url):b.url,'_blank'); };
-    });
-    populateSelect();
-  }
-  function populateSelect(){
-    var s=$('#pdfSelect');var cur=s.value;s.innerHTML='';
-    list().forEach(function(b){
-      var o=document.createElement('option');o.value=b.id;o.textContent=b.title+(b.status==='unpublished'?' — (غير منشور)':'');
-      if(b.status==='unpublished' || !b.url){o.disabled=true;}
-      s.appendChild(o);
-    });
-    if(cur) s.value=cur;
-  }
-  function bindAdd(){
-    $('#addBookForm').addEventListener('submit',function(e){
-      e.preventDefault();var fd=new FormData(e.target);
-      var obj={id:fd.get('id'),title:fd.get('title'),grade:fd.get('grade')||'',url:fd.get('url')||'',notes:fd.get('notes')||'',status:fd.get('url')?'available':'unpublished'};
-      dedupAdd(obj);render();toast('أُضيف الكتاب');e.target.reset();
-    });
-    $('#addLocalBtn').onclick=function(){var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf';inp.onchange=function(){var f=inp.files&&inp.files[0];if(!f){return;}var url=URL.createObjectURL(f);dedupAdd({id:'local-'+Date.now(),title:f.name,grade:'',url:url,notes:'محلي',status:'available'});render();toast('تمت إضافة ملف محلي');};inp.click();};
-  }
-  return {ensure:ensure,list:list,render:render,find:find,bindAdd:bindAdd};
-})();
+    function StatsCards({ exams, stats, latestResult }) {
+      const items = [
+        { label: 'الامتحانات المتاحة', value: exams.length, hint: 'جاهزة للبدء الآن', tone: 'brand' },
+        { label: 'المعدل العام', value: stats.avgScore != null ? `${stats.avgScore}%` : '-', hint: 'من جميع النتائج', tone: 'green' },
+        { label: 'الامتحانات المنجزة', value: stats.completed, hint: 'تم حفظها في Google Sheets', tone: 'default' },
+        { label: 'آخر نتيجة', value: latestResult ? `${latestResult.score}%` : '-', hint: latestResult ? latestResult.subject : 'لا يوجد بعد', tone: latestResult && Number(latestResult.score) < 50 ? 'red' : 'brand' }
+      ];
+      return (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {items.map((item, i) => (
+            <Card key={i} className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{item.label}</div>
+                  <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{item.value}</div>
+                </div>
+                <Badge tone={item.tone === 'green' ? 'green' : item.tone === 'red' ? 'red' : 'brand'}>{item.hint}</Badge>
+              </div>
+            </Card>
+          ))}
+        </div>
+      );
+    }
 
-/* ========== دراسة/سجل ========== */
-var StudyClock=(function(){function add(sec){Store.set(LS.TIME,(Store.get(LS.TIME,0)+sec));}function total(){return Store.get(LS.TIME,0);}return {add:add,total:total};})();
+    function ExamCard({ exam, onStart }) {
+      const mcqCount = (exam.questions || []).length;
+      const openCount = (exam.openQuestions || []).length;
+      return (
+        <Card className="group overflow-hidden p-5 transition hover:-translate-y-1 hover:shadow-glow">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Badge tone="brand">امتحان</Badge>
+              <h3 className="mt-3 text-lg font-black text-slate-900 dark:text-white">{exam.subject}</h3>
+              <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+                امتحان جاهز بمحاكاة مريحة للطالب مع تصحيح فوري وعرض واضح للأسئلة والإجابات.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {formatDuration(exam.duration || 3600)}
+            </div>
+          </div>
+          <div className="mt-5 grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950/50">
+              <div className="text-lg font-black">{mcqCount}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">اختياري</div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950/50">
+              <div className="text-lg font-black">{openCount}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">مقالي</div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950/50">
+              <div className="text-lg font-black">{mcqCount + openCount}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">المجموع</div>
+            </div>
+          </div>
+          <Button variant="brand" className="mt-5 w-full" onClick={() => onStart(exam.id)}>ابدأ الامتحان</Button>
+        </Card>
+      );
+    }
 
-/* ========== سياق النص (Jina Reader) ========== */
-var AutoContext=(function(){
-  function ctxMap(){return Store.get(LS.CTX,{});}
-  function saveCtx(id,text){var m=ctxMap();m[id]={ts:Date.now(),len:text.length,text:text.slice(0,120000)};Store.set(LS.CTX,m);}
-  function getCtx(id){var m=ctxMap();return m[id]&&m[id].text||'';}
-  function looksValidText(t){return t && t.length>400 && (/[اأإآبتثجحخدذرزسشصضطظعغفقكلمنهوي]/.test(t)||/[A-Za-z]/.test(t));}
-  function fetchViaJina(u){return fetch(jinaWrap(u)).then(function(r){if(!r.ok)throw 0;return r.text();});}
-  function ensure(book){
-    if(!book || !book.url){ $('#ctxInfo').innerHTML='لا يمكن تجهيز نص لكتاب غير منشور.'; return; }
-    if(getCtx(book.id)){ $('#ctxInfo').innerHTML='النص جاهز من الكاش ('+getCtx(book.id).length+' حرف).'; return; }
-    $('#ctxInfo').innerHTML='استخراج النص…';
-    fetchViaJina(book.url).then(function(t){
-      if(looksValidText(t)){ saveCtx(book.id,t); $('#ctxInfo').innerHTML='تم استخراج النص تلقائيًا ('+t.length+' حرف).'; toast('تم تجهيز نص الكتاب'); }
-      else { $('#ctxInfo').innerHTML='تعذّر استخراج نص كافٍ. افتح المصدر ثم اضغط «إعادة استخراج».';
-             toast('تعذّر تجهيز النص'); }
-    }).catch(function(){ $('#ctxInfo').innerHTML='تعذّر الاتصال بالمصدر. جرب لاحقًا.'; toast('تعذّر الاتصال'); });
-  }
-  function forceReExtract(book){var m=ctxMap();delete m[book.id];Store.set(LS.CTX,m);ensure(book);}
-  return {ensure:ensure,forceReExtract:forceReExtract,getCtx:getCtx};
-})();
+    function ResultsTable({ results }) {
+      if (!results.length) {
+        return <div className="text-sm text-slate-500 dark:text-slate-400">لا توجد نتائج محفوظة بعد.</div>;
+      }
+      return (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-950/60">
+                <tr className="text-right text-slate-500 dark:text-slate-400">
+                  <th className="px-4 py-3 font-bold">المادة</th>
+                  <th className="px-4 py-3 font-bold">العلامة</th>
+                  <th className="px-4 py-3 font-bold">التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.slice(0, 8).map((r, i) => (
+                  <tr key={i} className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{r.subject}</td>
+                    <td className="px-4 py-3">{r.score}%</td>
+                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
 
-/* ========== العارض داخل الإطار ========== */
-var Viewer=(function(){
-  var frame=$('#pdfFrame'), note=$('#pdfNote'), meta=$('#pdfMeta'), mask=$('#loadmask'), tick=null;
-  function setNote(html){note.className='notice';note.innerHTML=html||'';}
-  function startClock(){if(tick)clearInterval(tick);tick=setInterval(function(){StudyClock.add(5);},5000);}
-  function openInside(b){
-    if(!b || !b.url){ setNote('الكتاب غير منشور أو بلا رابط.'); return; }
-    mask.style.display='flex'; frame.removeAttribute('src'); meta.textContent=b.title;
-    if(isDrive(b.url)){ frame.src=b.url; setNote('العرض عبر <span class="badge">Google Drive Preview</span> داخل الإطار.'); }
-    else if((b.url||'').startsWith('blob:')){ frame.src=mozURL(b.url); setNote('العرض عبر <span class="badge">Mozilla PDF.js</span> لملف محلي.'); }
-    else { frame.src=gdocsEmbed(b.url); setNote('العرض عبر <span class="badge">Google Docs Viewer</span> داخل الإطار (تخطّي CORS).'); }
-    var loaded=false; setTimeout(function(){ if(!loaded){ setNote(note.innerHTML+'<div style="margin-top:6px;color:#ffd166">إن لم يظهر المحتوى، افتح «المصدر» أو جرّب لاحقًا.</div>'); mask.style.display='none'; } },6000);
-    frame.onload=function(){loaded=true;mask.style.display='none';}; startClock();
-  }
-  return {openInside:openInside};
-})();
+    function WrongQuestionsPanel({ wrongQuestions }) {
+      if (!wrongQuestions.length) {
+        return (
+          <Card className="p-5">
+            <SectionTitle title="نقاط الضعف" subtitle="سيتم جمع الأسئلة التي أخطأت بها لتراجعها لاحقًا." />
+            <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              لا توجد أخطاء محفوظة بعد. بعد أول امتحان ستظهر هنا الأسئلة التي تحتاج مراجعة.
+            </div>
+          </Card>
+        );
+      }
+      return (
+        <Card className="p-5">
+          <SectionTitle title="نقاط الضعف" subtitle="آخر 10 أسئلة خاطئة لمساعدتك في التركيز على مواطن التحسن." />
+          <div className="space-y-3">
+            {wrongQuestions.slice(0, 10).map((item, idx) => (
+              <div key={idx} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge tone="red">مراجعة</Badge>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{item.subject}</span>
+                </div>
+                <div className="font-bold text-slate-900 dark:text-white">{item.questionText}</div>
+                <div className="mt-3 text-sm text-red-600 dark:text-red-400">إجابتك: {item.userAnswerText || 'لم تجب'}</div>
+                <div className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">الصحيح: {item.correctAnswerText || '-'}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      );
+    }
 
-/* ========== Gemini (يعتمد فقط على النص) ========== */
-var RateLimiter=(function(){var W=60000,L=5,MAP={},ON=true;return{set:function(on){ON=on;},ok:function(tag){if(!ON)return true;var now=Date.now();var a=(MAP[tag]||[]).filter(function(t){return now-t<W;});if(a.length>=L)return false;a.push(now);MAP[tag]=a;return true;}};})();
-var Gemini=(function(){
-  function settings(){var s=Store.get(LS.SET,{key:$('#geminiKey').value||'',mock:true});return s;}
-  function context(){var id=$('#pdfSelect').value;return AutoContext.getCtx(id)||'';}
-  function ask(q,cbOK,cbErr){
-    var ctx=context();if(!ctx){cbErr(new Error('no_ctx'));return;}
-    var st=settings();if(!RateLimiter.ok('g')){cbErr(new Error('rate'));return;}
-    if(!st.key){cbErr(new Error('no_key'));return;}
-    var prompt='أجب بالعربية اعتمادًا فقط على النص التالي من كتاب دراسي:\n---\n'+ctx.slice(0,12000)+'\n---\nالسؤال: '+q+'\nقاعدة إلزامية: إذا لم توجد الإجابة في النص فقل: لا أعلم.';
-    var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+encodeURIComponent(st.key);
-    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]})})
-    .then(function(r){if(!r.ok)throw 0;return r.json()})
-    .then(function(j){var t=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text;cbOK((t||'').trim());})
-    .catch(function(){cbOK('لا أعلم.\n(تعذّر الاتصال — أعد المحاولة)')});
-  }
-  function genMCQ(count,diff,cbOK,cbErr){
-    var ctx=context();if(!ctx){cbErr(new Error('no_ctx'));return;}
-    var st=settings();if(!RateLimiter.ok('g')){cbErr(new Error('rate'));return;}
-    if(!st.key){cbErr(new Error('no_key'));return;}
-    var p='«اقرأ النص التالي (مقتطف من كتاب)، ثم أنشئ '+count+' أسئلة اختيار من متعدد بالعربية، كل سؤال 4 خيارات، خَرِّج بصيغة JSON: [ { "question": "...", "options": ["...","...","...","..."], "correctIndex": 0..3, "explanation": "..." } ]. اعتمد فقط على النص. المستوى: '+diff+'.»\n---\n'+ctx.slice(0,12000)+'\n---\nقاعدة إلزامية: إذا لم يحتوي النص على معلومة كافية فقل: لا أعلم.';
-    var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+encodeURIComponent(st.key);
-    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:p}]}]})})
-    .then(function(r){if(!r.ok)throw 0;return r.json()})
-    .then(function(j){var t=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text||'';var m=t.match(/\[[\s\S]*\]/);var str=m?m[0]:t;var arr=JSON.parse(str);if(Object.prototype.toString.call(arr)==='[object Array]')cbOK(arr);else throw 0;})
-    .catch(function(){cbErr(new Error('fail'));});
-  }
-  return {ask:ask,genMCQ:genMCQ};
-})();
+    function Dashboard({ exams, stats, results, wrongQuestions, onStartExam, onRefresh, apiReady }) {
+      const [query, setQuery] = useState('');
+      const filteredExams = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return exams;
+        return exams.filter(exam => String(exam.subject || '').toLowerCase().includes(q));
+      }, [query, exams]);
+      return (
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 safe-pb">
+          <Card className="overflow-hidden">
+            <div className="grid gap-6 p-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div>
+                <Badge tone={apiReady ? 'green' : 'red'}>{apiReady ? 'جاهز للربط' : 'يتطلب ربط API'}</Badge>
+                <h1 className="mt-4 text-3xl font-black leading-tight text-slate-900 dark:text-white">لوحة الطالب</h1>
+                <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600 dark:text-slate-300">
+                  تصفح الامتحانات، ابدأ المحاكاة، وراجع نتائجك السابقة مع نقاط الضعف في تجربة حديثة وسريعة.
+                </p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <div className="flex-1">
+                    <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="ابحث عن مادة أو اسم امتحان..." />
+                  </div>
+                  <Button variant="ghost" onClick={onRefresh}>تحديث البيانات</Button>
+                </div>
+              </div>
+              <div className="rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-slate-900 p-5 text-white shadow-glow">
+                <div className="text-sm text-white/80">الحالة الحالية</div>
+                <div className="mt-3 text-2xl font-black">{apiReady ? 'كل شيء جاهز للاتصال' : 'أضف رابط Apps Script أولًا'}</div>
+                <div className="mt-3 text-sm leading-7 text-white/85">
+                  بعد ربط Google Apps Script سيبدأ المشروع بجلب الامتحانات من Google Drive وتسجيل النتائج في Google Sheets مباشرة.
+                </div>
+              </div>
+            </div>
+          </Card>
 
-/* ========== اختبارات ولوحة ========== */
-var Results=(function(){function list(){return Store.get(LS.RES,[]);}function add(r){var a=list();a.unshift(r);Store.set(LS.RES,a);}return {list:list,add:add};})();
-var Quiz=(function(){var cur=null;function render(qs){var a=$('#quizArea');a.innerHTML='';for(var i=0;i<qs.length;i++){var q=qs[i];var box=document.createElement('div');box.className='card';box.innerHTML='<b>س'+(i+1)+': '+q.question+'</b>';for(var j=0;j<q.options.length;j++){var l=document.createElement('label');l.style.display='block';l.innerHTML='<input type="radio" name="q'+i+'" value="'+j+'"> '+q.options[j];box.appendChild(l);}a.appendChild(box);}$('#quizActions').style.display='flex';cur=qs;}function grade(){if(!cur)return;var s=0,res='';for(var i=0;i<cur.length;i++){var q=cur[i];var chk=document.querySelector('input[name="q'+i+'"]:checked');var v=chk?+chk.value:-1;var ok=v===q.correctIndex;if(ok)s++;res+='<div class="small">س'+(i+1)+': '+(ok?'✔ صحيح':'❌ خطأ')+' — '+q.explanation+'</div>';}var p=Math.round(100*s/cur.length);var box=$('#quizResult');box.style.display='block';box.innerHTML='<b>النتيجة: '+s+'/'+cur.length+' ('+p+'%)</b>'+res;Results.add({ts:Date.now(),score:p,count:cur.length});Dashboard.refresh();}function reset(){cur=null;$('#quizArea').innerHTML='';$('#quizActions').style.display='none';$('#quizResult').style.display='none';}return {render:render,grade:grade,reset:reset};})();
-var Dashboard=(function(){function KPIs(){$('#kBooks').textContent=Library.list().length;var r=Results.list();var avg=r.length?Math.round(r.reduce(function(a,b){return a+b.score;},0)/r.length):'—';$('#kAvg').textContent=(avg==='—')?'—':(avg+'%');var mins=Math.floor(Store.get(LS.TIME,0)/60);$('#kTime').textContent=mins+'د';}function table(){var t=$('#resTable'),rows=Results.list();if(!rows.length){t.innerHTML='<tr><td class="small">لا توجد نتائج بعد</td></tr>';return;}var html='<tr><th>التاريخ</th><th>النتيجة</th><th>الأسئلة</th></tr>';for(var i=0;i<rows.length;i++){var r=rows[i];html+='<tr><td>'+new Date(r.ts).toLocaleString('ar-JO')+'</td><td>'+r.score+'%</td><td>'+r.count+'</td></tr>'; }t.innerHTML=html;}function chartDraw(){var c=$('#scoresCanvas'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#0b0f16';ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle='#2b3342';ctx.beginPath();ctx.moveTo(40,10);ctx.lineTo(40,180);ctx.lineTo(880,180);ctx.stroke();var rows=Results.list().slice().reverse();if(!rows.length){ctx.fillStyle='#a7b4c4';ctx.fillText('لا توجد بيانات',420,100);return;}var max=100,min=0,stepX=(c.width-60)/Math.max(rows.length-1,1);ctx.strokeStyle='#4cc9f0';ctx.beginPath();for(var i=0;i<rows.length;i++){var x=40+i*stepX;var y=180-(rows[i].score-min)/(max-min)*160;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();ctx.fillStyle='#e8edf6';for(i=0;i<rows.length;i++){var xx=40+i*stepX;var yy=180-(rows[i].score-min)/(max-min)*160;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();}}function refresh(){KPIs();table();chartDraw();}return {refresh:refresh};})();
+          <StatsCards exams={exams} stats={stats} latestResult={results[0]} />
 
-/* ========== ربط الواجهات ========== */
-$('#openInside').onclick=function(){var b=Library.find($('#pdfSelect').value);if(b){Viewer.openInside(b);AutoContext.ensure(b);} };
-$('#reExtract').onclick=function(){var b=Library.find($('#pdfSelect').value);if(b){AutoContext.forceReExtract(b);} };
-$('#srcBtn').onclick=function(){var b=Library.find($('#pdfSelect').value);if(b){ if(!b.url){toast('لا يوجد رابط.');return;} window.open(isDrive(b.url)?sourceViewURL(b.url):b.url,'_blank');} };
-$('#quizGenBtn').onclick=function(){var n=+($('#quizCount').value||10);var d=$('#quizDiff').value;$('#quizArea').innerHTML='';$('#quizResult').style.display='none';Gemini.genMCQ(n,d,function(qs){Quiz.render(qs);},function(){toast('تعذّر التوليد — أعد الاستخراج');});};
-$('#quizGradeBtn').onclick=function(){Quiz.grade();};$('#quizResetBtn').onclick=function(){Quiz.reset();};
-$('#qaAskBtn').onclick=function(){var q=$('#qaQuestion').value||'';if(!q){toast('اكتب سؤالًا');return;}$('#qaStatus').textContent='جارٍ…';Gemini.ask(q,function(ans){$('#qaAnswer').textContent=ans;$('#qaStatus').textContent='تم.';},function(){ $('#qaStatus').textContent='فشل.';});};
-$('#qaAskBtn2').onclick=function(){var q=$('#qaQuestion2').value||'';if(!q){toast('اكتب سؤالًا');return;}$('#qaStatus2').textContent='جارٍ…';Gemini.ask(q,function(ans){$('#qaAnswer2').textContent=ans;$('#qaStatus2').textContent='تم.';},function(){ $('#qaStatus2').textContent='فشل.';});};
-$all('.tab').forEach(function(t){t.addEventListener('click',function(){Router.go(t.getAttribute('data-route'));});});
-$('#libSearch').addEventListener('input',function(){Library.render();});
-$('#libGrade').addEventListener('change',function(){Library.render();});
-$('#exportBtn').onclick=function(){var blob=new Blob([JSON.stringify({lib:Library.list(),res:Results.list(),tasks:Store.get(LS.TASK,[]),plan:$('#planArea').value,set:Store.get(LS.SET,{}),time:Store.get(LS.TIME,0),ctx:Store.get(LS.CTX,{})},null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dirassti-data.json';a.click();};
-document.getElementById('importInput').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(!f){return;}var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result||'{}');if(d.lib)Store.set(LS.LIB,d.lib);if(d.res)Store.set(LS.RES,d.res);if(d.tasks)Store.set(LS.TASK,d.tasks);if(d.plan!=null)$('#planArea').value=d.plan;if(d.set)Store.set(LS.SET,d.set);if(d.time!=null)Store.set(LS.TIME,d.time);if(d.ctx)Store.set(LS.CTX,d.ctx);location.reload();}catch(err){toast('ملف غير صالح');}};r.readAsText(f);});
-$('#saveSettings').onclick=function(){var st=Store.get(LS.SET,{});st.key=$('#geminiKey').value||'';st.mock=$('#mockToggle').checked;Store.set(LS.SET,st);$('#settingsInfo').textContent='تم الحفظ.';};
-$('#resetAll').onclick=function(){localStorage.clear();location.reload();};
-$('#helpBtn').onclick=function(){toast('روابط NCCD — بعضها غير منشور بعد حسب الموقع. العارض داخل الإطار، والنص يُستخرج تلقائيًا للذكاء والاختبارات.');};
+          <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+            <div className="space-y-6">
+              <Card className="p-5">
+                <SectionTitle
+                  title="الامتحانات المتاحة"
+                  subtitle={filteredExams.length === exams.length ? 'كل الامتحانات الجاهزة للعرض.' : `عدد النتائج المطابقة: ${filteredExams.length}`}
+                />
+                {filteredExams.length ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {filteredExams.map(exam => <ExamCard key={exam.id} exam={exam} onStart={onStartExam} />)}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    لا توجد امتحانات مطابقة للبحث الحالي.
+                  </div>
+                )}
+              </Card>
 
-/* ========== إقلاع ========== */
-function boot(){
-  Library.ensure();Library.bindAdd();Library.render();
-  // اختر أول كتاب متاح تلقائيًا
-  var first = Library.list().find(function(b){return b.status!=='unpublished' && b.url;});
-  if(first){ $('#pdfSelect').value=first.id; Viewer.openInside(first); AutoContext.ensure(first); }
-  $('#planArea').value=Store.get(LS.PLAN,'');
-  Router.restore();Dashboard.refresh();
-}
-document.addEventListener('DOMContentLoaded',boot);
-</script>
+              <WrongQuestionsPanel wrongQuestions={wrongQuestions} />
+            </div>
+
+            <div className="space-y-6">
+              <Card className="p-5">
+                <SectionTitle title="آخر النتائج" subtitle="ملخص سريع لآخر المحاولات المسجلة." />
+                <ResultsTable results={results} />
+              </Card>
+
+              <Card className="p-5">
+                <SectionTitle title="جاهزية الربط" subtitle="العناصر المطلوبة لتشغيل النظام بشكل كامل." />
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/60">
+                    <span>Google Apps Script Web App</span>
+                    <Badge tone={apiReady ? 'green' : 'red'}>{apiReady ? 'مُضاف' : 'غير مضاف'}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/60">
+                    <span>Google Sheets</span>
+                    <Badge tone="brand">جاهز</Badge>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/60">
+                    <span>Google Drive</span>
+                    <Badge tone="brand">جاهز</Badge>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ExamScreen({ exam, user, onFinish, onExit, notify }) {
+      const mcq = exam.questions || [];
+      const openQuestions = exam.openQuestions || [];
+      const totalSeconds = Number(exam.duration || 3600);
+      const [timeLeft, setTimeLeft] = useState(totalSeconds);
+      const [answers, setAnswers] = useState({});
+      const [openAnswers, setOpenAnswers] = useState({});
+      const [submitting, setSubmitting] = useState(false);
+      const [result, setResult] = useState(null);
+
+      useEffect(() => {
+        if (result) return;
+        const timer = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              handleSubmit(true);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        return () => clearInterval(timer);
+      }, [result]);
+
+      function setMcqAnswer(questionId, index) {
+        setAnswers(prev => ({ ...prev, [questionId]: index }));
+      }
+
+      function setEssayAnswer(questionId, value) {
+        setOpenAnswers(prev => ({ ...prev, [questionId]: value }));
+      }
+
+      async function handleSubmit(auto = false) {
+        if (submitting || result) return;
+        setSubmitting(true);
+        try {
+          let correct = 0;
+          const wrongItems = [];
+
+          mcq.forEach(q => {
+            const userIndex = answers[q.id];
+            if (userIndex === q.correctIndex) {
+              correct += 1;
+            } else {
+              wrongItems.push({
+                questionId: q.id,
+                questionText: q.text,
+                userAnswerIndex: userIndex ?? null,
+                userAnswerText: userIndex != null ? q.options[userIndex] : '',
+                correctIndex: q.correctIndex,
+                correctAnswerText: q.options[q.correctIndex] || '',
+                explanation: q.explanation || '',
+                subject: exam.subject
+              });
+            }
+          });
+
+          const score = mcq.length ? Math.round((correct / mcq.length) * 100) : 100;
+          const payload = {
+            userId: user.id,
+            userName: user.name,
+            examId: exam.id,
+            subject: exam.subject,
+            score,
+            answers,
+            openAnswers,
+            wrongItems
+          };
+
+          await onFinish(payload);
+          setResult({ score, wrongItems, openAnswers });
+          if (auto) notify({ type: 'info', title: 'انتهى الوقت', message: 'تم تسليم الامتحان تلقائيًا.' });
+        } catch (error) {
+          notify({ type: 'error', title: 'تعذر تسليم الامتحان', message: error.message });
+        } finally {
+          setSubmitting(false);
+        }
+      }
+
+      const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+      const seconds = String(timeLeft % 60).padStart(2, '0');
+      const answeredMcq = Object.keys(answers).length;
+      const answeredOpen = Object.values(openAnswers).filter(Boolean).length;
+
+      if (result) {
+        return (
+          <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 safe-pb">
+            <Card className="overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-slate-900 p-6 text-white shadow-glow">
+              <Badge tone="green">تم التسليم بنجاح</Badge>
+              <h1 className="mt-4 text-3xl font-black">{exam.subject}</h1>
+              <div className="mt-4 text-6xl font-black">{result.score}%</div>
+              <p className="mt-3 text-sm text-white/85">تم حفظ النتيجة وهي جاهزة للمراجعة داخل لوحة الطالب ولوحة الإدارة.</p>
+            </Card>
+
+            <Card className="p-5">
+              <SectionTitle title="تصحيح الأسئلة الخاطئة" subtitle="راجع إجاباتك والصحيح مع التفسير عند توفره." />
+              {result.wrongItems.length === 0 ? (
+                <div className="rounded-2xl bg-emerald-50 p-5 font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">ممتاز، لا توجد أخطاء في قسم الاختيار من متعدد.</div>
+              ) : (
+                <div className="space-y-4">
+                  {result.wrongItems.map((item, idx) => (
+                    <div key={idx} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                      <div className="font-bold text-slate-900 dark:text-white"><RichText text={item.questionText} /></div>
+                      <div className="mt-3 text-sm text-red-600 dark:text-red-400">إجابتك: {item.userAnswerText || 'لم تجب'}</div>
+                      <div className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">الصحيح: {item.correctAnswerText}</div>
+                      {item.explanation ? <div className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">التفسير: {item.explanation}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {openQuestions.length ? (
+              <Card className="p-5">
+                <SectionTitle title="الأسئلة المقالية" subtitle="مراجعة إجابتك مع النموذج المقترح." />
+                <div className="space-y-4">
+                  {openQuestions.map((q) => (
+                    <div key={q.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                      <div className="font-bold text-slate-900 dark:text-white"><RichText text={q.prompt} /></div>
+                      <div className="mt-4 text-sm font-bold text-slate-600 dark:text-slate-300">إجابتك</div>
+                      <div className="mt-2 rounded-2xl bg-slate-50 p-4 whitespace-pre-wrap dark:bg-slate-950/60">{result.openAnswers[q.id] || 'لم تتم الإجابة'}</div>
+                      <div className="mt-4 text-sm font-bold text-emerald-700 dark:text-emerald-400">الإجابة النموذجية</div>
+                      <div className="mt-2 rounded-2xl bg-emerald-50 p-4 whitespace-pre-wrap dark:bg-emerald-950/30">{q.idealAnswer || '-'}</div>
+                      {q.explanation ? <div className="mt-3 text-sm text-slate-600 dark:text-slate-300">{q.explanation}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+
+            <Button variant="brand" onClick={onExit}>العودة إلى لوحة الطالب</Button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 safe-pb">
+          <Card className="sticky top-[76px] z-20 border-brand-200 p-4 dark:border-brand-900/40">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">جاري تقديم الامتحان</div>
+                <div className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{exam.subject}</div>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <Badge tone="brand">الوقت {minutes}:{seconds}</Badge>
+                  <Badge tone="default">اختياري: {answeredMcq}/{mcq.length}</Badge>
+                  <Badge tone="default">مقالي: {answeredOpen}/{openQuestions.length}</Badge>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={onExit}>خروج من الامتحان</Button>
+                <Button variant="brand" onClick={() => handleSubmit(false)} disabled={submitting}>{submitting ? 'جارٍ التسليم...' : 'تسليم الامتحان'}</Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5">
+            <SectionTitle title="قسم الاختيار من متعدد" subtitle="اختر إجابة واحدة لكل سؤال." />
+            <div className="space-y-6">
+              {mcq.map((q, index) => (
+                <div key={q.id} className="rounded-3xl border border-slate-200 p-5 dark:border-slate-800">
+                  <div className="mb-4 flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-50 font-black text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">{index + 1}</div>
+                    <div className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white"><RichText text={q.text} /></div>
+                  </div>
+                  <div className="grid gap-3">
+                    {(q.options || []).map((option, i) => {
+                      const active = answers[q.id] === i;
+                      return (
+                        <button
+                          key={i}
+                          className={cls(
+                            'rounded-2xl border p-4 text-right transition',
+                            active
+                              ? 'border-brand-500 bg-brand-50 ring-4 ring-brand-100 dark:border-brand-500 dark:bg-brand-950/30 dark:ring-brand-950'
+                              : 'border-slate-200 hover:border-brand-300 hover:bg-slate-50 dark:border-slate-800 dark:hover:border-brand-800 dark:hover:bg-slate-950/60'
+                          )}
+                          onClick={() => setMcqAnswer(q.id, i)}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {openQuestions.length ? (
+            <Card className="p-5">
+              <SectionTitle title="قسم الأسئلة المقالية" subtitle="اكتب إجاباتك بتفصيل واضح." />
+              <div className="space-y-6">
+                {openQuestions.map((q, index) => (
+                  <div key={q.id} className="rounded-3xl border border-slate-200 p-5 dark:border-slate-800">
+                    <div className="mb-4 flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">{index + 1}</div>
+                      <div className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white"><RichText text={q.prompt} /></div>
+                    </div>
+                    <TextArea rows={8} placeholder="اكتب إجابتك هنا..." value={openAnswers[q.id] || ''} onChange={e => setEssayAnswer(q.id, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : null}
+        </div>
+      );
+    }
+
+    function AdminModal({ results, onClose, onUploaded, notify }) {
+      const [auth, setAuth] = useState(false);
+      const [password, setPassword] = useState('');
+      const [jsonText, setJsonText] = useState(JSON.stringify(SAMPLE_EXAM, null, 2));
+      const [loading, setLoading] = useState(false);
+      const [search, setSearch] = useState('');
+
+      const filteredResults = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return results;
+        return results.filter(r => [r.userName, r.subject].some(v => String(v || '').toLowerCase().includes(q)));
+      }, [results, search]);
+
+      function importJsonFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => setJsonText(String(reader.result || ''));
+        reader.readAsText(file, 'UTF-8');
+      }
+
+      async function uploadExam() {
+        try {
+          setLoading(true);
+          const exam = JSON.parse(jsonText);
+          await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, exam });
+          notify({ type: 'success', title: 'تم رفع الامتحان', message: 'أصبح الامتحان متاحًا الآن في لوحة الطالب.' });
+          await onUploaded();
+        } catch (error) {
+          notify({ type: 'error', title: 'فشل رفع الامتحان', message: error.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      return (
+        <Modal onClose={onClose}>
+          <Card className="max-h-[90vh] overflow-hidden">
+            {!auth ? (
+              <div className="p-6 sm:p-8">
+                <Badge tone="brand">لوحة الإدارة</Badge>
+                <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">تسجيل دخول الإدارة</h2>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">هذه النسخة مخصصة لمشروع مغلق، وكلمة المرور الافتراضية موجودة داخل الواجهة.</p>
+                <div className="mt-6 max-w-md space-y-4">
+                  <Input type="password" placeholder="كلمة مرور الإدارة" value={password} onChange={e => setPassword(e.target.value)} />
+                  <div className="flex gap-2">
+                    <Button variant="brand" onClick={() => {
+                      if (password === CONFIG.ADMIN_PASSWORD) setAuth(true);
+                      else notify({ type: 'error', title: 'رفض الدخول', message: 'كلمة المرور غير صحيحة.' });
+                    }}>دخول</Button>
+                    <Button variant="ghost" onClick={onClose}>إغلاق</Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="max-h-[90vh] overflow-y-auto p-6 sm:p-8">
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <Badge tone="green">تم التحقق</Badge>
+                    <h2 className="mt-3 text-2xl font-black text-slate-900 dark:text-white">إدارة دراستي</h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">رفع امتحانات JSON، استيراد من ملف، ومتابعة نتائج الطلاب.</p>
+                  </div>
+                  <Button variant="ghost" onClick={onClose}>إغلاق</Button>
+                </div>
+
+                <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+                  <Card className="p-5">
+                    <SectionTitle
+                      title="رفع امتحان"
+                      subtitle="ألصق JSON أو استورده من ملف محلي ثم ارفعه مباشرة إلى Google Drive."
+                      action={<label className="cursor-pointer rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold dark:border-slate-700">استيراد ملف<input className="hidden" type="file" accept="application/json,.json" onChange={e => importJsonFile(e.target.files?.[0])} /></label>}
+                    />
+                    <TextArea rows={20} value={jsonText} onChange={e => setJsonText(e.target.value)} className="font-mono text-sm" />
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button variant="brand" onClick={uploadExam} disabled={loading}>{loading ? 'جارٍ الرفع...' : 'رفع الامتحان'}</Button>
+                      <Button variant="ghost" onClick={() => setJsonText(JSON.stringify(SAMPLE_EXAM, null, 2))}>إعادة العينة</Button>
+                    </div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <SectionTitle title="نتائج الطلاب" subtitle="بحث سريع بالاسم أو المادة مع آخر النتائج أولاً." />
+                    <Input placeholder="ابحث عن طالب أو مادة..." value={search} onChange={e => setSearch(e.target.value)} className="mb-4" />
+                    <div className="hide-scrollbar max-h-[560px] space-y-3 overflow-y-auto pr-1">
+                      {filteredResults.length ? filteredResults.map((r, i) => (
+                        <div key={i} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-black text-slate-900 dark:text-white">{r.userName || 'غير معروف'}</div>
+                              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{r.subject}</div>
+                            </div>
+                            <Badge tone={Number(r.score || 0) >= 50 ? 'green' : 'red'}>{r.score}%</Badge>
+                          </div>
+                          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</div>
+                        </div>
+                      )) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">لا توجد نتائج مطابقة.</div>
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </Card>
+        </Modal>
+      );
+    }
+
+    function App() {
+      const [user, setUser] = useState(loadLocal(CONFIG.STORAGE_KEYS.user, null));
+      const [darkMode, setDarkMode] = useState(loadLocal(CONFIG.STORAGE_KEYS.theme, false));
+      const [loading, setLoading] = useState(false);
+      const [selectedExam, setSelectedExam] = useState(null);
+      const [adminOpen, setAdminOpen] = useState(false);
+      const [adminResults, setAdminResults] = useState([]);
+      const [exams, setExams] = useState([]);
+      const [results, setResults] = useState([]);
+      const [wrongQuestions, setWrongQuestions] = useState([]);
+      const [stats, setStats] = useState({ avgScore: null, completed: 0 });
+      const { toast, setToast } = useToast();
+
+      const apiReady = Boolean(CONFIG.API_BASE && !CONFIG.API_BASE.includes('PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE'));
+
+      useEffect(() => {
+        document.documentElement.classList.toggle('dark', darkMode);
+        saveLocal(CONFIG.STORAGE_KEYS.theme, darkMode);
+      }, [darkMode]);
+
+      function notify(toastData) {
+        setToast(toastData);
+      }
+
+      async function loadDashboardData(currentUser = user, silent = false) {
+        if (!currentUser || !apiReady) return;
+        try {
+          if (!silent) setLoading(true);
+          const [examRes, resultRes] = await Promise.all([
+            api('listExams'),
+            api('getUserResults', { userId: currentUser.id })
+          ]);
+
+          const examsList = examRes.exams || [];
+          const userResults = (resultRes.results || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const completed = userResults.length;
+          const avgScore = completed ? Math.round(userResults.reduce((sum, item) => sum + Number(item.score || 0), 0) / completed) : null;
+          const wrongs = [];
+          userResults.forEach(r => {
+            try {
+              JSON.parse(r.wrongItemsJson || '[]').forEach(item => wrongs.push(item));
+            } catch {}
+          });
+
+          setExams(examsList);
+          setResults(userResults);
+          setWrongQuestions(wrongs);
+          setStats({ avgScore, completed });
+        } catch (error) {
+          notify({ type: 'error', title: 'تعذر تحميل البيانات', message: error.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function loadAllResults() {
+        if (!apiReady) return [];
+        try {
+          const adminRes = await api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD });
+          return adminRes.results || [];
+        } catch (error) {
+          notify({ type: 'error', title: 'تعذر تحميل نتائج الإدارة', message: error.message });
+          return [];
+        }
+      }
+
+      useEffect(() => {
+        if (user && apiReady) loadDashboardData(user);
+      }, [user, apiReady]);
+
+      function handleLogin(nextUser) {
+        saveLocal(CONFIG.STORAGE_KEYS.user, nextUser);
+        setUser(nextUser);
+      }
+
+      function logout() {
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.user);
+        setUser(null);
+        setSelectedExam(null);
+      }
+
+      async function startExam(examId) {
+        try {
+          setLoading(true);
+          const res = await api('getExam', { examId });
+          setSelectedExam(res.exam);
+        } catch (error) {
+          notify({ type: 'error', title: 'تعذر تحميل الامتحان', message: error.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function finishExam(payload) {
+        await api('submitResult', payload);
+        await loadDashboardData(user, true);
+      }
+
+      async function openAdmin() {
+        setAdminResults(await loadAllResults());
+        setAdminOpen(true);
+      }
+
+      if (!user) {
+        return <><LoginScreen onLogin={handleLogin} /><Toast toast={toast} /></>;
+      }
+
+      return (
+        <div className="min-h-screen bg-grid bg-grid">
+          <TopBar
+            user={user}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            onOpenAdmin={openAdmin}
+            onLogout={logout}
+            onlineState={apiReady ? 'متصل وجاهز' : 'يحتاج الربط'}
+          />
+
+          {loading ? (
+            <div className="mx-auto max-w-7xl px-4 py-8">
+              <Card className="p-8 text-center text-slate-500 dark:text-slate-400">جارٍ التحميل...</Card>
+            </div>
+          ) : selectedExam ? (
+            <ExamScreen
+              exam={selectedExam}
+              user={user}
+              onFinish={finishExam}
+              onExit={() => setSelectedExam(null)}
+              notify={notify}
+            />
+          ) : (
+            <Dashboard
+              exams={exams}
+              stats={stats}
+              results={results}
+              wrongQuestions={wrongQuestions}
+              onStartExam={startExam}
+              onRefresh={() => loadDashboardData(user)}
+              apiReady={apiReady}
+            />
+          )}
+
+          {adminOpen ? (
+            <AdminModal
+              results={adminResults}
+              onClose={() => setAdminOpen(false)}
+              onUploaded={async () => {
+                await loadDashboardData(user, true);
+                setAdminResults(await loadAllResults());
+              }}
+              notify={notify}
+            />
+          ) : null}
+
+          {!apiReady ? (
+            <div className="fixed inset-x-0 bottom-0 z-20 border-t border-amber-200 bg-amber-50/95 px-4 py-3 text-sm text-amber-800 backdrop-blur dark:border-amber-900/30 dark:bg-amber-950/85 dark:text-amber-200">
+              <div className="mx-auto max-w-7xl">المشروع جاهز، ويتبقى فقط إضافة رابط Google Apps Script Web App داخل <span className="font-mono">CONFIG.API_BASE</span> ثم تشغيله.</div>
+            </div>
+          ) : null}
+
+          <Toast toast={toast} />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
