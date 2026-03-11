@@ -44,7 +44,7 @@ const {useEffect, useMemo, useRef, useState} = React;
 const CONFIG = {
   APP_NAME: "دراستي",
   APP_SUBTITLE: "منصة مذاكرة ذكية مبنية على الضعف والإتقان",
-  API_BASE: "https://script.google.com/macros/s/AKfycbws_n38R3rfGgCLJyaGo63hUHiegtLXW8xEdRZz-VzmriY3C2ElCJygpr8cLWzZn-ctCg/exec",
+  API_BASE: "https://script.google.com/macros/s/AKfycbyUxGuhd2-PxZQYlKy336JkyF3Gl_mIDmlcnJwdTPnY-Gx2YOvvNBL8LM8-JBzfm30kwQ/exec",
   ADMIN_PASSWORD: "admin",
   STORAGE_KEYS: {
     user: "dirasti_user_v3",
@@ -130,7 +130,7 @@ function getUnits(subjectCode, semester){ return getSemester(subjectCode, semest
 function getSubunits(subjectCode, semester, unitTitle){ return getUnits(subjectCode, semester).find(u => u.titleAr === unitTitle)?.subunits || []; }
 
 async function api(action, payload={}) {
-  if (CONFIG.API_BASE.includes("https://script.google.com/macros/s/AKfycbws_n38R3rfGgCLJyaGo63hUHiegtLXW8xEdRZz-VzmriY3C2ElCJygpr8cLWzZn-ctCg/exec")) throw new Error("ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولًا");
+  if (CONFIG.API_BASE.includes("https://script.google.com/macros/s/AKfycbyUxGuhd2-PxZQYlKy336JkyF3Gl_mIDmlcnJwdTPnY-Gx2YOvvNBL8LM8-JBzfm30kwQ/exec")) throw new Error("ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولًا");
   const res = await fetch(CONFIG.API_BASE, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
