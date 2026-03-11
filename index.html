@@ -39,7 +39,7 @@
 <body class="bg-slate-50 dark:bg-slate-950">
 <div id="root"></div>
 <script type="text/babel">
-const {useEffect, useMemo, useRef, useState} = React;
+const {useEffect, useRef, useState} = React;
 
 const CONFIG = {
   APP_NAME: "دراستي",
@@ -90,7 +90,7 @@ const CURRICULUM = {
     ]},
     {"code":"islamic_education","nameAr":"التربية الاسلامية","examMode":"OMR_MCQ","semesters":[
       {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[]},
-      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[]}
+      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[{"titleAr":"الوحدة الأولى","subunits":["السنن الإلهية وتعظيم الشعائر والزكاة"]}]}
     ]}
   ]
 };
@@ -130,12 +130,15 @@ function getUnits(subjectCode, semester){ return getSemester(subjectCode, semest
 function getSubunits(subjectCode, semester, unitTitle){ return getUnits(subjectCode, semester).find(u => u.titleAr === unitTitle)?.subunits || []; }
 
 async function api(action, payload={}) {
-  if (CONFIG.API_BASE.includes("https://script.google.com/macros/s/AKfycby25JaeA9qMsV4Z8aEGpr1C2IqPLqca-6rL72wa8SM0VFK1K5A7nauiaW16Oq2rVz2NYw/exec")) throw new Error("ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولًا");
+  if (!CONFIG.API_BASE || CONFIG.API_BASE.includes("PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE")) {
+    throw new Error("ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولًا");
+  }
   const res = await fetch(CONFIG.API_BASE, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, ...payload })
   });
+  if (!res.ok) throw new Error("فشل الاتصال بالخادم");
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || "API Error");
   return data;
@@ -310,7 +313,7 @@ function ExamCard({exam, onStart}){
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-lg font-black text-slate-900 dark:text-white">{exam.title || exam.subjectAr || exam.subject || "-"}</div>
-          <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr} • {exam.unitTitleAr || "بدون وحدة"} {exam.subunitTitleAr ? `• ${exam.subunitTitleAr}` : ""}</div>
+          <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr || exam.subject} • {exam.unitTitleAr || "بدون وحدة"} {exam.subunitTitleAr ? `• ${exam.subunitTitleAr}` : ""}</div>
         </div>
         <div className="rounded-2xl bg-brand-50 dark:bg-brand-950/40 px-3 py-2 text-brand-700 dark:text-brand-300 text-sm font-bold">{exam.examMode || "عام"}</div>
       </div>
@@ -483,7 +486,7 @@ function ExamScreen({exam, user, onFinish, onExit}){
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [submitted, answers, openAnswers]);
+  }, [submitted]);
 
   function handleSubmit(){
     if(submitted) return;
@@ -812,7 +815,7 @@ function AdminModal({data, onRefresh, onClose, toast}){
                 {filteredExams.length ? filteredExams.map(exam => (
                   <Card key={exam.id} className="p-5">
                     <div className="font-black text-slate-900 dark:text-white">{exam.title || exam.subjectAr || exam.subject}</div>
-                    <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr} • {exam.unitTitleAr || "بدون وحدة"}</div>
+                    <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr || exam.subject} • {exam.unitTitleAr || "بدون وحدة"}</div>
                     <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">عدد الأسئلة: {(exam.questions||[]).length + (exam.openQuestions||[]).length}</div>
                     <Button variant="danger" className="w-full mt-4" onClick={()=>deleteExam(exam.id)} disabled={busy}>حذف الامتحان</Button>
                   </Card>
@@ -890,7 +893,7 @@ function App(){
     }
   }
 
-  useEffect(() => { if(user && !CONFIG.API_BASE.includes("PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE")) refresh(); }, [user]);
+  useEffect(() => { if(user) refresh(); }, [user]);
 
   async function startExam(id){
     try{
@@ -933,17 +936,13 @@ function App(){
     setSelectedExam(null);
   }
 
-  const connected = !CONFIG.API_BASE.includes("PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE");
-
   if(!user) return <LoginScreen onLogin={setUser} />;
 
   return (
     <div className="min-h-screen text-slate-900 dark:text-slate-100">
       <TopBar user={user} darkMode={darkMode} onToggleDark={()=>{ const next=!darkMode; setDarkMode(next); saveLocal(CONFIG.STORAGE_KEYS.darkMode, next); }} onLogout={logout} onOpenAdmin={()=>setAdminOpen(true)} onGoHome={()=>setSelectedExam(null)} />
       <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-        {!connected ? (
-          <EmptyState title="المشروع جاهز بالكامل" body="ضع رابط Google Apps Script الحقيقي داخل CONFIG.API_BASE في index.html ثم ارفع الملف إلى GitHub Pages." />
-        ) : loading ? (
+        {loading ? (
           <Card className="p-6">جارٍ التحميل...</Card>
         ) : selectedExam ? (
           <ExamScreen exam={selectedExam} user={user} onFinish={finishExam} onExit={()=>setSelectedExam(null)} />
