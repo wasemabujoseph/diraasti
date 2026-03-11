@@ -134,7 +134,7 @@
     }
 
     async function api(action, payload = {}) {
-      if (!CONFIG.API_BASE || CONFIG.API_BASE.includes('PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE')) {
+      if (!CONFIG.API_BASE || CONFIG.API_BASE.includes('https://script.google.com/macros/s/AKfycbws_n38R3rfGgCLJyaGo63hUHiegtLXW8xEdRZz-VzmriY3C2ElCJygpr8cLWzZn-ctCg/exec')) {
         throw new Error('ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولاً.');
       }
 
