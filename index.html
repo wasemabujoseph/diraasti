@@ -38,6 +38,7 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-950">
 <div id="root"></div>
+
 <script type="text/babel">
 const {useEffect, useRef, useState} = React;
 
@@ -51,6 +52,8 @@ const CONFIG = {
     darkMode: "dirasti_dark_v3"
   }
 };
+
+console.log("Loaded CONFIG.API_BASE =", CONFIG.API_BASE);
 
 const CURRICULUM = {
   "gradeAr": "الصف الثاني عشر - المسار الأكاديمي",
@@ -129,18 +132,40 @@ function getSemester(subjectCode, semester){ return getSubjectByCode(subjectCode
 function getUnits(subjectCode, semester){ return getSemester(subjectCode, semester)?.units || []; }
 function getSubunits(subjectCode, semester, unitTitle){ return getUnits(subjectCode, semester).find(u => u.titleAr === unitTitle)?.subunits || []; }
 
-async function api(action, payload={}) {
-  if (!CONFIG.API_BASE || CONFIG.API_BASE.includes("PUT_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE")) {
-    throw new Error("ضع رابط Google Apps Script Web App داخل CONFIG.API_BASE أولًا");
+async function api(action, payload = {}) {
+  console.log("Runtime API_BASE:", CONFIG.API_BASE);
+
+  const cleanApi = String(CONFIG.API_BASE || "").trim();
+
+  if (!cleanApi) {
+    throw new Error("CONFIG.API_BASE فارغ");
   }
-  const res = await fetch(CONFIG.API_BASE, {
+
+  if (!cleanApi.startsWith("https://script.google.com/macros/s/")) {
+    throw new Error("رابط Google Apps Script غير صالح");
+  }
+
+  const res = await fetch(cleanApi, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, ...payload })
   });
-  if (!res.ok) throw new Error("فشل الاتصال بالخادم");
-  const data = await res.json();
-  if(!data.ok) throw new Error(data.error || "API Error");
+
+  if (!res.ok) {
+    throw new Error("فشل الاتصال بالخادم");
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    throw new Error("الخادم لم يرجع JSON صحيح");
+  }
+
+  if (!data.ok) {
+    throw new Error(data.error || "API Error");
+  }
+
   return data;
 }
 
@@ -173,6 +198,7 @@ function Toast({toast, onClose}){
 function Card({children, className=""}) {
   return <div className={cls("rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft", className)}>{children}</div>;
 }
+
 function Button({children, variant="primary", className="", ...props}){
   const variants = {
     primary:"bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-95",
@@ -183,17 +209,20 @@ function Button({children, variant="primary", className="", ...props}){
   };
   return <button {...props} className={cls("px-4 py-3 rounded-2xl font-bold transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed", variants[variant], className)}>{children}</button>;
 }
+
 function Input({label, hint, className="", ...props}){
   return <label className="block">{label ? <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</div> : null}
     <input {...props} className={cls("w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-4 py-3 outline-none focus:ring-4 focus:ring-brand-100 dark:focus:ring-brand-950", className)} />
     {hint ? <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}
   </label>;
 }
+
 function Select({label, children, className="", ...props}){
   return <label className="block">{label ? <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</div> : null}
     <select {...props} className={cls("w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-4 py-3 outline-none focus:ring-4 focus:ring-brand-100 dark:focus:ring-brand-950", className)}>{children}</select>
   </label>;
 }
+
 function TextArea({label, hint, className="", ...props}){
   return <label className="block">{label ? <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</div> : null}
     <textarea {...props} className={cls("w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-4 py-3 outline-none focus:ring-4 focus:ring-brand-100 dark:focus:ring-brand-950", className)} />
@@ -205,7 +234,13 @@ function RichText({text}){
   const ref = useRef(null);
   useEffect(() => {
     if(ref.current && window.renderMathInElement){
-      window.renderMathInElement(ref.current, { delimiters:[{left:"$$", right:"$$", display:true},{left:"$", right:"$", display:false}], throwOnError:false });
+      window.renderMathInElement(ref.current, {
+        delimiters:[
+          {left:"$$", right:"$$", display:true},
+          {left:"$", right:"$", display:false}
+        ],
+        throwOnError:false
+      });
     }
   }, [text]);
   return <div ref={ref} className="whitespace-pre-wrap leading-8">{text || ""}</div>;
@@ -217,12 +252,16 @@ function Modal({title, subtitle, onClose, children, maxWidth="max-w-6xl"}){
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-4 overflow-auto">
       <div className={cls("mx-auto mt-6", maxWidth)}>
         <div className="rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
           <div className="glass sticky top-0 z-10 flex items-start justify-between gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-            <div><h2 className="text-2xl font-black text-slate-900 dark:text-white">{title}</h2>{subtitle ? <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p> : null}</div>
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white">{title}</h2>
+              {subtitle ? <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p> : null}
+            </div>
             <Button variant="outline" onClick={onClose}>إغلاق</Button>
           </div>
           <div className="p-5">{children}</div>
@@ -245,6 +284,7 @@ function EmptyState({title, body, action}){
 
 function LoginScreen({onLogin}){
   const [name, setName] = useState("");
+
   return (
     <div className="min-h-screen p-4 md:p-8 bg-slate-50 dark:bg-slate-950">
       <div className="max-w-6xl mx-auto min-h-screen grid lg:grid-cols-2 gap-6 items-center">
@@ -259,19 +299,26 @@ function LoginScreen({onLogin}){
             <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">Hybrid</div><div className="text-white/75 text-sm">إنجليزي متعدد الأقسام</div></div>
           </div>
         </Card>
+
         <Card className="p-8">
           <div className="text-sm font-bold text-brand-600 dark:text-brand-300">ابدأ الآن</div>
           <h2 className="mt-2 text-3xl font-black text-slate-900 dark:text-white">دخول الطالب</h2>
           <p className="mt-2 text-slate-500 dark:text-slate-400">سجّل باسمك وابدأ الاختبارات أو التدريب العلاجي.</p>
           <div className="mt-6 space-y-4">
             <Input label="الاسم الكامل" placeholder="مثال: أحمد محمد" value={name} onChange={e => setName(e.target.value)} />
-            <Button variant="brand" className="w-full" onClick={() => {
-              const clean = name.trim();
-              if(!clean) return alert("أدخل الاسم أولًا");
-              const user = { id: clean.replace(/\s+/g,"_"), name: clean };
-              saveLocal(CONFIG.STORAGE_KEYS.user, user);
-              onLogin(user);
-            }}>الدخول إلى دراستي</Button>
+            <Button
+              variant="brand"
+              className="w-full"
+              onClick={() => {
+                const clean = name.trim();
+                if(!clean) return alert("أدخل الاسم أولًا");
+                const user = { id: clean.replace(/\s+/g,"_"), name: clean };
+                saveLocal(CONFIG.STORAGE_KEYS.user, user);
+                onLogin(user);
+              }}
+            >
+              الدخول إلى دراستي
+            </Button>
           </div>
         </Card>
       </div>
@@ -290,6 +337,7 @@ function TopBar({user, darkMode, onToggleDark, onLogout, onOpenAdmin, onGoHome})
             <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{CURRICULUM.gradeAr} - {CURRICULUM.trackAr}</div>
           </div>
         </button>
+
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-3 rounded-2xl bg-slate-100 dark:bg-slate-800 px-3 py-2">
             <div className="h-9 w-9 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black">{initials(user.name)}</div>
@@ -330,6 +378,7 @@ function ExamCard({exam, onStart}){
 function MasterySection({analytics}){
   const subjectRows = analytics?.subjectMastery || [];
   const unitRows = analytics?.unitMastery || [];
+
   return (
     <div className="space-y-6">
       <Card className="p-5">
@@ -344,6 +393,7 @@ function MasterySection({analytics}){
           )) : <div className="text-slate-500 dark:text-slate-400">لا توجد بيانات بعد.</div>}
         </div>
       </Card>
+
       <Card className="p-5">
         <h3 className="text-xl font-black text-slate-900 dark:text-white">الإتقان حسب الوحدة والموضوع</h3>
         <div className="mt-5 grid lg:grid-cols-2 gap-4">
@@ -366,9 +416,15 @@ function MasterySection({analytics}){
 
 function WrongRedoSection({filters, setFilters, analytics, onGenerateRedo, loading}){
   const weaknessRows = analytics?.weaknessRows || [];
-  const filtered = weaknessRows.filter(row => (!filters.subjectCode || row.subjectCode === filters.subjectCode) && (!filters.unitTitleAr || row.unitTitleAr === filters.unitTitleAr) && (!filters.subunitTitleAr || row.subunitTitleAr === filters.subunitTitleAr));
+  const filtered = weaknessRows.filter(row =>
+    (!filters.subjectCode || row.subjectCode === filters.subjectCode) &&
+    (!filters.unitTitleAr || row.unitTitleAr === filters.unitTitleAr) &&
+    (!filters.subunitTitleAr || row.subunitTitleAr === filters.subunitTitleAr)
+  );
+
   const units = filters.subjectCode ? getUnits(filters.subjectCode, filters.semester || 1) : [];
   const subs = filters.subjectCode && filters.unitTitleAr ? getSubunits(filters.subjectCode, filters.semester || 1, filters.unitTitleAr) : [];
+
   return (
     <div className="space-y-6">
       <Card className="p-5">
@@ -377,21 +433,26 @@ function WrongRedoSection({filters, setFilters, analytics, onGenerateRedo, loadi
             <option value="">كل المواد</option>
             {CURRICULUM.subjects.map(s => <option key={s.code} value={s.code}>{s.nameAr}</option>)}
           </Select>
+
           <Select label="الفصل" value={filters.semester} onChange={e => setFilters({...filters, semester:Number(e.target.value), unitTitleAr:"", subunitTitleAr:""})}>
             <option value="1">الأول</option>
             <option value="2">الثاني</option>
           </Select>
+
           <Select label="الوحدة" value={filters.unitTitleAr} onChange={e => setFilters({...filters, unitTitleAr:e.target.value, subunitTitleAr:""})}>
             <option value="">كل الوحدات</option>
             {units.map((u,i) => <option key={i} value={u.titleAr}>{u.titleAr}</option>)}
           </Select>
+
           <Select label="الموضوع الفرعي" value={filters.subunitTitleAr} onChange={e => setFilters({...filters, subunitTitleAr:e.target.value})}>
             <option value="">كل المواضيع</option>
             {subs.map((s,i) => <option key={i} value={s}>{s}</option>)}
           </Select>
+
           <div className="flex items-end"><Button variant="brand" className="w-full" onClick={onGenerateRedo} disabled={loading}>{loading ? "جارٍ التجهيز..." : "أنشئ تدريب علاجي"}</Button></div>
         </div>
       </Card>
+
       <Card className="p-5">
         <h3 className="text-xl font-black text-slate-900 dark:text-white">أبرز نقاط الضعف</h3>
         <div className="mt-5 grid lg:grid-cols-2 gap-4">
@@ -416,6 +477,7 @@ function Dashboard({data, onStartExam, onGenerateRedo, redoLoading, redoFilters,
   const analytics = data.analytics || {};
   const questionBankSummary = data.questionBankSummary || {};
   const results = data.results || [];
+
   return (
     <div className="space-y-6">
       <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
@@ -425,6 +487,7 @@ function Dashboard({data, onStartExam, onGenerateRedo, redoLoading, redoFilters,
             <h1 className="mt-4 text-3xl md:text-4xl font-black">ذاكر بذكاء، ليس بكثرة</h1>
             <p className="mt-3 text-white/80 leading-8">المادة ← الوحدة ← الموضوع الفرعي ← اختبار ← أخطاء ← تدريب علاجي ← إتقان.</p>
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">الاختبارات</div><div className="text-3xl font-black mt-1">{exams.length}</div></div>
             <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">نتائجك</div><div className="text-3xl font-black mt-1">{results.length}</div></div>
@@ -433,25 +496,36 @@ function Dashboard({data, onStartExam, onGenerateRedo, redoLoading, redoFilters,
           </div>
         </div>
       </Card>
+
       <div className="flex flex-wrap gap-2">
         {[["exams","الامتحانات"],["redo","أعد أخطائي"],["mastery","الإتقان"],["results","آخر النتائج"]].map(([id,label]) => (
           <button key={id} onClick={() => setTab(id)} className={cls("px-4 py-3 rounded-2xl font-bold", tab===id ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800")}>{label}</button>
         ))}
       </div>
+
       {tab === "exams" ? (
-        exams.length ? <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{exams.map(exam => <ExamCard key={exam.id} exam={exam} onStart={onStartExam} />)}</div>
-          : <EmptyState title="لا توجد امتحانات بعد" body="افتح لوحة الإدارة وارفع أول امتحان." /> ) : null}
+        exams.length
+          ? <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{exams.map(exam => <ExamCard key={exam.id} exam={exam} onStart={onStartExam} />)}</div>
+          : <EmptyState title="لا توجد امتحانات بعد" body="افتح لوحة الإدارة وارفع أول امتحان." />
+      ) : null}
+
       {tab === "redo" ? <WrongRedoSection filters={redoFilters} setFilters={setRedoFilters} analytics={analytics} onGenerateRedo={onGenerateRedo} loading={redoLoading} /> : null}
       {tab === "mastery" ? <MasterySection analytics={analytics} /> : null}
+
       {tab === "results" ? (
-        results.length ? <div className="grid lg:grid-cols-2 gap-4">{results.map((r,i)=>(
-          <Card key={i} className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div><div className="font-black text-slate-900 dark:text-white">{r.subject}</div><div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</div></div>
-              <div className="text-3xl font-black text-brand-600 dark:text-brand-300">{r.score}%</div>
-            </div>
-          </Card>
-        ))}</div> : <EmptyState title="لا توجد نتائج بعد" body="بعد إنهاء أول اختبار ستظهر نتائجك هنا." />
+        results.length
+          ? <div className="grid lg:grid-cols-2 gap-4">{results.map((r,i)=>(
+              <Card key={i} className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-black text-slate-900 dark:text-white">{r.subject}</div>
+                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</div>
+                  </div>
+                  <div className="text-3xl font-black text-brand-600 dark:text-brand-300">{r.score}%</div>
+                </div>
+              </Card>
+            ))}</div>
+          : <EmptyState title="لا توجد نتائج بعد" body="بعد إنهاء أول اختبار ستظهر نتائجك هنا." />
       ) : null}
     </div>
   );
@@ -471,6 +545,7 @@ function ExamScreen({exam, user, onFinish, onExit}){
   const openQ = exam.openQuestions || [];
   const sections = exam.sections || [];
   const totalSeconds = exam.duration || 3600;
+
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
   const [answers, setAnswers] = useState({});
   const [openAnswers, setOpenAnswers] = useState({});
@@ -490,28 +565,35 @@ function ExamScreen({exam, user, onFinish, onExit}){
 
   function handleSubmit(){
     if(submitted) return;
+
     let correct = 0;
     const wrongItems = [];
+
     mcq.forEach(q => {
       const userIndex = answers[q.id];
-      if(userIndex === q.correctIndex) correct++;
-      else wrongItems.push({
-        questionId: q.id,
-        questionText: q.text,
-        userAnswerIndex: userIndex ?? null,
-        userAnswerText: userIndex != null ? q.options?.[userIndex] : "",
-        correctIndex: q.correctIndex,
-        correctAnswerText: q.options?.[q.correctIndex] || "",
-        explanation: q.explanation || "",
-        subject: exam.subjectAr || exam.subject,
-        subjectCode: exam.subjectCode || "",
-        semester: exam.semester || "",
-        unitTitleAr: q.unitTitleAr || exam.unitTitleAr || "",
-        subunitTitleAr: q.subunitTitleAr || exam.subunitTitleAr || "",
-        questionType: q.questionType || "mcq"
-      });
+      if(userIndex === q.correctIndex) {
+        correct++;
+      } else {
+        wrongItems.push({
+          questionId: q.id,
+          questionText: q.text,
+          userAnswerIndex: userIndex ?? null,
+          userAnswerText: userIndex != null ? q.options?.[userIndex] : "",
+          correctIndex: q.correctIndex,
+          correctAnswerText: q.options?.[q.correctIndex] || "",
+          explanation: q.explanation || "",
+          subject: exam.subjectAr || exam.subject,
+          subjectCode: exam.subjectCode || "",
+          semester: exam.semester || "",
+          unitTitleAr: q.unitTitleAr || exam.unitTitleAr || "",
+          subunitTitleAr: q.subunitTitleAr || exam.subunitTitleAr || "",
+          questionType: q.questionType || "mcq"
+        });
+      }
     });
+
     const score = mcq.length ? Math.round((correct / mcq.length) * 100) : 100;
+
     const payload = {
       userId: user.id,
       userName: user.name,
@@ -526,6 +608,7 @@ function ExamScreen({exam, user, onFinish, onExit}){
       openAnswers,
       wrongItems
     };
+
     setSubmitted(true);
     setResult({score, wrongItems, openAnswersSnapshot: openAnswers});
     onFinish(payload);
@@ -542,10 +625,17 @@ function ExamScreen({exam, user, onFinish, onExit}){
       <div className="space-y-6">
         <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div><div className="text-white/75 text-sm font-bold">تم تسليم الامتحان</div><h2 className="text-3xl font-black mt-2">{exam.title || exam.subjectAr}</h2></div>
-            <div className="rounded-[28px] bg-white/10 px-8 py-5 text-center"><div className="text-sm text-white/75">النتيجة</div><div className="text-5xl font-black mt-2">{result.score}%</div></div>
+            <div>
+              <div className="text-white/75 text-sm font-bold">تم تسليم الامتحان</div>
+              <h2 className="text-3xl font-black mt-2">{exam.title || exam.subjectAr}</h2>
+            </div>
+            <div className="rounded-[28px] bg-white/10 px-8 py-5 text-center">
+              <div className="text-sm text-white/75">النتيجة</div>
+              <div className="text-5xl font-black mt-2">{result.score}%</div>
+            </div>
           </div>
         </Card>
+
         <SectionBlock title="تصحيح الاختيار من متعدد">
           {result.wrongItems.length ? result.wrongItems.map((w,i)=>(
             <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
@@ -557,17 +647,21 @@ function ExamScreen({exam, user, onFinish, onExit}){
             </div>
           )) : <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 p-4 font-bold text-emerald-700 dark:text-emerald-200">ممتاز، لا توجد أخطاء في قسم MCQ.</div>}
         </SectionBlock>
-        {openQ.length ? <SectionBlock title="الأسئلة المقالية">
-          {openQ.map((q,idx)=>(
-            <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-              <div className="font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
-              <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">إجابتك</div>
-              <div className="mt-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3 whitespace-pre-wrap">{result.openAnswersSnapshot[q.id] || "لم تتم الإجابة"}</div>
-              <div className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">الإجابة النموذجية</div>
-              <div className="mt-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 whitespace-pre-wrap">{q.idealAnswer || "-"}</div>
-            </div>
-          ))}
-        </SectionBlock> : null}
+
+        {openQ.length ? (
+          <SectionBlock title="الأسئلة المقالية">
+            {openQ.map((q,idx)=>(
+              <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+                <div className="font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
+                <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">إجابتك</div>
+                <div className="mt-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3 whitespace-pre-wrap">{result.openAnswersSnapshot[q.id] || "لم تتم الإجابة"}</div>
+                <div className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">الإجابة النموذجية</div>
+                <div className="mt-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 whitespace-pre-wrap">{q.idealAnswer || "-"}</div>
+              </div>
+            ))}
+          </SectionBlock>
+        ) : null}
+
         <Button variant="brand" onClick={onExit}>العودة للوحة التحكم</Button>
       </div>
     );
@@ -599,20 +693,25 @@ function ExamScreen({exam, user, onFinish, onExit}){
 
       {(exam.examMode === "HYBRID" || sections.length > 0) ? (
         <>
-          {mcq.length ? <SectionBlock title="القسم الأول: OMR / Multiple Choice">
-            {mcq.map((q, idx) => (
-              <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} />
-            ))}
-          </SectionBlock> : null}
-          {openQ.length ? <SectionBlock title="الأقسام المقالية / Reading / Writing">
-            {openQ.map((q, idx) => (
-              <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-                <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.sectionTitle || q.questionType || "مقالي"}</div>
-                <div className="mt-2 font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
-                <TextArea rows={8} className="mt-4" placeholder="اكتب إجابتك هنا..." value={openAnswers[q.id] || ""} onChange={e=>setOpenAnswers(prev=>({...prev,[q.id]:e.target.value}))}/>
-              </div>
-            ))}
-          </SectionBlock> : null}
+          {mcq.length ? (
+            <SectionBlock title="القسم الأول: OMR / Multiple Choice">
+              {mcq.map((q, idx) => (
+                <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} />
+              ))}
+            </SectionBlock>
+          ) : null}
+
+          {openQ.length ? (
+            <SectionBlock title="الأقسام المقالية / Reading / Writing">
+              {openQ.map((q, idx) => (
+                <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+                  <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.sectionTitle || q.questionType || "مقالي"}</div>
+                  <div className="mt-2 font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
+                  <TextArea rows={8} className="mt-4" placeholder="اكتب إجابتك هنا..." value={openAnswers[q.id] || ""} onChange={e=>setOpenAnswers(prev=>({...prev,[q.id]:e.target.value}))}/>
+                </div>
+              ))}
+            </SectionBlock>
+          ) : null}
         </>
       ) : (
         <SectionBlock title="ورقة التظليل OMR">
@@ -661,6 +760,7 @@ function AdminModal({data, onRefresh, onClose, toast}){
   const [duration, setDuration] = useState(1800);
   const [jsonText, setJsonText] = useState(JSON.stringify(SAMPLE_EXAM, null, 2));
   const [search, setSearch] = useState("");
+
   const subject = getSubjectByCode(subjectCode);
   const units = getUnits(subjectCode, semester);
   const subunits = getSubunits(subjectCode, semester, unitTitleAr);
@@ -668,12 +768,21 @@ function AdminModal({data, onRefresh, onClose, toast}){
   useEffect(() => { if(!unitTitleAr && units.length) setUnitTitleAr(units[0].titleAr); }, [subjectCode, semester]);
   useEffect(() => { if(unitTitleAr && !subunits.includes(subunitTitleAr)) setSubunitTitleAr(subunits[0] || ""); }, [unitTitleAr, subjectCode, semester]);
 
-  const filteredResults = (data.allResults || []).filter(r => !search || normalizeText(r.userName).includes(normalizeText(search)) || normalizeText(r.subject).includes(normalizeText(search)));
-  const filteredExams = (data.exams || []).filter(e => !search || normalizeText(e.title || e.subjectAr || "").includes(normalizeText(search)));
+  const filteredResults = (data.allResults || []).filter(r =>
+    !search ||
+    normalizeText(r.userName).includes(normalizeText(search)) ||
+    normalizeText(r.subject).includes(normalizeText(search))
+  );
+
+  const filteredExams = (data.exams || []).filter(e =>
+    !search ||
+    normalizeText(e.title || e.subjectAr || "").includes(normalizeText(search))
+  );
 
   function enrichExam(exam){
     const subj = getSubjectByCode(subjectCode);
     const finalTitle = title.trim() || exam.title || `${subj?.nameAr || exam.subjectAr || ""}${unitTitleAr ? " - " + unitTitleAr : ""}${subunitTitleAr ? " - " + subunitTitleAr : ""}`;
+
     exam.title = finalTitle;
     exam.subjectCode = subjectCode;
     exam.subjectAr = subj?.nameAr || exam.subjectAr || exam.subject || "";
@@ -682,7 +791,9 @@ function AdminModal({data, onRefresh, onClose, toast}){
     exam.subunitTitleAr = subunitTitleAr || exam.subunitTitleAr || "";
     exam.examMode = subj?.examMode || exam.examMode || "OMR_MCQ";
     exam.duration = Number(duration || exam.duration || 1800);
-    exam.questions = (exam.questions || []).map((q, idx) => ({ ...q,
+
+    exam.questions = (exam.questions || []).map((q, idx) => ({
+      ...q,
       id: q.id || `q-${idx+1}`,
       questionType: q.questionType || "mcq",
       subjectCode,
@@ -691,7 +802,9 @@ function AdminModal({data, onRefresh, onClose, toast}){
       unitTitleAr: q.unitTitleAr || unitTitleAr || "",
       subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ""
     }));
-    exam.openQuestions = (exam.openQuestions || []).map((q, idx) => ({ ...q,
+
+    exam.openQuestions = (exam.openQuestions || []).map((q, idx) => ({
+      ...q,
       id: q.id || `oq-${idx+1}`,
       questionType: q.questionType || "essay",
       sectionTitle: q.sectionTitle || (subjectCode === "english" ? "Writing / Reading" : "Essay"),
@@ -701,12 +814,14 @@ function AdminModal({data, onRefresh, onClose, toast}){
       unitTitleAr: q.unitTitleAr || unitTitleAr || "",
       subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ""
     }));
+
     if(subjectCode === "english"){
       exam.sections = [
         {id:"mcq", title:"OMR MCQ", type:"mcq"},
         {id:"open", title:"Reading / Literature / Writing", type:"open"}
       ];
     }
+
     return exam;
   }
 
@@ -762,22 +877,27 @@ function AdminModal({data, onRefresh, onClose, toast}){
                   <Select label="المادة" value={subjectCode} onChange={e=>{setSubjectCode(e.target.value); setUnitTitleAr(""); setSubunitTitleAr("");}}>
                     {CURRICULUM.subjects.map(s => <option key={s.code} value={s.code}>{s.nameAr}</option>)}
                   </Select>
+
                   <Select label="الفصل" value={semester} onChange={e=>{setSemester(Number(e.target.value)); setUnitTitleAr(""); setSubunitTitleAr("");}}>
                     <option value="1">الفصل الأول</option>
                     <option value="2">الفصل الثاني</option>
                   </Select>
+
                   <Select label="الوحدة" value={unitTitleAr} onChange={e=>setUnitTitleAr(e.target.value)}>
                     <option value="">بدون وحدة</option>
                     {units.map((u,i) => <option key={i} value={u.titleAr}>{u.titleAr}</option>)}
                   </Select>
+
                   <Select label="الموضوع الفرعي" value={subunitTitleAr} onChange={e=>setSubunitTitleAr(e.target.value)}>
                     <option value="">بدون موضوع فرعي</option>
                     {subunits.map((s,i) => <option key={i} value={s}>{s}</option>)}
                   </Select>
                 </div>
+
                 <Input label="عنوان الامتحان" placeholder="يُنشأ تلقائيًا إن تركته فارغًا" value={title} onChange={e=>setTitle(e.target.value)} />
                 <Input label="المدة بالثواني" type="number" value={duration} onChange={e=>setDuration(e.target.value)} />
                 <TextArea label="JSON الامتحان" rows={18} value={jsonText} onChange={e=>setJsonText(e.target.value)} hint="يمكن أن يكون الامتحان MCQ فقط أو Hybrid للإنجليزي." />
+
                 <div className="flex flex-wrap gap-3">
                   <Button variant="brand" onClick={uploadExam} disabled={busy}>{busy ? "جارٍ الرفع..." : "رفع الامتحان"}</Button>
                   <label className="px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700 cursor-pointer">
@@ -792,6 +912,7 @@ function AdminModal({data, onRefresh, onClose, toast}){
                   </label>
                 </div>
               </Card>
+
               <Card className="p-5">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">ما الذي يفعله الرفع الآن؟</h3>
                 <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
@@ -831,7 +952,10 @@ function AdminModal({data, onRefresh, onClose, toast}){
                 {filteredResults.length ? filteredResults.map((r,i)=>(
                   <Card key={i} className="p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div><div className="font-black text-slate-900 dark:text-white">{r.userName}</div><div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{r.subject}</div></div>
+                      <div>
+                        <div className="font-black text-slate-900 dark:text-white">{r.userName}</div>
+                        <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{r.subject}</div>
+                      </div>
                       <div className="text-2xl font-black text-brand-600 dark:text-brand-300">{r.score}%</div>
                     </div>
                     <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</div>
@@ -866,7 +990,9 @@ function App(){
   const [redoFilters, setRedoFilters] = useState({ subjectCode:"", semester:1, unitTitleAr:"", subunitTitleAr:"", limit:10 });
   const toast = useToast();
 
-  useEffect(() => { document.documentElement.classList.toggle("dark", !!darkMode); }, [darkMode]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", !!darkMode);
+  }, [darkMode]);
 
   async function refresh(){
     if(!user) return;
@@ -893,7 +1019,9 @@ function App(){
     }
   }
 
-  useEffect(() => { if(user) refresh(); }, [user]);
+  useEffect(() => {
+    if(user) refresh();
+  }, [user]);
 
   async function startExam(id){
     try{
@@ -940,16 +1068,36 @@ function App(){
 
   return (
     <div className="min-h-screen text-slate-900 dark:text-slate-100">
-      <TopBar user={user} darkMode={darkMode} onToggleDark={()=>{ const next=!darkMode; setDarkMode(next); saveLocal(CONFIG.STORAGE_KEYS.darkMode, next); }} onLogout={logout} onOpenAdmin={()=>setAdminOpen(true)} onGoHome={()=>setSelectedExam(null)} />
+      <TopBar
+        user={user}
+        darkMode={darkMode}
+        onToggleDark={()=>{
+          const next=!darkMode;
+          setDarkMode(next);
+          saveLocal(CONFIG.STORAGE_KEYS.darkMode, next);
+        }}
+        onLogout={logout}
+        onOpenAdmin={()=>setAdminOpen(true)}
+        onGoHome={()=>setSelectedExam(null)}
+      />
+
       <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
         {loading ? (
           <Card className="p-6">جارٍ التحميل...</Card>
         ) : selectedExam ? (
           <ExamScreen exam={selectedExam} user={user} onFinish={finishExam} onExit={()=>setSelectedExam(null)} />
         ) : (
-          <Dashboard data={data} onStartExam={startExam} onGenerateRedo={generateRedo} redoLoading={redoLoading} redoFilters={redoFilters} setRedoFilters={setRedoFilters} />
+          <Dashboard
+            data={data}
+            onStartExam={startExam}
+            onGenerateRedo={generateRedo}
+            redoLoading={redoLoading}
+            redoFilters={redoFilters}
+            setRedoFilters={setRedoFilters}
+          />
         )}
       </main>
+
       {adminOpen ? <AdminModal data={data} onRefresh={refresh} onClose={()=>setAdminOpen(false)} toast={toast.show} /> : null}
       <Toast toast={toast.toast} onClose={toast.clear} />
     </div>
