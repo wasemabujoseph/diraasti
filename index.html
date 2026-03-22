@@ -46,7 +46,7 @@ const {useEffect, useRef, useState} = React;
 const CONFIG = {
   APP_NAME: "دراستي",
   APP_SUBTITLE: "منصة مذاكرة ذكية مبنية على الضعف والإتقان",
-  API_BASE: "https://script.google.com/macros/s/AKfycbzlEfEuLv63mndtDqImcYBEC8TPkuPPEgXwWAgYiNgx5RTi7ChOxqstK1M-yUfm3y0Efg/exec",
+  API_BASE: "https://script.google.com/macros/s/AKfycbz4iJFPn84eU1tiUCD4chS8toyEG7WXD7L-yKJms9mBX7JfVqQqmrQFRW2wAmBQFsACTw/exec",
   ADMIN_PASSWORD: "admin",
   STORAGE_KEYS: {
     user: "dirasti_user_v3",
@@ -57,93 +57,276 @@ const CONFIG = {
 console.log("Loaded CONFIG.API_BASE =", CONFIG.API_BASE);
 
 const CURRICULUM = {
-  "gradeAr": "الصف الثاني عشر - المسار الأكاديمي",
-  "trackAr": "الحقل الطبي",
-  "subjects": [
-    {"code":"chemistry","nameAr":"الكيمياء","examMode":"OMR_MCQ","semesters":[
-      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[
-        {"titleAr":"حالات المادة","subunits":["تجربة استهلالية: العلاقة بين حجم الغاز ودرجة حرارته عند ثبات الضغط","قانون بويل","العوامل المؤثرة في سرعة التبخر","أسئلة تفكير"]},
-        {"titleAr":"المحاليل","subunits":["تجربة استهلالية: خصائص المخاليط","الانخفاض في درجة تجمد المحلول","أسئلة تفكير"]},
-        {"titleAr":"الاتزان الكيميائي","subunits":["تجربة استهلالية: تسامي اليود","أثر التركيز على موضع الاتزان","أثر درجة الحرارة على الاتزان","أسئلة تفكير"]},
-        {"titleAr":"الحموض والقواعد وتطبيقاتها","subunits":["تجربة استهلالية: خصائص الحمض والقاعدة","مقارنة قوة الحموض","معايرة حمض قوي بقاعدة قوية","تأين الأملاح","أسئلة تفكير"]}
-      ]},
-      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[]}
-    ]},
-    {"code":"life_sciences","nameAr":"العلوم الحياتية","examMode":"OMR_MCQ","semesters":[
-      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[
-        {"titleAr":"وحدة مرتبطة بالطفرات الجينية / DNA","subunits":["نشاط: محاكاة الطفرة الجينية"]},
-        {"titleAr":"التكنولوجيا الحيوية","subunits":["تجربة استهلالية: حل لغز الجريمة","نشاط: محاكاة عمل إنزيمات القطع المحدد","نشاط: استخلاص DNA من خلايا باطن الخد","أسئلة مثيرة للتفكير","أسئلة إضافية"]}
-      ]},
-      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[]}
-    ]},
-    {"code":"english","nameAr":"اللغة الانجليزية","examMode":"HYBRID","semesters":[
-      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[
-        {"titleAr":"Identity","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
-        {"titleAr":"On the move","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
-        {"titleAr":"Hard sell","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Lesson 5B","Self-assessment","Revision"]},
-        {"titleAr":"Tastes","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Lesson 5B","Self-assessment","Revision"]},
-        {"titleAr":"Do your best","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]}
-      ]},
-      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[
-        {"titleAr":"Feels good","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
-        {"titleAr":"The creative urge","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
-        {"titleAr":"Follow the crowd?","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Lesson 5B","Self-assessment","Revision"]},
-        {"titleAr":"Unbelievable","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
-        {"titleAr":"Up the ladder","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]}
-      ]}
-    ]},
-    {"code":"islamic_education","nameAr":"التربية الاسلامية","examMode":"OMR_MCQ","semesters":[
-      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[]},
-      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[{"titleAr":"الوحدة الأولى","subunits":["السنن الإلهية وتعظيم الشعائر والزكاة"]}]}
-    ]}
+  gradeAr: "الصف الثاني عشر",
+  trackAr: "المسار الأكاديمي",
+  subjects: [
+    {
+      code: "life_sciences",
+      nameAr: "العلوم الحياتية",
+      examMode: "OMR_MCQ",
+      semesters: [
+        { semester: 1, titleAr: "الفصل الدراسي الأول", units: [
+          { titleAr: "كيمياء الحياة", subunits: ["المركبات العضوية الحيوية", "الإنزيمات وجزيء حفظ الطاقة ATP", "التفاعلات الكيميائية في الخلية"] },
+          { titleAr: "دورة الخلية وتصنيع البروتينات", subunits: ["دورة الخلية", "الانقسام الخلوي وأهميته", "تضاعف DNA والتعبير الجيني"] },
+          { titleAr: "الوراثة", subunits: [] },
+          { titleAr: "التكنولوجيا الحيوية", subunits: [] }
+        ]},
+        { semester: 2, titleAr: "الفصل الدراسي الثاني", units: [
+          { titleAr: "التنظيم والاتزان", subunits: ["الجهاز العصبي: التركيب والوظيفة وبعض مشكلاته", "الإحساس والاستجابة في جسم الإنسان وبعض مشكلاتهما", "الغدد الصم والاتزان وبعض مشكلاتهما"] },
+          { titleAr: "الدعامة والحركة", subunits: ["الجهاز الهيكلي: التركيب والوظيفة وبعض مشكلاته", "العضلات وبعض مشكلاتها"] }
+        ]}
+      ]
+    },
+    {
+      code: "chemistry",
+      nameAr: "الكيمياء",
+      examMode: "OMR_MCQ",
+      semesters: [
+        { semester: 1, titleAr: "الفصل الدراسي الأول", units: [
+          { titleAr: "حالات المادة", subunits: ["الحالة الغازية", "الحالة السائلة", "الحالة الصلبة"] },
+          { titleAr: "المحاليل", subunits: ["تصنيف المحاليل", "خصائص المحاليل"] },
+          { titleAr: "الاتزان الكيميائي", subunits: [] },
+          { titleAr: "الحموض والقواعد وتطبيقاتها", subunits: [] }
+        ]},
+        { semester: 2, titleAr: "الفصل الدراسي الثاني", units: [
+          { titleAr: "الكيمياء الحركية", subunits: ["سرعة التفاعلات الكيميائية", "قوانين سرعة التفاعلات", "نظرية التصادم والعوامل المؤثرة في سرعة التفاعل"] }
+        ]}
+      ]
+    },
+    {
+      code: "islamic_education",
+      nameAr: "التربية الإسلامية",
+      examMode: "OMR_MCQ",
+      semesters: [
+        { semester: 1, titleAr: "الفصل الدراسي الأول", units: [
+          { titleAr: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا", subunits: ["سورة البقرة، الآيات الكريمة (284-286)", "مكانة السنة النبوية الشريفة في التشريع الإسلامي", "اليوم الآخر: أحداثه وآثار الإيمان به", "مراعاة المصالح في الشريعة الإسلامية"] },
+          { titleAr: "لِّيَتَفَقَّهُوا فِي الدِّينِ", subunits: ["القصص القرآني", "رضا الله تعالى (حديث نبوي شريف)", "الطلاق", "العدة"] },
+          { titleAr: "وَمَا أَرْسَلْنَاكَ إِلَّا كَافَّةً لِّلنَّاسِ", subunits: ["سورة الأعراف، الآيات الكريمة (31-34)", "رسائل النبي ﷺ إلى الملوك والزعماء في عصره", "الحقوق السياسية للمرأة في الإسلام", "التعايش الإنساني"] },
+          { titleAr: "وَأَطِيعُوا اللَّهَ وَالرَّسُولَ لَعَلَّكُمْ تُرْحَمُونَ", subunits: ["اتقاء الشبهات (حديث نبوي شريف)", "المذاهب الفقهية الأربعة", "من خصائص الشريعة الإسلامية: الوسطية", "موقف الإسلام من التلوث البيئي"] }
+        ]},
+        { semester: 2, titleAr: "الفصل الدراسي الثاني", units: [
+          { titleAr: "إِنَّهُ لَقُرْآنٌ كَرِيمٌ ۝ فِي كِتَابٍ مَّكْنُونٍ", subunits: ["إعجاز القرآن الكريم", "سورة النحل، الآيات الكريمة (68-72)", "الاجتهاد في الشريعة الإسلامية", "دلائل وجود الله تعالى"] },
+          { titleAr: "يَا أَيُّهَا النَّاسُ اتَّقُوا رَبَّكُمُ الَّذِي خَلَقَكُم مِّن نَّفْسٍ وَاحِدَةٍ", subunits: ["الحديث الشريف: منهج الإسلام في الحياة", "مقاصد الشريعة الإسلامية", "من وصايا النبي ﷺ في حجة الوداع", "المسؤولية المجتمعية في الإسلام"] },
+          { titleAr: "وَلَا تَأْكُلُوا أَمْوَالَكُم بَيْنَكُم بِالْبَاطِلِ", subunits: ["سورة الفرقان، الآيات الكريمة (63-77)", "الميراث في الشريعة الإسلامية", "الوصية في الشريعة الإسلامية", "مجالات الوقف ودورها في التنمية"] },
+          { titleAr: "وَلَا تَعْتَدُوا ۚ إِنَّ اللَّهَ لَا يُحِبُّ الْمُعْتَدِينَ", subunits: ["الحديث الشريف: مفهوم الإفلاس بين الدنيا والآخرة", "منهج الإسلام في مكافحة الجريمة", "حقوق الإنسان بين الإسلام والإعلان العالمي لحقوق الإنسان", "العلاقات الدولية في الإسلام"] }
+        ]}
+      ]
+    },
+    {
+      code: "english",
+      nameAr: "اللغة الإنجليزية المتقدمة",
+      examMode: "HYBRID",
+      note: "المؤكد رسميًا: الفصل الأول Units 1-4، والفصل الثاني Unit 6 فقط. لا تُملأ بقية وحدات الفصل الثاني إلا بدليل من المصدر.",
+      semesters: [
+        { semester: 1, titleAr: "الفصل الدراسي الأول", units: [
+          { titleAr: "Unit 1", subunits: [] },
+          { titleAr: "Unit 2", subunits: [] },
+          { titleAr: "Unit 3", subunits: [] },
+          { titleAr: "Unit 4", subunits: [] }
+        ]},
+        { semester: 2, titleAr: "الفصل الدراسي الثاني", units: [
+          { titleAr: "Unit 6", subunits: [] }
+        ]}
+      ]
+    }
   ]
 };
 
 const SAMPLE_EXAM = {
-  title: "الكيمياء - قانون بويل - مع صفحات PDF مرجعية",
+  title: "الكيمياء - حالات المادة - نموذج PDF + JSON",
   subjectCode: "chemistry",
   subjectAr: "الكيمياء",
   semester: 1,
   unitTitleAr: "حالات المادة",
-  subunitTitleAr: "قانون بويل",
+  subunitTitleAr: "الحالة الغازية",
   examMode: "OMR_MCQ",
   duration: 1800,
+  settings: {
+    defaultQuestionView: "single",
+    allowSwitchView: true,
+    showOneQuestionPerRow: true
+  },
   sourcePdf: {
-    fileName: "boyle-law-exam.pdf",
-    note: "يرفع المشرف ملف PDF هنا. كل سؤال يمكنه الإشارة إلى صفحة من هذا الملف بدل تخزين الصورة داخل JSON."
+    fileName: "source.pdf"
   },
   questions: [
     {
-      id: "chem-boyle-1",
-      text: "بالاعتماد على الشكل الموجود في صفحة PDF المرجعية، ماذا يحدث للضغط عندما يقل الحجم؟",
+      id: "q1",
+      text: "بالاعتماد على الرسم البياني الآتي، ماذا يحدث للضغط عندما يقل حجم الغاز؟",
       options: ["يبقى ثابتًا", "يزداد", "يقل", "لا يمكن التحديد"],
       correctIndex: 1,
-      difficulty: "medium",
-      explanation: "الإجابة تؤخذ من السؤال/المفتاح داخل المصدر نفسه فقط.",
+      explanation: "",
       pdfPageRef: {
-        page: 3,
+        page: 2,
         visualType: "chart",
-        description: "الصفحة تحتوي رسمًا بيانيًا يربط الضغط بالحجم ويستخدم مباشرة في هذا السؤال.",
+        description: "هذه الصفحة تعرض الرسم البياني المستخدم مباشرة في السؤال.",
         showFullPage: true
       }
     },
     {
-      id: "chem-boyle-2",
-      text: "اعتمادًا على الصورة في الصفحة المرجعية، ما اسم الأداة الظاهرة؟",
-      options: ["مخبار مدرج", "دورق مخروطي", "مجهر", "بيكر"],
+      id: "q2",
+      text: "عينة من الغاز عند درجة حرارة ثابتة، إذا ازداد الضغط فماذا يحدث للحجم؟",
+      options: ["يزداد", "يقل", "يبقى ثابتًا", "ينعدم"],
       correctIndex: null,
-      difficulty: "medium",
-      explanation: "إذا لم يوجد مفتاح إجابة واضح في PDF تبقى null.",
-      pdfPageRef: {
-        page: 4,
-        visualType: "image",
-        description: "الصفحة تعرض صورة مخبرية مرتبطة بالسؤال.",
-        showFullPage: true
-      }
+      explanation: ""
     }
   ],
   openQuestions: []
 };
+
+const STRICT_JSON_PROMPT = `You are converting an exam PDF into a STRICT, VALID JSON file for an online exam system.
+
+Your output must be a single raw JSON object only.
+
+CRITICAL OUTPUT RULES:
+1. Output JSON only.
+2. Do NOT add markdown fences.
+3. Do NOT wrap the JSON in quotation marks.
+4. Do NOT add comments.
+5. Do NOT add explanations before or after the JSON.
+6. Every property name must be in double quotes.
+7. Every string value must be in double quotes.
+8. Escape any internal double quotes inside text using backslash, like: \"example\"
+9. Do not leave trailing commas.
+10. The result must be directly parseable by JSON.parse().
+
+SOURCE RULES:
+1. Use ONLY the provided PDF content.
+2. Do NOT use outside knowledge.
+3. Do NOT invent questions, answers, images, charts, tables, or explanations.
+4. If an answer is not explicitly present in the PDF, set:
+   "correctIndex": null
+5. If a question depends on an image, chart, graph, table, or diagram in the PDF:
+   - identify the PDF page that contains that visual
+   - add a "pdfPageRef" object to that question
+6. The visual reference must come only from the PDF itself.
+7. If no visual is needed for a question, do not add "pdfPageRef".
+
+LANGUAGE AND TEXT RULES:
+1. Preserve the original question wording from the PDF as closely as possible.
+2. Preserve Arabic exactly as it appears, but fix obvious OCR junk only when necessary for readability.
+3. If the source contains quotation marks inside text, escape them properly.
+4. Keep question order exactly as in the PDF.
+5. Keep options order exactly as in the PDF.
+6. Do not paraphrase unless OCR is clearly broken.
+
+JSON SCHEMA:
+The output must follow this exact structure:
+
+{
+  "title": "",
+  "subjectCode": "",
+  "subjectAr": "",
+  "semester": null,
+  "unitTitleAr": "",
+  "subunitTitleAr": "",
+  "examMode": "OMR_MCQ",
+  "duration": null,
+  "sourcePdf": {
+    "fileName": "source.pdf"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "text": "",
+      "options": ["", "", "", ""],
+      "correctIndex": 0,
+      "explanation": ""
+    }
+  ],
+  "openQuestions": []
+}
+
+RULES FOR QUESTIONS:
+1. "id" must be sequential:
+   q1, q2, q3, q4 ...
+2. "text" must contain the full MCQ prompt.
+3. "options" must be an array of the visible answer choices in the same order as the PDF.
+4. "correctIndex" must be:
+   - 0 for first option
+   - 1 for second option
+   - 2 for third option
+   - 3 for fourth option
+5. If no answer is explicitly present in the PDF, use:
+   "correctIndex": null
+6. "explanation" should be:
+   - "" if no explanation exists in the PDF
+   - or copied from the PDF only if explicitly present
+7. Do not generate explanations from reasoning.
+
+RULES FOR VISUAL QUESTIONS:
+If a question depends on a picture, chart, graph, table, figure, or diagram from the PDF, add this field:
+
+"pdfPageRef": {
+  "page": 1,
+  "visualType": "image",
+  "description": "",
+  "showFullPage": true
+}
+
+RULES FOR pdfPageRef:
+1. "page" must be the PDF page number where the needed visual appears.
+2. "visualType" must be one of:
+   "image"
+   "chart"
+   "graph"
+   "table"
+   "diagram"
+3. "description" must briefly describe what exists on that page and how it relates to the question.
+4. "showFullPage" must always be true.
+5. Add "pdfPageRef" only if the question actually needs a visual from the PDF.
+
+IMPORTANT VALIDATION RULES:
+1. The final result must be one JSON object starting with { and ending with }.
+2. Do not output this:
+   "{ ... }"
+   It must be:
+   { ... }
+3. Make sure every object property is separated by a comma.
+4. Make sure there is no comma after the last property in an object.
+5. Make sure there is no comma after the last item in an array.
+6. Escape internal quotes inside Arabic or English text.
+7. Use null only without quotes when needed.
+8. Use true only without quotes.
+9. Do not use undefined.
+10. Do not invent extra fields outside the schema unless the question needs "pdfPageRef".
+
+EXAMPLE OF A NORMAL QUESTION:
+{
+  "id": "q1",
+  "text": "عينة من الغاز عند درجة حرارة ثابتة، إذا قل حجمها فماذا يحدث لضغطها؟",
+  "options": [
+    "يقل",
+    "يزداد",
+    "يبقى ثابتًا",
+    "ينعدم"
+  ],
+  "correctIndex": 1,
+  "explanation": ""
+}
+
+EXAMPLE OF A VISUAL QUESTION:
+{
+  "id": "q2",
+  "text": "اعتمادًا على الرسم البياني الآتي، أي العبارات صحيحة؟",
+  "options": [
+    "أ",
+    "ب",
+    "ج",
+    "د"
+  ],
+  "correctIndex": 2,
+  "explanation": "",
+  "pdfPageRef": {
+    "page": 4,
+    "visualType": "chart",
+    "description": "هذه الصفحة تحتوي الرسم البياني المستخدم مباشرة في هذا السؤال.",
+    "showFullPage": true
+  }
+}
+
+FINAL INSTRUCTION:
+Return raw valid JSON only, matching the schema exactly, with no markdown, no surrounding quotes, no comments, and no extra text.`;
 
 function cls(...arr){ return arr.filter(Boolean).join(" "); }
 function saveLocal(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
@@ -568,195 +751,10 @@ function SectionBlock({title, children}){
   );
 }
 
-function ExamScreen({exam, user, onFinish, onExit}){
-  const mcq = exam.questions || [];
-  const openQ = exam.openQuestions || [];
-  const sections = exam.sections || [];
-  const totalSeconds = exam.duration || 3600;
-
-  const [timeLeft, setTimeLeft] = useState(totalSeconds);
-  const [answers, setAnswers] = useState({});
-  const [openAnswers, setOpenAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    if(submitted) return;
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if(prev <= 1){ clearInterval(timer); handleSubmit(); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [submitted]);
-
-  function handleSubmit(){
-    if(submitted) return;
-
-    let correct = 0;
-    const wrongItems = [];
-
-    mcq.forEach(q => {
-      const userIndex = answers[q.id];
-      if(userIndex === q.correctIndex) {
-        correct++;
-      } else {
-        wrongItems.push({
-          questionId: q.id,
-          questionText: q.text,
-          userAnswerIndex: userIndex ?? null,
-          userAnswerText: userIndex != null ? q.options?.[userIndex] : "",
-          correctIndex: q.correctIndex,
-          correctAnswerText: q.options?.[q.correctIndex] || "",
-          explanation: q.explanation || "",
-          subject: exam.subjectAr || exam.subject,
-          subjectCode: exam.subjectCode || "",
-          semester: exam.semester || "",
-          unitTitleAr: q.unitTitleAr || exam.unitTitleAr || "",
-          subunitTitleAr: q.subunitTitleAr || exam.subunitTitleAr || "",
-          questionType: q.questionType || "mcq"
-        });
-      }
-    });
-
-    const score = mcq.length ? Math.round((correct / mcq.length) * 100) : 100;
-
-    const payload = {
-      userId: user.id,
-      userName: user.name,
-      examId: exam.id,
-      subject: exam.subjectAr || exam.subject,
-      subjectCode: exam.subjectCode || "",
-      score,
-      semester: exam.semester || "",
-      unitTitleAr: exam.unitTitleAr || "",
-      subunitTitleAr: exam.subunitTitleAr || "",
-      answers,
-      openAnswers,
-      wrongItems
-    };
-
-    setSubmitted(true);
-    setResult({score, wrongItems, openAnswersSnapshot: openAnswers});
-    onFinish(payload);
-  }
-
-  const minutes = String(Math.floor(timeLeft / 60)).padStart(2,"0");
-  const seconds = String(timeLeft % 60).padStart(2,"0");
-  const answered = Object.keys(answers).length + Object.values(openAnswers).filter(Boolean).length;
-  const total = mcq.length + openQ.length || 1;
-  const progress = Math.round((answered / total) * 100);
-
-  if(submitted && result){
-    return (
-      <div className="space-y-6">
-        <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <div className="text-white/75 text-sm font-bold">تم تسليم الامتحان</div>
-              <h2 className="text-3xl font-black mt-2">{exam.title || exam.subjectAr}</h2>
-            </div>
-            <div className="rounded-[28px] bg-white/10 px-8 py-5 text-center">
-              <div className="text-sm text-white/75">النتيجة</div>
-              <div className="text-5xl font-black mt-2">{result.score}%</div>
-            </div>
-          </div>
-        </Card>
-
-        <SectionBlock title="تصحيح الاختيار من متعدد">
-          {result.wrongItems.length ? result.wrongItems.map((w,i)=>(
-            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-              <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{w.unitTitleAr || "بدون وحدة"} {w.subunitTitleAr ? `• ${w.subunitTitleAr}` : ""}</div>
-              <div className="font-black text-slate-900 dark:text-white mt-2"><RichText text={w.questionText} /></div>
-              <div className="mt-3 text-sm text-red-600">إجابتك: {w.userAnswerText || "لم تجب"}</div>
-              <div className="text-sm text-emerald-600 mt-1">الصحيح: {w.correctAnswerText}</div>
-              {w.explanation ? <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">{w.explanation}</div> : null}
-            </div>
-          )) : <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 p-4 font-bold text-emerald-700 dark:text-emerald-200">ممتاز، لا توجد أخطاء في قسم MCQ.</div>}
-        </SectionBlock>
-
-        {openQ.length ? (
-          <SectionBlock title="الأسئلة المقالية">
-            {openQ.map((q,idx)=>(
-              <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-                <div className="font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
-                <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">إجابتك</div>
-                <div className="mt-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3 whitespace-pre-wrap">{result.openAnswersSnapshot[q.id] || "لم تتم الإجابة"}</div>
-                <div className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">الإجابة النموذجية</div>
-                <div className="mt-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 whitespace-pre-wrap">{q.idealAnswer || "-"}</div>
-              </div>
-            ))}
-          </SectionBlock>
-        ) : null}
-
-        <Button variant="brand" onClick={onExit}>العودة للوحة التحكم</Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-          <div>
-            <div className="text-sm font-bold text-brand-600 dark:text-brand-300">{exam.subjectAr || exam.subject}</div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-2">{exam.title || exam.subjectAr || exam.subject}</h1>
-            <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.unitTitleAr || "بدون وحدة"}</span>
-              {exam.subunitTitleAr ? <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.subunitTitleAr}</span> : null}
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">الوقت: {minutes}:{seconds}</span>
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">التقدم: {progress}%</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" onClick={onExit}>إلغاء</Button>
-            <Button variant="brand" onClick={handleSubmit}>تسليم</Button>
-          </div>
-        </div>
-        <div className="mt-5">
-          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-brand-600" style={{width:`${progress}%`}}></div></div>
-        </div>
-      </Card>
-
-      {(exam.examMode === "HYBRID" || sections.length > 0) ? (
-        <>
-          {mcq.length ? (
-            <SectionBlock title="القسم الأول: OMR / Multiple Choice">
-              {mcq.map((q, idx) => (
-                <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} pdfBase64={exam.sourcePdf?.base64 || null} />
-              ))}
-            </SectionBlock>
-          ) : null}
-
-          {openQ.length ? (
-            <SectionBlock title="الأقسام المقالية / Reading / Writing">
-              {openQ.map((q, idx) => (
-                <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-                  <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.sectionTitle || q.questionType || "مقالي"}</div>
-                  <div className="mt-2 font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
-                  <TextArea rows={8} className="mt-4" placeholder="اكتب إجابتك هنا..." value={openAnswers[q.id] || ""} onChange={e=>setOpenAnswers(prev=>({...prev,[q.id]:e.target.value}))}/>
-                </div>
-              ))}
-            </SectionBlock>
-          ) : null}
-        </>
-      ) : (
-        <SectionBlock title="ورقة التظليل OMR">
-          <div className="grid md:grid-cols-2 gap-4">
-            {mcq.map((q, idx) => (
-              <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} omr pdfBase64={exam.sourcePdf?.base64 || null} />
-            ))}
-          </div>
-        </SectionBlock>
-      )}
-    </div>
-  );
-}
-
 function PdfPagePreview({pdfBase64, pageNumber, description}){
   const canvasRef = useRef(null);
   const [error, setError] = useState("");
+
   useEffect(() => {
     let cancelled = false;
     async function renderPage(){
@@ -786,11 +784,9 @@ function PdfPagePreview({pdfBase64, pageNumber, description}){
   if(!pdfBase64 || !pageNumber) return null;
   return (
     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3 space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-xs font-black text-brand-600 dark:text-brand-300">مرجع PDF</div>
-          <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">الصفحة {pageNumber}</div>
-        </div>
+      <div>
+        <div className="text-xs font-black text-brand-600 dark:text-brand-300">مرجع PDF</div>
+        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">الصفحة {pageNumber}</div>
       </div>
       {description ? <div className="text-xs leading-6 text-slate-500 dark:text-slate-400">{description}</div> : null}
       <div className="overflow-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
@@ -808,43 +804,257 @@ function QuestionCard({q, index, selected, onSelect, omr=false, pdfBase64=null})
     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
       <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.unitTitleAr || ""} {q.subunitTitleAr ? `• ${q.subunitTitleAr}` : ""}</div>
       <div className="font-black text-slate-900 dark:text-white mt-2">{index+1}. <RichText text={q.text} /></div>
-      {pageNumber ? (
-        <div className={cls("mt-4 gap-4", omr ? "grid" : "grid xl:grid-cols-[minmax(0,1fr),340px] items-start") }>
-          <div className="order-2 xl:order-1">
-            <div className={cls("grid gap-3", omr ? "sm:grid-cols-2" : "") }>
-              {(q.options || []).map((opt, i) => (
-                <button key={i} onClick={()=>onSelect(i)} className={cls("rounded-2xl border p-4 text-right transition",
-                  selected === i ? "border-brand-600 bg-brand-50 dark:bg-brand-950/30 dark:border-brand-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70"
-                )}>
-                  <div className="flex items-center gap-3">
-                    <div className={cls("h-7 w-7 rounded-full border flex items-center justify-center text-xs font-black", selected === i ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 dark:border-slate-700")}>{String.fromCharCode(65+i)}</div>
-                    <div className="flex-1">{opt}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+      <div className={cls("mt-4 gap-4", pageNumber ? "grid xl:grid-cols-[minmax(0,1fr),340px] items-start" : "") }>
+        <div className={pageNumber ? "order-2 xl:order-1" : ""}>
+          <div className={cls("grid gap-3", omr ? "lg:grid-cols-2" : "") }>
+            {(q.options || []).map((opt, i) => (
+              <button key={i} onClick={()=>onSelect(i)} className={cls("rounded-2xl border p-4 text-right transition",
+                selected === i ? "border-brand-600 bg-brand-50 dark:bg-brand-950/30 dark:border-brand-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70"
+              )}>
+                <div className="flex items-center gap-3">
+                  <div className={cls("h-7 w-7 rounded-full border flex items-center justify-center text-xs font-black", selected === i ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 dark:border-slate-700")}>{String.fromCharCode(65+i)}</div>
+                  <div className="flex-1">{opt}</div>
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
+        {pageNumber ? (
           <div className="order-1 xl:order-2">
             <PdfPagePreview pdfBase64={pdfBase64} pageNumber={pageNumber} description={pageDescription} />
           </div>
-        </div>
-      ) : (
-        <div className={cls("mt-4 grid gap-3", omr ? "sm:grid-cols-2" : "")}>
-          {(q.options || []).map((opt, i) => (
-            <button key={i} onClick={()=>onSelect(i)} className={cls("rounded-2xl border p-4 text-right transition",
-              selected === i ? "border-brand-600 bg-brand-50 dark:bg-brand-950/30 dark:border-brand-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70"
-            )}>
-              <div className="flex items-center gap-3">
-                <div className={cls("h-7 w-7 rounded-full border flex items-center justify-center text-xs font-black", selected === i ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 dark:border-slate-700")}>{String.fromCharCode(65+i)}</div>
-                <div className="flex-1">{opt}</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function EssayQuestionCard({q, index, value, onChange, pdfBase64=null}){
+  const pageNumber = extractPdfPageNumber(q.pdfPageRef);
+  const pageDescription = typeof q.pdfPageRef === "object" ? q.pdfPageRef.description : "";
+  return (
+    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+      <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.sectionTitle || q.questionType || "مقالي"}</div>
+      <div className="mt-2 font-black text-slate-900 dark:text-white">{index+1}. <RichText text={q.prompt || q.text} /></div>
+      {pageNumber ? <div className="mt-4"><PdfPagePreview pdfBase64={pdfBase64} pageNumber={pageNumber} description={pageDescription} /></div> : null}
+      <TextArea rows={8} className="mt-4" placeholder="اكتب إجابتك هنا..." value={value || ""} onChange={onChange}/>
+      {q.idealAnswer ? (
+        <div className="mt-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 text-sm text-emerald-800 dark:text-emerald-200 whitespace-pre-wrap">{q.idealAnswer}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function ExamScreen({exam, user, onFinish, onExit}){
+  const mcq = exam.questions || [];
+  const openQ = exam.openQuestions || [];
+  const totalSeconds = exam.duration || 3600;
+  const defaultView = exam.settings?.defaultQuestionView || "single";
+  const allowSwitchView = exam.settings?.allowSwitchView !== false;
+  const combinedItems = [...mcq.map(q => ({ kind: "mcq", q })), ...openQ.map(q => ({ kind: "open", q }))];
+
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const [answers, setAnswers] = useState({});
+  const [openAnswers, setOpenAnswers] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [result, setResult] = useState(null);
+  const [viewMode, setViewMode] = useState(defaultView);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    setTimeLeft(totalSeconds);
+    setAnswers({});
+    setOpenAnswers({});
+    setSubmitted(false);
+    setResult(null);
+    setViewMode(defaultView);
+    setCurrentIndex(0);
+  }, [exam.id]);
+
+  useEffect(() => {
+    if(submitted) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if(prev <= 1){ clearInterval(timer); handleSubmit(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [submitted, exam.id]);
+
+  function handleSubmit(){
+    if(submitted) return;
+    const scorableMcq = mcq.filter(q => Number.isInteger(q.correctIndex));
+    let correct = 0;
+    const wrongItems = [];
+
+    scorableMcq.forEach(q => {
+      const userIndex = answers[q.id];
+      if(userIndex === q.correctIndex) {
+        correct++;
+      } else {
+        wrongItems.push({
+          questionId: q.id,
+          questionText: q.text,
+          userAnswerIndex: userIndex ?? null,
+          userAnswerText: userIndex != null ? q.options?.[userIndex] : "",
+          correctIndex: q.correctIndex,
+          correctAnswerText: q.options?.[q.correctIndex] || "",
+          explanation: q.explanation || "",
+          subject: exam.subjectAr || exam.subject,
+          subjectCode: exam.subjectCode || "",
+          semester: exam.semester || "",
+          unitTitleAr: q.unitTitleAr || exam.unitTitleAr || "",
+          subunitTitleAr: q.subunitTitleAr || exam.subunitTitleAr || "",
+          questionType: q.questionType || "mcq"
+        });
+      }
+    });
+
+    const score = scorableMcq.length ? Math.round((correct / scorableMcq.length) * 100) : 100;
+    const payload = {
+      userId: user.id,
+      userName: user.name,
+      examId: exam.id,
+      subject: exam.subjectAr || exam.subject,
+      subjectCode: exam.subjectCode || "",
+      score,
+      semester: exam.semester || "",
+      unitTitleAr: exam.unitTitleAr || "",
+      subunitTitleAr: exam.subunitTitleAr || "",
+      answers,
+      openAnswers,
+      wrongItems
+    };
+
+    setSubmitted(true);
+    setResult({score, wrongItems, openAnswersSnapshot: openAnswers, scorableCount: scorableMcq.length, ungradedCount: mcq.length - scorableMcq.length});
+    onFinish(payload);
+  }
+
+  const minutes = String(Math.floor(timeLeft / 60)).padStart(2,"0");
+  const seconds = String(timeLeft % 60).padStart(2,"0");
+  const answered = Object.keys(answers).length + Object.values(openAnswers).filter(Boolean).length;
+  const total = combinedItems.length || 1;
+  const progress = Math.round((answered / total) * 100);
+  const currentItem = combinedItems[currentIndex] || null;
+
+  function renderSingleItem(item, idx){
+    if(!item) return null;
+    if(item.kind === "mcq") return <QuestionCard q={item.q} index={idx} selected={answers[item.q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[item.q.id]:value}))} pdfBase64={exam.sourcePdf?.base64 || null} />;
+    return <EssayQuestionCard q={item.q} index={idx} value={openAnswers[item.q.id] || ""} onChange={e=>setOpenAnswers(prev=>({...prev,[item.q.id]:e.target.value}))} pdfBase64={exam.sourcePdf?.base64 || null} />;
+  }
+
+  if(submitted && result){
+    return (
+      <div className="space-y-6">
+        <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="text-white/75 text-sm font-bold">تم تسليم الامتحان</div>
+              <h2 className="text-3xl font-black mt-2">{exam.title || exam.subjectAr}</h2>
+              <div className="mt-3 text-sm text-white/80">الأسئلة المصححة: {result.scorableCount} • الأسئلة بدون مفتاح صريح: {result.ungradedCount}</div>
+            </div>
+            <div className="rounded-[28px] bg-white/10 px-8 py-5 text-center">
+              <div className="text-sm text-white/75">النتيجة</div>
+              <div className="text-5xl font-black mt-2">{result.score}%</div>
+            </div>
+          </div>
+        </Card>
+
+        <SectionBlock title="تصحيح الاختيار من متعدد">
+          {result.wrongItems.length ? result.wrongItems.map((w,i)=>(
+            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{w.unitTitleAr || "بدون وحدة"} {w.subunitTitleAr ? `• ${w.subunitTitleAr}` : ""}</div>
+              <div className="font-black text-slate-900 dark:text-white mt-2"><RichText text={w.questionText} /></div>
+              <div className="mt-3 text-sm text-red-600">إجابتك: {w.userAnswerText || "لم تجب"}</div>
+              <div className="text-sm text-emerald-600 mt-1">الصحيح: {w.correctAnswerText}</div>
+              {w.explanation ? <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">{w.explanation}</div> : null}
+            </div>
+          )) : <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 p-4 font-bold text-emerald-700 dark:text-emerald-200">ممتاز، لا توجد أخطاء في قسم MCQ المصحح.</div>}
+        </SectionBlock>
+
+        {openQ.length ? (
+          <SectionBlock title="الأسئلة المقالية">
+            {openQ.map((q,idx)=>(
+              <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+                <div className="font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt || q.text} /></div>
+                <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">إجابتك</div>
+                <div className="mt-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3 whitespace-pre-wrap">{result.openAnswersSnapshot[q.id] || "لم تتم الإجابة"}</div>
+                {q.idealAnswer ? <><div className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">الإجابة النموذجية</div><div className="mt-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 whitespace-pre-wrap">{q.idealAnswer}</div></> : null}
               </div>
-            </button>
-          ))}
+            ))}
+          </SectionBlock>
+        ) : null}
+
+        <Button variant="brand" onClick={onExit}>العودة للوحة التحكم</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+          <div>
+            <div className="text-sm font-bold text-brand-600 dark:text-brand-300">{exam.subjectAr || exam.subject}</div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-2">{exam.title || exam.subjectAr || exam.subject}</h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-sm">
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.unitTitleAr || "بدون وحدة"}</span>
+              {exam.subunitTitleAr ? <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.subunitTitleAr}</span> : null}
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">الوقت: {minutes}:{seconds}</span>
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">التقدم: {progress}%</span>
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">عدد البنود: {total}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {allowSwitchView ? (
+              <div className="flex items-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1">
+                <button className={cls("px-3 py-2 rounded-xl text-sm font-bold", viewMode === "single" ? "bg-white dark:bg-slate-900" : "")} onClick={()=>setViewMode("single")}>سؤال بسؤال</button>
+                <button className={cls("px-3 py-2 rounded-xl text-sm font-bold", viewMode === "all" ? "bg-white dark:bg-slate-900" : "")} onClick={()=>setViewMode("all")}>عرض كامل</button>
+              </div>
+            ) : null}
+            <Button variant="outline" onClick={onExit}>إلغاء</Button>
+            <Button variant="brand" onClick={handleSubmit}>تسليم</Button>
+          </div>
         </div>
+        <div className="mt-5"><div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-brand-600" style={{width:`${progress}%`}}></div></div></div>
+      </Card>
+
+      {viewMode === "single" ? (
+        <SectionBlock title={`السؤال ${Math.min(currentIndex + 1, total)} من ${total}`}>
+          {renderSingleItem(currentItem, currentIndex)}
+          <div className="flex flex-wrap justify-between gap-3 pt-2">
+            <Button variant="outline" onClick={()=>setCurrentIndex(i => Math.max(0, i - 1))} disabled={currentIndex === 0}>السابق</Button>
+            <Button variant="brand" onClick={()=>setCurrentIndex(i => Math.min(total - 1, i + 1))} disabled={currentIndex >= total - 1}>التالي</Button>
+          </div>
+        </SectionBlock>
+      ) : (
+        <>
+          {mcq.length ? (
+            <SectionBlock title="الاختيار من متعدد">
+              <div className="space-y-4">
+                {mcq.map((q, idx) => (
+                  <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} pdfBase64={exam.sourcePdf?.base64 || null} />
+                ))}
+              </div>
+            </SectionBlock>
+          ) : null}
+          {openQ.length ? (
+            <SectionBlock title="الأسئلة المقالية / Reading / Writing">
+              <div className="space-y-4">
+                {openQ.map((q, idx) => (
+                  <EssayQuestionCard key={q.id} q={q} index={idx} value={openAnswers[q.id] || ""} onChange={e=>setOpenAnswers(prev=>({...prev,[q.id]:e.target.value}))} pdfBase64={exam.sourcePdf?.base64 || null} />
+                ))}
+              </div>
+            </SectionBlock>
+          ) : null}
+        </>
       )}
     </div>
   );
 }
+
 
 function AdminModal({data, onRefresh, onClose, toast}){
   const [password, setPassword] = useState("");
@@ -981,7 +1191,7 @@ function AdminModal({data, onRefresh, onClose, toast}){
       ) : (
         <div className="space-y-6">
           <div className="flex flex-wrap gap-2">
-            {[["upload","رفع امتحان"],["bank","بنك الامتحانات"],["results","نتائج الطلاب"],["qbank","ملخص بنك الأسئلة"]].map(([id,label]) => (
+            {[["upload","رفع امتحان"],["bank","بنك الامتحانات"],["results","نتائج الطلاب"],["qbank","ملخص بنك الأسئلة"],["syllabus","السلسلة الدراسية"]].map(([id,label]) => (
               <button key={id} onClick={()=>setTab(id)} className={cls("px-4 py-3 rounded-2xl font-bold", tab===id ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-100 dark:bg-slate-800")}>{label}</button>
             ))}
           </div>
@@ -1045,20 +1255,28 @@ function AdminModal({data, onRefresh, onClose, toast}){
                 </div>
               </Card>
 
-              <Card className="p-5">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">ما الذي يفعله الرفع الآن؟</h3>
+              <div className="space-y-6">
+                <Card className="p-5">
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">ما الذي يفعله الرفع الآن؟</h3>
                 <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                   <p>1) يضيف تصنيف المادة والفصل والوحدة والموضوع الفرعي إلى الامتحان والأسئلة.</p>
                   <p>2) يحفظ ملف JSON وملف PDF المرجعي في Google Drive.</p>
                   <p>3) إذا احتوى السؤال على pdfPageRef فسيعرض نفس صفحة الـ PDF بجانب السؤال داخل الاختبار.</p>
-                  <p>4) يفهرس جميع الأسئلة في بنك أسئلة مخفي مرتب.</p>
-                  <p>5) يجعل “أعد أخطائي” يعمل حسب التصنيف، وليس حسب المادة فقط.</p>
+                  <p>4) يدعم نمطي العرض: سؤال بسؤال أو عرض كامل، مع ترتيب عمودي للأسئلة.</p>
+                  <p>5) يفهرس جميع الأسئلة في بنك أسئلة مخفي مرتب، ويجعل “أعد أخطائي” يعمل حسب التصنيف.</p>
                   <p>6) يميز الإنجليزي كوضع Hybrid، والكيمياء/الأحياء/الإسلامية كـ OMR MCQ.</p>
                 </div>
-                <div className="mt-5 rounded-3xl bg-slate-100 dark:bg-slate-800 p-4 text-sm">
-                  مثال جاهز داخل الحقل يمكن رفعه مباشرة.
-                </div>
-              </Card>
+                  <div className="mt-5 rounded-3xl bg-slate-100 dark:bg-slate-800 p-4 text-sm">مثال جاهز داخل الحقل يمكن رفعه مباشرة.</div>
+                </Card>
+
+                <Card className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">Prompt التحويل الرسمي</h3>
+                    <Button variant="outline" onClick={()=>navigator.clipboard.writeText(STRICT_JSON_PROMPT)}>نسخ prompt</Button>
+                  </div>
+                  <TextArea rows={18} className="mt-4" value={STRICT_JSON_PROMPT} readOnly />
+                </Card>
+              </div>
             </div>
           ) : null}
 
@@ -1104,6 +1322,40 @@ function AdminModal({data, onRefresh, onClose, toast}){
               <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">الكيمياء</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.bySubject?.chemistry || 0}</div></Card>
               <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">الأحياء</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.bySubject?.life_sciences || 0}</div></Card>
               <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">الإنجليزي</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.bySubject?.english || 0}</div></Card>
+            </div>
+          ) : null}
+          {tab === "syllabus" ? (
+            <div className="space-y-6">
+              {CURRICULUM.subjects.map(subject => (
+                <Card key={subject.code} className="p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xl font-black text-slate-900 dark:text-white">{subject.nameAr}</div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subject.examMode === "HYBRID" ? "Hybrid" : "OMR MCQ"}</div>
+                    </div>
+                    {subject.note ? <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{subject.note}</div> : null}
+                  </div>
+                  <div className="mt-5 grid lg:grid-cols-2 gap-4">
+                    {subject.semesters.map(sem => (
+                      <div key={sem.semester} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+                        <div className="font-black text-slate-900 dark:text-white">{sem.titleAr}</div>
+                        <div className="mt-4 space-y-4">
+                          {sem.units.length ? sem.units.map((unit, idx) => (
+                            <div key={idx} className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-4">
+                              <div className="font-bold text-brand-700 dark:text-brand-300">{unit.titleAr}</div>
+                              {unit.subunits?.length ? (
+                                <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300 list-disc pr-5">
+                                  {unit.subunits.map((sub, sidx) => <li key={sidx}>{sub}</li>)}
+                                </ul>
+                              ) : <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">لا توجد دروس فرعية مثبتة هنا.</div>}
+                            </div>
+                          )) : <div className="text-sm text-slate-500 dark:text-slate-400">لا توجد وحدات مدخلة لهذا الفصل.</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              ))}
             </div>
           ) : null}
         </div>
