@@ -51,7 +51,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'الصف الثاني عشر - المسار الأكاديمي',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbzEoWpnOu8Mfh8vk9Bkny8iUd0CJ3hsmX_713fYtg_HAZCAZGqkuf-qi0PlH6Kv8QW2mQ/exec',
+  API_BASE: 'https://script.google.com/macros/s/AKfycbxMCe-OGgEZvYcuyZ_COelMLtLP06tjQatIQUeKxuby2qKrTS7SXqmco7pKDFHv7LCBwQ/exec',
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: {
     user: 'dirasti_user_v8',
@@ -292,12 +292,25 @@ function copy(obj){ return JSON.parse(JSON.stringify(obj)); }
 function stripExamDataUrl(exam){ const next = copy(exam || {}); if(next.sourcePdf) delete next.sourcePdf.dataUrl; (next.questions || []).forEach(q => { if(q.sourcePdf) delete q.sourcePdf.dataUrl; }); (next.openQuestions || []).forEach(q => { if(q.sourcePdf) delete q.sourcePdf.dataUrl; }); return next; }
 
 async function api(action, payload = {}){
-  const res = await fetch(CONFIG.API_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...payload })
-  });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(CONFIG.API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      cache: 'no-store',
+      redirect: 'follow',
+      body: JSON.stringify({ action, ...payload, _ts: Date.now() })
+    });
+  } catch (networkErr) {
+    throw new Error('تعذر الوصول إلى Google Apps Script. تأكد من إعادة النشر وأن صلاحية Web App تسمح بالوصول. ' + (networkErr && networkErr.message ? networkErr.message : networkErr));
+  }
+  const raw = await res.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (parseErr) {
+    throw new Error('استجابة الخادم ليست JSON صالحًا. تأكد من استخدام رابط /exec المنشور حديثًا.');
+  }
   if(!data.ok) throw new Error(data.error || 'Unknown API error');
   return data;
 }
@@ -324,19 +337,34 @@ async function uploadPdfInChunks(file, exam, examId=''){
   const dataUrl = await readFileAsDataUrl(file);
   const base64 = String(dataUrl).split(',')[1] || '';
   const uploadId = `pdf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const chunkSize = 45000;
+  const chunkSize = 12000;
   const totalChunks = Math.max(1, Math.ceil(base64.length / chunkSize));
+
+  async function sendChunkWithRetry(i, chunkData){
+    let lastErr = null;
+    for(let attempt = 1; attempt <= 3; attempt++){
+      try {
+        return await api('uploadPdfChunk', {
+          adminPassword: CONFIG.ADMIN_PASSWORD,
+          uploadId,
+          chunkIndex: i,
+          totalChunks,
+          pdfFileName: file.name,
+          chunkData
+        });
+      } catch (err) {
+        lastErr = err;
+        await new Promise(resolve => setTimeout(resolve, 350 * attempt));
+      }
+    }
+    throw lastErr || new Error('فشل رفع جزء من ملف PDF');
+  }
+
   for(let i = 0; i < totalChunks; i++){
     const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
-    await api('uploadPdfChunk', {
-      adminPassword: CONFIG.ADMIN_PASSWORD,
-      uploadId,
-      chunkIndex: i,
-      totalChunks,
-      pdfFileName: file.name,
-      chunkData
-    });
+    await sendChunkWithRetry(i, chunkData);
   }
+
   return api('finalizeChunkedUpload', {
     adminPassword: CONFIG.ADMIN_PASSWORD,
     uploadId,
