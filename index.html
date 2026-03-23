@@ -51,7 +51,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'الصف الثاني عشر - المسار الأكاديمي',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbzJh6sKXrCi7sGh_9NM1l_x6-wh_H59iFqgTE_fCMb8KSyonbWv9fYUNpI76c1lrPBM9A/exec',
+  API_BASE: 'https://script.google.com/macros/s/AKfycbzypQWMpYyWkZZcKqza7cPLZzSjABvFkLSgFv75IPlZy4UUvLILwgLSeiRRSMVsV8tCuQ/exec',
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: {
     user: 'dirasti_user_v8',
@@ -296,15 +296,36 @@ function round2(n){ return Math.round(Number(n || 0) * 100) / 100; }
 function copy(obj){ return JSON.parse(JSON.stringify(obj)); }
 function stripExamDataUrl(exam){ const next = copy(exam || {}); if(next.sourcePdf) delete next.sourcePdf.dataUrl; (next.questions || []).forEach(q => { if(q.sourcePdf) delete q.sourcePdf.dataUrl; }); (next.openQuestions || []).forEach(q => { if(q.sourcePdf) delete q.sourcePdf.dataUrl; }); return next; }
 
-async function api(action, payload = {}){
-  const res = await fetch(CONFIG.API_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...payload })
-  });
-  const data = await res.json();
-  if(!data.ok) throw new Error(data.error || 'Unknown API error');
-  return data;
+async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function api(action, payload = {}, options = {}){
+  const retries = options.retries ?? 2;
+  const timeoutMs = options.timeoutMs ?? 45000;
+  let lastError = null;
+  for(let attempt = 0; attempt <= retries; attempt++){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try{
+      const res = await fetch(CONFIG.API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...payload }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch(parseErr) { throw new Error(text || 'Invalid API response'); }
+      if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if(!data.ok) throw new Error(data.error || 'Unknown API error');
+      return data;
+    }catch(err){
+      clearTimeout(timer);
+      lastError = err;
+      if(attempt < retries) await sleep(700 * (attempt + 1));
+    }
+  }
+  throw lastError || new Error('Request failed');
 }
 
 async function readFileAsText(file){
@@ -329,7 +350,7 @@ async function uploadPdfInChunks(file, exam, examId=''){
   const dataUrl = await readFileAsDataUrl(file);
   const base64 = String(dataUrl).split(',')[1] || '';
   const uploadId = `pdf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const chunkSize = 45000;
+  const chunkSize = 12000;
   const totalChunks = Math.max(1, Math.ceil(base64.length / chunkSize));
   for(let i = 0; i < totalChunks; i++){
     const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
@@ -340,7 +361,8 @@ async function uploadPdfInChunks(file, exam, examId=''){
       totalChunks,
       pdfFileName: file.name,
       chunkData
-    });
+    }, { retries: 4, timeoutMs: 45000 });
+    if(i % 8 === 7) await sleep(150);
   }
   return api('finalizeChunkedUpload', {
     adminPassword: CONFIG.ADMIN_PASSWORD,
@@ -348,7 +370,7 @@ async function uploadPdfInChunks(file, exam, examId=''){
     pdfFileName: file.name,
     exam,
     examId
-  });
+  }, { retries: 3, timeoutMs: 90000 });
 }
 
 function useToast(){
