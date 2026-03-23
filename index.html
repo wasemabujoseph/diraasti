@@ -51,7 +51,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'الصف الثاني عشر - المسار الأكاديمي',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbz4Q5fWWqLptx2OR7_zG-DwBYNsiu9JYiSFrKCpPtztqKFOkLLfVP4xwTytAm5R2RE64w/exec',
+  API_BASE: 'https://script.google.com/macros/s/AKfycbzEoWpnOu8Mfh8vk9Bkny8iUd0CJ3hsmX_713fYtg_HAZCAZGqkuf-qi0PlH6Kv8QW2mQ/exec',
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: {
     user: 'dirasti_user_v8',
@@ -317,6 +317,32 @@ async function readFileAsDataUrl(file){
     reader.onerror = reject;
     reader.onload = () => resolve(String(reader.result || ''));
     reader.readAsDataURL(file);
+  });
+}
+
+async function uploadPdfInChunks(file, exam, examId=''){
+  const dataUrl = await readFileAsDataUrl(file);
+  const base64 = String(dataUrl).split(',')[1] || '';
+  const uploadId = `pdf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const chunkSize = 45000;
+  const totalChunks = Math.max(1, Math.ceil(base64.length / chunkSize));
+  for(let i = 0; i < totalChunks; i++){
+    const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
+    await api('uploadPdfChunk', {
+      adminPassword: CONFIG.ADMIN_PASSWORD,
+      uploadId,
+      chunkIndex: i,
+      totalChunks,
+      pdfFileName: file.name,
+      chunkData
+    });
+  }
+  return api('finalizeChunkedUpload', {
+    adminPassword: CONFIG.ADMIN_PASSWORD,
+    uploadId,
+    pdfFileName: file.name,
+    exam,
+    examId
   });
 }
 
@@ -1149,18 +1175,20 @@ function AdminModal({catalog, allResults, onRefresh, onClose, toast}){
         unitTitleAr: q.unitTitleAr || unitTitleAr || '',
         subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ''
       }));
-      let pdfDataUrl = '';
       let pdfFileName = exam.sourcePdf?.fileName || 'source.pdf';
       if(pdfFile){
-        pdfDataUrl = await readFileAsDataUrl(pdfFile);
         pdfFileName = pdfFile.name;
+        await uploadPdfInChunks(pdfFile, exam);
+      } else {
+        await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, exam, pdfFileName });
       }
-      await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, exam, pdfDataUrl, pdfFileName });
       toast('تم رفع الامتحان وPDF وفهرسة الأسئلة في البنك');
       setPdfFile(null);
       await onRefresh();
     }catch(err){
-      toast('فشل الرفع: ' + err.message, 'error');
+      const msg = String(err?.message || err || 'Unknown error');
+      const extra = msg.includes('NetworkError') ? ' جرّب إعادة نشر Apps Script أو تقليل حجم PDF، وهذه النسخة ترفع الملف على دفعات أصغر.' : '';
+      toast('فشل الرفع: ' + msg + extra, 'error');
     }finally{ setBusy(false); }
   }
 
