@@ -13,945 +13,731 @@
         extend: {
           colors: {
             brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              200: '#c7d2fe',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca'
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca'
             }
           },
           boxShadow: {
             soft: '0 20px 45px rgba(2, 6, 23, 0.10)',
-            glow: '0 18px 45px rgba(79, 70, 229, 0.20)'
+            glow: '0 18px 45px rgba(79, 70, 229, 0.22)'
           }
         }
       }
     };
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <style>
     body { font-family: Tahoma, Arial, sans-serif; }
     .glass { backdrop-filter: blur(18px); background: rgba(255,255,255,.72); }
     .dark .glass { background: rgba(15,23,42,.72); }
-    .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-    .scroll-thin::-webkit-scrollbar-thumb { background: rgba(100,116,139,.35); border-radius: 999px; }
   </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-  <div id="root"></div>
+<body class="bg-slate-50 dark:bg-slate-950">
+<div id="root"></div>
 
 <script type="text/babel">
-const { useEffect, useMemo, useState } = React;
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const {useEffect, useRef, useState} = React;
 
 const CONFIG = {
-  APP_NAME: 'دراستي',
-  APP_SUBTITLE: 'الصف الثاني عشر - المسار الأكاديمي',
-  API_BASE: '  API_BASE: 'https://script.google.com/macros/s/AKfycbyhnymffxedOirsKIyRHx21iTBRtuOJI2ECD3kNjN-uIihOE20JDolAwUnIcVmIxIcTcA/exec',',
-  ADMIN_PASSWORD: 'admin',
-  GOOGLE_OAUTH_CLIENT_ID: 'ضع هنا Google OAuth Client ID',
-  GOOGLE_DRIVE_UPLOAD_FOLDER_ID: 'ضع هنا Folder ID لو أردت حفظ كل PDFs في مجلد محدد',
+  APP_NAME: "دراستي",
+  APP_SUBTITLE: "منصة مذاكرة ذكية مبنية على الضعف والإتقان",
+  API_BASE: "https://script.google.com/macros/s/AKfycbzgHBjjA8CWtpEeQDKJtWS93xkT5o-73rrXkqsyNdxSXLYfin0qa_noS2YGzjoMw0U35w/exec",
+  ADMIN_PASSWORD: "admin",
   STORAGE_KEYS: {
-    user: 'dirasti_user_v8',
-    darkMode: 'dirasti_dark_v8'
+    user: "dirasti_user_v3",
+    darkMode: "dirasti_dark_v3"
   }
 };
 
-const STRICT_JSON_PROMPT = `You are converting an exam PDF into a STRICT, VALID JSON file for an online exam system.
-
-Your output must be a single raw JSON object only.
-
-CRITICAL OUTPUT RULES:
-1. Output JSON only.
-2. Do NOT add markdown fences.
-3. Do NOT wrap the JSON in quotation marks.
-4. Do NOT add comments.
-5. Do NOT add explanations before or after the JSON.
-6. Every property name must be in double quotes.
-7. Every string value must be in double quotes.
-8. Escape any internal double quotes inside text using backslash, like: \"example\"
-9. Do not leave trailing commas.
-10. The result must be directly parseable by JSON.parse().
-
-SOURCE RULES:
-1. Use ONLY the provided PDF content.
-2. Do NOT use outside knowledge.
-3. Do NOT invent questions, answers, images, charts, tables, or explanations.
-4. If an answer is not explicitly present in the PDF, set:
-   "correctIndex": null
-5. If a question depends on an image, chart, graph, table, or diagram in the PDF:
-   - identify the PDF page that contains that visual
-   - add a "pdfPageRef" object to that question
-6. The visual reference must come only from the PDF itself.
-7. If no visual is needed for a question, do not add "pdfPageRef".
-
-LANGUAGE AND TEXT RULES:
-1. Preserve the original question wording from the PDF as closely as possible.
-2. Preserve Arabic exactly as it appears, but fix obvious OCR junk only when necessary for readability.
-3. If the source contains quotation marks inside text, escape them properly.
-4. Keep question order exactly as in the PDF.
-5. Keep options order exactly as in the PDF.
-6. Do not paraphrase unless OCR is clearly broken.
-
-JSON SCHEMA:
-The output must follow this exact structure:
-
-{
-  "title": "",
-  "subjectCode": "",
-  "subjectAr": "",
-  "semester": null,
-  "unitTitleAr": "",
-  "subunitTitleAr": "",
-  "examMode": "OMR_MCQ",
-  "duration": null,
-  "sourcePdf": {
-    "fileName": "source.pdf"
-  },
-  "questions": [
-    {
-      "id": "q1",
-      "text": "",
-      "options": ["", "", "", ""],
-      "correctIndex": 0,
-      "explanation": ""
-    }
-  ],
-  "openQuestions": []
-}
-
-RULES FOR QUESTIONS:
-1. "id" must be sequential:
-   q1, q2, q3, q4 ...
-2. "text" must contain the full MCQ prompt.
-3. "options" must be an array of the visible answer choices in the same order as the PDF.
-4. "correctIndex" must be:
-   - 0 for first option
-   - 1 for second option
-   - 2 for third option
-   - 3 for fourth option
-5. If no answer is explicitly present in the PDF, use:
-   "correctIndex": null
-6. "explanation" should be:
-   - "" if no explanation exists in the PDF
-   - or copied from the PDF only if explicitly present
-7. Do not generate explanations from reasoning.
-
-RULES FOR VISUAL QUESTIONS:
-If a question depends on a picture, chart, graph, table, figure, or diagram from the PDF, add this field:
-
-"pdfPageRef": {
-  "page": 1,
-  "visualType": "image",
-  "description": "",
-  "showFullPage": true
-}
-
-RULES FOR pdfPageRef:
-1. "page" must be the PDF page number where the needed visual appears.
-2. "visualType" must be one of:
-   "image"
-   "chart"
-   "graph"
-   "table"
-   "diagram"
-3. "description" must briefly describe what exists on that page and how it relates to the question.
-4. "showFullPage" must always be true.
-5. Add "pdfPageRef" only if the question actually needs a visual from the PDF.
-
-IMPORTANT VALIDATION RULES:
-1. The final result must be one JSON object starting with { and ending with }.
-2. Do not output this:
-   "{ ... }"
-   It must be:
-   { ... }
-3. Make sure every object property is separated by a comma.
-4. Make sure there is no comma after the last property in an object.
-5. Make sure there is no comma after the last item in an array.
-6. Escape internal quotes inside Arabic or English text.
-7. Use null only without quotes when needed.
-8. Use true only without quotes.
-9. Do not use undefined.
-10. Do not invent extra fields outside the schema unless the question needs "pdfPageRef".
-
-FINAL INSTRUCTION:
-Return raw valid JSON only, matching the schema exactly, with no markdown, no surrounding quotes, no comments, and no extra text.`;
+console.log("Loaded CONFIG.API_BASE =", CONFIG.API_BASE);
 
 const CURRICULUM = {
-  gradeAr: 'الصف الثاني عشر',
-  trackAr: 'المسار الأكاديمي',
-  comprehensiveLabel: 'بنك شامل لكل المادة',
-  subjects: [
-    {
-      code: 'chemistry',
-      nameAr: 'الكيمياء',
-      colorFrom: 'from-indigo-700',
-      colorTo: 'to-slate-950',
-      units: [
-        { semester: 1, titleAr: 'حالات المادة', weight: 13.5 },
-        { semester: 1, titleAr: 'المحاليل', weight: 8 },
-        { semester: 1, titleAr: 'الاتزان الكيميائي', weight: 10.8 },
-        { semester: 1, titleAr: 'الحموض والقواعد وتطبيقاتها', weight: 18.9 },
-        { semester: 2, titleAr: 'الكيمياء الحركية', weight: 13.5 },
-        { semester: 2, titleAr: 'الكيمياء الكهربائية', weight: 17.5 },
-        { semester: 2, titleAr: 'الكيمياء العضوية', weight: 17.5 }
-      ]
-    },
-    {
-      code: 'life_sciences',
-      nameAr: 'الأحياء',
-      colorFrom: 'from-emerald-600',
-      colorTo: 'to-slate-950',
-      units: [
-        { semester: 1, titleAr: 'كيمياء الحياة', weight: 16.9 },
-        { semester: 1, titleAr: 'دورة الخلية وتصنيع البروتينات', weight: 12.8 },
-        { semester: 1, titleAr: 'الوراثة', weight: 14.9 },
-        { semester: 1, titleAr: 'التكنولوجيا الحيوية', weight: 8.2 },
-        { semester: 2, titleAr: 'التنظيم والاتزان', weight: 11.8 },
-        { semester: 2, titleAr: 'الدعامة والحركة', weight: 6.1 },
-        { semester: 2, titleAr: 'الهضم والنقل وتبادل الغازات', weight: 10.7 },
-        { semester: 2, titleAr: 'الإخراج والتكاثر', weight: 11.3 },
-        { semester: 2, titleAr: 'المناعة والمضادات الحيوية', weight: 6.9 }
-      ]
-    },
-    {
-      code: 'islamic_education',
-      nameAr: 'التربية الإسلامية',
-      colorFrom: 'from-amber-500',
-      colorTo: 'to-slate-950',
-      units: [
-        { semester: 1, titleAr: 'علاقة الإنسان بربه', weight: 16.66 },
-        { semester: 1, titleAr: 'علاقة الإنسان بنفسه', weight: 16.66 },
-        { semester: 1, titleAr: 'علاقة الإنسان بمن حوله', weight: 16.66 },
-        { semester: 2, titleAr: 'علاقة الإنسان بربه', weight: 16.66 },
-        { semester: 2, titleAr: 'علاقة الإنسان بنفسه', weight: 16.66 },
-        { semester: 2, titleAr: 'علاقة الإنسان بمن حوله', weight: 16.66 }
-      ]
-    },
-    {
-      code: 'english_advanced',
-      nameAr: 'Advance English',
-      colorFrom: 'from-fuchsia-600',
-      colorTo: 'to-slate-950',
-      units: [
-        { semester: 1, titleAr: 'Unit 1', weight: 10 },
-        { semester: 1, titleAr: 'Unit 2', weight: 10 },
-        { semester: 1, titleAr: 'Unit 3', weight: 10 },
-        { semester: 1, titleAr: 'Unit 4', weight: 10 },
-        { semester: 1, titleAr: 'Unit 5', weight: 10 },
-        { semester: 2, titleAr: 'Unit 6', weight: 10 },
-        { semester: 2, titleAr: 'Unit 7', weight: 10 },
-        { semester: 2, titleAr: 'Unit 8', weight: 10 },
-        { semester: 2, titleAr: 'Unit 9', weight: 10 },
-        { semester: 2, titleAr: 'Unit 10', weight: 10 }
-      ]
-    }
+  "gradeAr": "الصف الثاني عشر - المسار الأكاديمي",
+  "trackAr": "الحقل الطبي",
+  "subjects": [
+    {"code":"chemistry","nameAr":"الكيمياء","examMode":"OMR_MCQ","semesters":[
+      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[
+        {"titleAr":"حالات المادة","subunits":["تجربة استهلالية: العلاقة بين حجم الغاز ودرجة حرارته عند ثبات الضغط","قانون بويل","العوامل المؤثرة في سرعة التبخر","أسئلة تفكير"]},
+        {"titleAr":"المحاليل","subunits":["تجربة استهلالية: خصائص المخاليط","الانخفاض في درجة تجمد المحلول","أسئلة تفكير"]},
+        {"titleAr":"الاتزان الكيميائي","subunits":["تجربة استهلالية: تسامي اليود","أثر التركيز على موضع الاتزان","أثر درجة الحرارة على الاتزان","أسئلة تفكير"]},
+        {"titleAr":"الحموض والقواعد وتطبيقاتها","subunits":["تجربة استهلالية: خصائص الحمض والقاعدة","مقارنة قوة الحموض","معايرة حمض قوي بقاعدة قوية","تأين الأملاح","أسئلة تفكير"]}
+      ]},
+      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[]}
+    ]},
+    {"code":"life_sciences","nameAr":"العلوم الحياتية","examMode":"OMR_MCQ","semesters":[
+      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[
+        {"titleAr":"وحدة مرتبطة بالطفرات الجينية / DNA","subunits":["نشاط: محاكاة الطفرة الجينية"]},
+        {"titleAr":"التكنولوجيا الحيوية","subunits":["تجربة استهلالية: حل لغز الجريمة","نشاط: محاكاة عمل إنزيمات القطع المحدد","نشاط: استخلاص DNA من خلايا باطن الخد","أسئلة مثيرة للتفكير","أسئلة إضافية"]}
+      ]},
+      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[]}
+    ]},
+    {"code":"english","nameAr":"اللغة الانجليزية","examMode":"HYBRID","semesters":[
+      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[
+        {"titleAr":"Identity","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
+        {"titleAr":"On the move","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
+        {"titleAr":"Hard sell","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Lesson 5B","Self-assessment","Revision"]},
+        {"titleAr":"Tastes","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Lesson 5B","Self-assessment","Revision"]},
+        {"titleAr":"Do your best","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]}
+      ]},
+      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[
+        {"titleAr":"Feels good","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
+        {"titleAr":"The creative urge","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
+        {"titleAr":"Follow the crowd?","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Lesson 5B","Self-assessment","Revision"]},
+        {"titleAr":"Unbelievable","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]},
+        {"titleAr":"Up the ladder","subunits":["Lesson 1B","Lesson 2B","Lesson 3B","Lesson 4B","Self-assessment","Revision"]}
+      ]}
+    ]},
+    {"code":"islamic_education","nameAr":"التربية الاسلامية","examMode":"OMR_MCQ","semesters":[
+      {"semester":1,"titleAr":"الفصل الدراسي الأول","units":[]},
+      {"semester":2,"titleAr":"الفصل الدراسي الثاني","units":[{"titleAr":"الوحدة الأولى","subunits":["السنن الإلهية وتعظيم الشعائر والزكاة"]}]}
+    ]}
   ]
 };
 
 const SAMPLE_EXAM = {
-  title: 'الكيمياء - حالات المادة - نموذج PDF + JSON',
-  subjectCode: 'chemistry',
-  subjectAr: 'الكيمياء',
+  title: "الكيمياء - قانون بويل - تدريب علاجي",
+  subjectCode: "chemistry",
+  subjectAr: "الكيمياء",
   semester: 1,
-  unitTitleAr: 'حالات المادة',
-  subunitTitleAr: '',
-  examMode: 'OMR_MCQ',
+  unitTitleAr: "حالات المادة",
+  subunitTitleAr: "قانون بويل",
+  examMode: "OMR_MCQ",
   duration: 1800,
-  sourcePdf: { fileName: 'source.pdf' },
   questions: [
     {
-      id: 'q1',
-      text: 'اعتمادًا على الشكل الموجود في صفحة الـ PDF، أي العبارات التالية صحيحة؟',
-      options: ['أ', 'ب', 'ج', 'د'],
-      correctIndex: null,
-      explanation: '',
-      pdfPageRef: {
-        page: 2,
-        visualType: 'chart',
-        description: 'هذه الصفحة تحتوي الشكل المستخدم في السؤال.',
-        showFullPage: true
-      }
+      id: "chem-boyle-1",
+      text: "إذا قل حجم الغاز إلى النصف عند ثبوت درجة الحرارة فإن الضغط:",
+      options: ["يبقى ثابتًا", "يتضاعف", "ينخفض للنصف", "يصبح صفرًا"],
+      correctIndex: 1,
+      difficulty: "medium",
+      explanation: "بحسب قانون بويل العلاقة عكسية بين الحجم والضغط عند ثبوت الحرارة."
     }
   ],
   openQuestions: []
 };
 
-function cls(...parts){ return parts.filter(Boolean).join(' '); }
-function unitKey(subjectCode, semester, unitTitleAr){ return [subjectCode || '', semester == null ? '' : semester, unitTitleAr || ''].join('||'); }
-function getSubjectByCode(code){ return CURRICULUM.subjects.find(s => s.code === code) || null; }
-function getBankUnitMap(summary){ return summary?.byUnit || {}; }
-function loadLocal(key, fallback){ try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch{ return fallback; } }
+function cls(...arr){ return arr.filter(Boolean).join(" "); }
 function saveLocal(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-function formatDate(value){ if(!value) return ''; try{ return new Date(value).toLocaleString('ar-JO'); }catch{ return value; } }
-function normalizeText(v){ return String(v || '').trim().toLowerCase(); }
-function round2(n){ return Math.round(Number(n || 0) * 100) / 100; }
-function copy(obj){ return JSON.parse(JSON.stringify(obj)); }
-function stripExamDataUrl(exam){ const next = copy(exam || {}); if(next.sourcePdf) delete next.sourcePdf.dataUrl; (next.questions || []).forEach(q => { if(q.sourcePdf) delete q.sourcePdf.dataUrl; }); (next.openQuestions || []).forEach(q => { if(q.sourcePdf) delete q.sourcePdf.dataUrl; }); return next; }
+function loadLocal(key, fallback=null){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback;}catch{return fallback;} }
+function normalizeText(v=""){ return String(v).trim().toLowerCase(); }
+function formatDate(ts){ try{return new Date(ts).toLocaleString("ar-JO");}catch{return ts || "-";} }
+function formatMinutes(sec=0){ return Math.max(1, Math.round(sec/60)); }
+function initials(name=""){ return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase(); }
+function getSubjectByCode(code){ return CURRICULUM.subjects.find(s => s.code === code); }
+function getSemester(subjectCode, semester){ return getSubjectByCode(subjectCode)?.semesters?.find(s => Number(s.semester) === Number(semester)); }
+function getUnits(subjectCode, semester){ return getSemester(subjectCode, semester)?.units || []; }
+function getSubunits(subjectCode, semester, unitTitle){ return getUnits(subjectCode, semester).find(u => u.titleAr === unitTitle)?.subunits || []; }
 
-async function api(action, payload = {}){
-  let res;
-  try {
-    res = await fetch(CONFIG.API_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      cache: 'no-store',
-      redirect: 'follow',
-      body: JSON.stringify({ action, ...payload, _ts: Date.now() })
-    });
-  } catch (networkErr) {
-    throw new Error('تعذر الوصول إلى Google Apps Script. تأكد من إعادة النشر وأن صلاحية Web App تسمح بالوصول. ' + (networkErr && networkErr.message ? networkErr.message : networkErr));
+async function api(action, payload = {}) {
+  console.log("Runtime API_BASE:", CONFIG.API_BASE);
+
+  const cleanApi = String(CONFIG.API_BASE || "").trim();
+
+  if (!cleanApi) {
+    throw new Error("CONFIG.API_BASE فارغ");
   }
-  const raw = await res.text();
+
+  if (!cleanApi.startsWith("https://script.google.com/macros/s/")) {
+    throw new Error("رابط Google Apps Script غير صالح");
+  }
+
+  const res = await fetch(cleanApi, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, ...payload })
+  });
+
+  if (!res.ok) {
+    throw new Error("فشل الاتصال بالخادم");
+  }
+
   let data;
   try {
-    data = raw ? JSON.parse(raw) : {};
-  } catch (parseErr) {
-    throw new Error('استجابة الخادم ليست JSON صالحًا. تأكد من استخدام رابط /exec المنشور حديثًا.');
+    data = await res.json();
+  } catch (err) {
+    throw new Error("الخادم لم يرجع JSON صحيح");
   }
-  if(!data.ok) throw new Error(data.error || 'Unknown API error');
+
+  if (!data.ok) {
+    throw new Error(data.error || "API Error");
+  }
+
   return data;
-}
-
-async function readFileAsText(file){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.readAsText(file, 'utf-8');
-  });
-}
-
-async function readFileAsDataUrl(file){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function uploadPdfInChunks(file, exam, examId=''){
-  const dataUrl = await readFileAsDataUrl(file);
-  const base64 = String(dataUrl).split(',')[1] || '';
-  const uploadId = `pdf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const chunkSize = 12000;
-  const totalChunks = Math.max(1, Math.ceil(base64.length / chunkSize));
-
-  async function sendChunkWithRetry(i, chunkData){
-    let lastErr = null;
-    for(let attempt = 1; attempt <= 3; attempt++){
-      try {
-        return await api('uploadPdfChunk', {
-          adminPassword: CONFIG.ADMIN_PASSWORD,
-          uploadId,
-          chunkIndex: i,
-          totalChunks,
-          pdfFileName: file.name,
-          chunkData
-        });
-      } catch (err) {
-        lastErr = err;
-        await new Promise(resolve => setTimeout(resolve, 350 * attempt));
-      }
-    }
-    throw lastErr || new Error('فشل رفع جزء من ملف PDF');
-  }
-
-  for(let i = 0; i < totalChunks; i++){
-    const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
-    await sendChunkWithRetry(i, chunkData);
-  }
-
-  return api('finalizeChunkedUpload', {
-    adminPassword: CONFIG.ADMIN_PASSWORD,
-    uploadId,
-    pdfFileName: file.name,
-    exam,
-    examId
-  });
 }
 
 function useToast(){
   const [toast, setToast] = useState(null);
-  function show(message, tone='success'){
-    setToast({ id: Date.now(), message, tone });
-    setTimeout(() => setToast(null), 3600);
-  }
-  return { toast, show, clear: () => setToast(null) };
-}
-
-function Button({variant='brand', className='', ...props}){
-  const styles = {
-    brand: 'bg-brand-600 hover:bg-brand-700 text-white shadow-glow',
-    outline: 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100',
-    soft: 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
-    ghost: 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-  };
-  return <button {...props} className={cls('px-4 py-3 rounded-2xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed', styles[variant], className)} />;
-}
-
-function Card({className='', children}){ return <div className={cls('rounded-[28px] bg-white dark:bg-slate-900 shadow-soft border border-slate-200/80 dark:border-slate-800', className)}>{children}</div>; }
-function Input({label, hint, className='', ...props}){ return <label className="block"><div className="text-sm font-bold mb-2">{label}</div><input {...props} className={cls('w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500', className)} />{hint ? <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}</label>; }
-function Select({label, children, className='', ...props}){ return <label className="block"><div className="text-sm font-bold mb-2">{label}</div><select {...props} className={cls('w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500', className)}>{children}</select></label>; }
-function TextArea({label, hint, className='', ...props}){ return <label className="block"><div className="text-sm font-bold mb-2">{label}</div><textarea {...props} className={cls('w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500', className)} />{hint ? <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}</label>; }
-
-function Modal({title, subtitle, onClose, children, maxWidth='max-w-6xl'}){
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className={cls('mx-auto w-full', maxWidth)}>
-        <Card className="p-5 md:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-black">{title}</h2>
-              {subtitle ? <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">{subtitle}</div> : null}
-            </div>
-            <Button variant="outline" onClick={onClose}>إغلاق</Button>
-          </div>
-          <div className="mt-6">{children}</div>
-        </Card>
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    if(!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+  return { toast, show:(message,type="success")=>setToast({message,type}), clear:()=>setToast(null) };
 }
 
 function Toast({toast, onClose}){
   if(!toast) return null;
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60]">
-      <div className={cls('rounded-2xl px-4 py-3 shadow-soft text-white', toast.tone === 'error' ? 'bg-red-600' : 'bg-slate-900')}>
-        <div className="flex items-center gap-3"><span>{toast.message}</span><button onClick={onClose} className="text-white/80">×</button></div>
+    <div className="fixed bottom-4 left-4 right-4 md:right-6 md:left-auto md:w-[360px] z-[80]">
+      <div className={cls("rounded-2xl border px-4 py-3 shadow-soft",
+        toast.type==="error" ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-200" :
+        "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900 dark:text-emerald-200")}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="font-semibold text-sm">{toast.message}</div>
+          <button className="opacity-70 hover:opacity-100" onClick={onClose}>✕</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Card({children, className=""}) {
+  return <div className={cls("rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft", className)}>{children}</div>;
+}
+
+function Button({children, variant="primary", className="", ...props}){
+  const variants = {
+    primary:"bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-95",
+    brand:"bg-brand-600 text-white hover:bg-brand-700 shadow-glow",
+    soft:"bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white",
+    outline:"border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white",
+    danger:"bg-red-600 text-white hover:bg-red-700"
+  };
+  return <button {...props} className={cls("px-4 py-3 rounded-2xl font-bold transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed", variants[variant], className)}>{children}</button>;
+}
+
+function Input({label, hint, className="", ...props}){
+  return <label className="block">{label ? <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</div> : null}
+    <input {...props} className={cls("w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-4 py-3 outline-none focus:ring-4 focus:ring-brand-100 dark:focus:ring-brand-950", className)} />
+    {hint ? <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}
+  </label>;
+}
+
+function Select({label, children, className="", ...props}){
+  return <label className="block">{label ? <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</div> : null}
+    <select {...props} className={cls("w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-4 py-3 outline-none focus:ring-4 focus:ring-brand-100 dark:focus:ring-brand-950", className)}>{children}</select>
+  </label>;
+}
+
+function TextArea({label, hint, className="", ...props}){
+  return <label className="block">{label ? <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</div> : null}
+    <textarea {...props} className={cls("w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 px-4 py-3 outline-none focus:ring-4 focus:ring-brand-100 dark:focus:ring-brand-950", className)} />
+    {hint ? <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}
+  </label>;
+}
+
+function RichText({text}){
+  const ref = useRef(null);
+  useEffect(() => {
+    if(ref.current && window.renderMathInElement){
+      window.renderMathInElement(ref.current, {
+        delimiters:[
+          {left:"$$", right:"$$", display:true},
+          {left:"$", right:"$", display:false}
+        ],
+        throwOnError:false
+      });
+    }
+  }, [text]);
+  return <div ref={ref} className="whitespace-pre-wrap leading-8">{text || ""}</div>;
+}
+
+function Modal({title, subtitle, onClose, children, maxWidth="max-w-6xl"}){
+  useEffect(() => {
+    const handler = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-4 overflow-auto">
+      <div className={cls("mx-auto mt-6", maxWidth)}>
+        <div className="rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
+          <div className="glass sticky top-0 z-10 flex items-start justify-between gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white">{title}</h2>
+              {subtitle ? <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p> : null}
+            </div>
+            <Button variant="outline" onClick={onClose}>إغلاق</Button>
+          </div>
+          <div className="p-5">{children}</div>
+        </div>
       </div>
     </div>
   );
 }
 
 function EmptyState({title, body, action}){
-  return <Card className="p-8 text-center"><div className="text-xl font-black">{title}</div><div className="mt-2 text-slate-500 dark:text-slate-400">{body}</div>{action ? <div className="mt-4">{action}</div> : null}</Card>;
-}
-
-function LoginScreen({onLogin}){
-  const [name, setName] = useState('');
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-slate-100 dark:bg-slate-950">
-      <div className="max-w-6xl mx-auto min-h-screen grid lg:grid-cols-2 gap-6 items-center">
-        <Card className="p-8 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
-          <div className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-bold">PDF + JSON</div>
-          <h1 className="mt-6 text-4xl md:text-5xl font-black">{CONFIG.APP_NAME}</h1>
-          <p className="mt-3 text-white/80 leading-8">{CONFIG.APP_SUBTITLE}</p>
-          <div className="mt-8 grid sm:grid-cols-2 gap-4">
-            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">4 مواد</div><div className="text-white/75 text-sm">واجهة منظمة حسب المادة والوحدة</div></div>
-            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">PDF</div><div className="text-white/75 text-sm">عرض الصفحة الأصلية بجانب السؤال</div></div>
-            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">Redo</div><div className="text-white/75 text-sm">إعادة نفس الأسئلة الخاطئة</div></div>
-            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">Custom</div><div className="text-white/75 text-sm">امتحان مخصص من البنك حسب الأوزان أو يدويًا</div></div>
-          </div>
-        </Card>
-        <Card className="p-8">
-          <div className="text-sm font-bold text-brand-600 dark:text-brand-300">ابدأ الآن</div>
-          <h2 className="mt-2 text-3xl font-black">دخول الطالب</h2>
-          <p className="mt-2 text-slate-500 dark:text-slate-400">اكتب اسمك للدخول، وستُحفظ محاولاتك ومراجعاتك لاحقًا.</p>
-          <div className="mt-6 space-y-4">
-            <Input label="الاسم الكامل" placeholder="مثال: أحمد محمد" value={name} onChange={e => setName(e.target.value)} />
-            <Button variant="brand" className="w-full" onClick={() => {
-              const clean = name.trim();
-              if(!clean) return alert('أدخل الاسم أولًا');
-              const user = { id: clean.replace(/\s+/g, '_'), name: clean };
-              saveLocal(CONFIG.STORAGE_KEYS.user, user);
-              onLogin(user);
-            }}>الدخول إلى دراستي</Button>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function TopBar({user, darkMode, onToggleDark, onLogout, onOpenAdmin, onGoHome, title}){
-  return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto p-3 md:p-4 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-          <Button variant="danger" className="!px-4 !py-2 text-sm" onClick={onLogout}>خروج</Button>
-          <Button variant="outline" className="!px-4 !py-2 text-sm" onClick={onOpenAdmin}>لوحة الإدارة</Button>
-          <Button variant="soft" className="!px-3 !py-2 text-lg" onClick={onToggleDark}>{darkMode ? '☀️' : '🌙'}</Button>
-          <div className="rounded-2xl bg-slate-100 dark:bg-slate-900 px-3 py-2 text-sm font-bold">{user.name}</div>
-        </div>
-        <button onClick={onGoHome} className="text-right">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-brand-600 text-white flex items-center justify-center text-2xl font-black">د</div>
-            <div>
-              <div className="font-black text-lg">{CONFIG.APP_NAME}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">{title || CONFIG.APP_SUBTITLE}</div>
-            </div>
-          </div>
-        </button>
-      </div>
-    </header>
-  );
-}
-
-function SubjectCard({subject, exams, questionBankCount, onOpen}){
-  return (
-    <button onClick={() => onOpen(subject.code)} className="text-right">
-      <Card className={cls('p-6 h-full bg-gradient-to-br text-white border-none shadow-glow', subject.colorFrom, subject.colorTo)}>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-sm text-white/75">{CONFIG.APP_NAME}</div>
-            <div className="mt-2 text-3xl font-black">{subject.nameAr}</div>
-          </div>
-          <div className="text-xs font-bold rounded-full px-3 py-2 bg-white/10">{subject.code === 'english_advanced' ? 'ADV' : 'OMR_MCQ'}</div>
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-3xl bg-white/10 p-4"><div className="text-white/70 text-sm">الامتحانات</div><div className="text-3xl font-black mt-2">{exams.length}</div></div>
-          <div className="rounded-3xl bg-white/10 p-4"><div className="text-white/70 text-sm">بنك الأسئلة</div><div className="text-3xl font-black mt-2">{questionBankCount || 0}</div></div>
-        </div>
-        <div className="mt-4 text-sm text-white/80">اضغط لعرض الوحدات والامتحانات والامتحان المخصص.</div>
-      </Card>
-    </button>
-  );
-}
-
-function HomeScreen({catalog, results, analytics, onOpenSubject}){
-  const recent = results.slice(0, 4);
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
-        <div className="grid lg:grid-cols-[1.4fr,1fr] gap-5 items-center">
-          <div>
-            <div className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-bold">الواجهة الجديدة حسب المادة ← الوحدة ← الامتحان</div>
-            <h1 className="mt-4 text-3xl md:text-4xl font-black">اختر المادة أولًا</h1>
-            <p className="mt-3 text-white/80 leading-8">بعد دخول الطالب سيشاهد المواد الأربع كبطاقات كبيرة، ثم الوحدات، ثم الامتحانات الخاصة بكل وحدة، مع حفظ النتائج والمراجعة الدائمة.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">نتائجك</div><div className="text-3xl font-black mt-2">{results.length}</div></div>
-            <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">إتقانك العام</div><div className="text-3xl font-black mt-2">{analytics.overallMastery ?? 0}%</div></div>
-            <div className="rounded-3xl bg-white/10 p-4 col-span-2"><div className="text-sm text-white/70">راجع واحتفظ بكل محاولاتك</div><div className="mt-2 font-bold">يمكنك مراجعة أي امتحان سابق وإعادة أخطائك فقط في أي وقت.</div></div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {CURRICULUM.subjects.map(subject => (
-          <SubjectCard
-            key={subject.code}
-            subject={subject}
-            exams={(catalog.exams || []).filter(ex => ex.subjectCode === subject.code)}
-            questionBankCount={catalog.questionBankSummary?.bySubject?.[subject.code] || 0}
-            onOpen={onOpenSubject}
-          />
-        ))}
-      </div>
-
-      {recent.length ? (
-        <Card className="p-6">
-          <h2 className="text-2xl font-black">آخر محاولاتك</h2>
-          <div className="mt-5 grid lg:grid-cols-2 gap-4">
-            {recent.map(r => (
-              <div key={r.attemptId} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-black">{r.examTitle || r.subjectAr}</div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">{r.unitTitleAr || r.subjectAr} • {formatDate(r.createdAt)}</div>
-                  </div>
-                  <div className="text-3xl font-black text-brand-600 dark:text-brand-300">{r.score}%</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : null}
-    </div>
-  );
-}
-
-function UnitStatCard({unit, selected, onSelect, bankCount, examCount}){
-  return (
-    <button onClick={() => onSelect(unit.key)} className="text-right">
-      <Card className={cls('p-5 h-full transition', selected ? 'ring-2 ring-brand-500 border-brand-300 dark:border-brand-700' : '')}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{unit.isComprehensive ? 'الفصلان معًا' : `الفصل ${Number(unit.semester) === 1 ? 'الأول' : 'الثاني'}`}</div>
-          {unit.weight != null ? <div className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-sm font-black">{unit.weight}%</div> : <div className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-sm font-black">شامل</div>}
-        </div>
-        <div className="mt-2 text-2xl font-black">{unit.unitTitleAr}</div>
-        <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{unit.isComprehensive ? 'يغطي الفصول أو الوحدات كلها' : 'امتحانات الوحدة + بنك الأسئلة الخاص بها'}</div>
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-xs text-slate-500 dark:text-slate-400">بنك الأسئلة</div><div className="mt-1 text-2xl font-black">{bankCount}</div></div>
-          <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-xs text-slate-500 dark:text-slate-400">امتحانات</div><div className="mt-1 text-2xl font-black">{examCount}</div></div>
-        </div>
-      </Card>
-    </button>
-  );
-}
-
-function StartExamCard({exam, latestAttempt, onStart, onReview, onRedoWrong, onRetakeWhole}){
-  const correct = Number(latestAttempt?.correctCount || 0);
-  const total = Number(latestAttempt?.totalMcq || exam.questionCount || 0);
-  const wrong = total ? Math.max(0, total - correct) : 0;
-  const canRedoWrong = !!latestAttempt && Array.isArray(latestAttempt.wrongItems) && latestAttempt.wrongItems.length > 0;
-  return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{exam.examMode || 'OMR_MCQ'}</div>
-          <div className="mt-2 text-xl font-black">{exam.title}</div>
-          <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr} • {exam.unitTitleAr || 'بدون وحدة'}</div>
-        </div>
-        <div className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-sm font-black">{exam.duration ? Math.round(exam.duration / 60) : '-'} د</div>
-      </div>
-      <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-xs text-slate-500 dark:text-slate-400">MCQ</div><div className="font-black text-xl mt-1">{exam.questionCount}</div></div>
-        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-xs text-slate-500 dark:text-slate-400">تغيير الوقت</div><div className="font-black text-sm mt-2">{exam.settings?.allowStudentChangeTime ? 'متاح' : 'مغلق'}</div></div>
-        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-xs text-slate-500 dark:text-slate-400">آخر صحيح</div><div className="font-black text-xl mt-1">{latestAttempt ? correct : '-'}</div></div>
-        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-xs text-slate-500 dark:text-slate-400">آخر خطأ</div><div className="font-black text-xl mt-1">{latestAttempt ? wrong : '-'}</div></div>
-      </div>
-      {latestAttempt ? <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">آخر محاولة: {formatDate(latestAttempt.createdAt)} • النتيجة {latestAttempt.score}%</div> : <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">لم يتم تقديم هذا الامتحان بعد.</div>}
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Button variant="brand" onClick={() => onStart(exam)}>ابدأ الامتحان</Button>
-        {latestAttempt ? <Button variant="outline" onClick={() => onReview(latestAttempt.attemptId)}>مراجعة</Button> : null}
-        {canRedoWrong ? <Button variant="soft" onClick={() => onRedoWrong(latestAttempt)}>إعادة الخاطئ فقط</Button> : null}
-        {latestAttempt ? <Button variant="soft" onClick={() => onRetakeWhole(exam)}>إعادة الامتحان كاملًا</Button> : null}
-      </div>
+    <Card className="p-8 text-center">
+      <div className="mx-auto h-14 w-14 rounded-3xl bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center text-2xl">✨</div>
+      <h3 className="mt-4 text-xl font-black text-slate-900 dark:text-white">{title}</h3>
+      <p className="mt-2 text-slate-500 dark:text-slate-400">{body}</p>
+      {action ? <div className="mt-5">{action}</div> : null}
     </Card>
   );
 }
 
-function SubjectPage({subjectCode, catalog, results, analytics, onBackHome, onStartExam, onReviewAttempt, onRedoAttempt, onOpenCustomExam}){
-  const subject = getSubjectByCode(subjectCode);
-  const subjectExams = (catalog.exams || []).filter(ex => ex.subjectCode === subjectCode);
-  const bankSummary = catalog.questionBankSummary || {};
-  const unitMap = getBankUnitMap(bankSummary);
-  const comprehensiveLabel = CURRICULUM.comprehensiveLabel;
-  const unitCards = useMemo(() => {
-    const list = (subject?.units || []).map(u => ({ ...u, key: unitKey(subjectCode, u.semester, u.titleAr), unitTitleAr: u.titleAr }));
-    list.push({ semester: 'both', titleAr: comprehensiveLabel, unitTitleAr: comprehensiveLabel, weight: null, isComprehensive: true, key: unitKey(subjectCode, 'both', comprehensiveLabel) });
-    return list;
-  }, [subjectCode]);
-  const [tab, setTab] = useState('units');
-  const [selectedUnitKey, setSelectedUnitKey] = useState(unitCards[0]?.key || '');
-  useEffect(() => { setSelectedUnitKey(unitCards[0]?.key || ''); }, [subjectCode]);
+function LoginScreen({onLogin}){
+  const [name, setName] = useState("");
 
-  const selectedUnit = unitCards.find(u => u.key === selectedUnitKey) || unitCards[0];
-  const examsForSelectedUnit = useMemo(() => {
-    if(!selectedUnit) return [];
-    if(selectedUnit.isComprehensive){
-      return subjectExams.filter(ex => ex.unitTitleAr === comprehensiveLabel || String(ex.semester) === 'both');
-    }
-    return subjectExams.filter(ex => String(ex.semester) === String(selectedUnit.semester) && ex.unitTitleAr === selectedUnit.unitTitleAr);
-  }, [selectedUnitKey, subjectExams]);
+  return (
+    <div className="min-h-screen p-4 md:p-8 bg-slate-50 dark:bg-slate-950">
+      <div className="max-w-6xl mx-auto min-h-screen grid lg:grid-cols-2 gap-6 items-center">
+        <Card className="p-8 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
+          <div className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-bold">جاهز لربط GitHub Pages + Google Apps Script</div>
+          <h1 className="mt-6 text-4xl md:text-5xl font-black">{CONFIG.APP_NAME}</h1>
+          <p className="mt-4 text-white/80 leading-8">{CONFIG.APP_SUBTITLE}</p>
+          <div className="mt-8 grid sm:grid-cols-2 gap-4">
+            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">4</div><div className="text-white/75 text-sm">مواد أساسية</div></div>
+            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">Redo</div><div className="text-white/75 text-sm">إعادة الأخطاء</div></div>
+            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">OMR</div><div className="text-white/75 text-sm">كيمياء وأحياء وإسلامية</div></div>
+            <div className="rounded-3xl bg-white/10 p-4"><div className="font-black text-2xl">Hybrid</div><div className="text-white/75 text-sm">إنجليزي متعدد الأقسام</div></div>
+          </div>
+        </Card>
 
-  const resultsByExam = useMemo(() => {
-    const map = {};
-    results.forEach(r => {
-      if(!r.examId || (r.subjectCode !== subjectCode)) return;
-      if(!map[r.examId] || new Date(r.createdAt) > new Date(map[r.examId].createdAt)) map[r.examId] = r;
-    });
-    return map;
-  }, [results, subjectCode]);
+        <Card className="p-8">
+          <div className="text-sm font-bold text-brand-600 dark:text-brand-300">ابدأ الآن</div>
+          <h2 className="mt-2 text-3xl font-black text-slate-900 dark:text-white">دخول الطالب</h2>
+          <p className="mt-2 text-slate-500 dark:text-slate-400">سجّل باسمك وابدأ الاختبارات أو التدريب العلاجي.</p>
+          <div className="mt-6 space-y-4">
+            <Input label="الاسم الكامل" placeholder="مثال: أحمد محمد" value={name} onChange={e => setName(e.target.value)} />
+            <Button
+              variant="brand"
+              className="w-full"
+              onClick={() => {
+                const clean = name.trim();
+                if(!clean) return alert("أدخل الاسم أولًا");
+                const user = { id: clean.replace(/\s+/g,"_"), name: clean };
+                saveLocal(CONFIG.STORAGE_KEYS.user, user);
+                onLogin(user);
+              }}
+            >
+              الدخول إلى دراستي
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
-  const subjectAnalytics = analytics?.unitStats?.filter(u => u.subjectCode === subjectCode) || [];
-  const subjectAttempts = results.filter(r => r.subjectCode === subjectCode).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const totalBankQuestions = bankSummary.bySubject?.[subjectCode] || 0;
+function TopBar({user, darkMode, onToggleDark, onLogout, onOpenAdmin, onGoHome}){
+  return (
+    <div className="sticky top-0 z-30 glass border-b border-slate-200 dark:border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <button onClick={onGoHome} className="flex items-center gap-3 min-w-0">
+          <div className="h-11 w-11 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-black shadow-glow">د</div>
+          <div className="text-right min-w-0">
+            <div className="font-black text-slate-900 dark:text-white truncate">{CONFIG.APP_NAME}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{CURRICULUM.gradeAr} - {CURRICULUM.trackAr}</div>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3 rounded-2xl bg-slate-100 dark:bg-slate-800 px-3 py-2">
+            <div className="h-9 w-9 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black">{initials(user.name)}</div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-slate-900 dark:text-white">{user.name}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">طالب</div>
+            </div>
+          </div>
+          <Button variant="soft" onClick={onToggleDark}>{darkMode ? "☀️" : "🌙"}</Button>
+          <Button variant="outline" className="hidden sm:block" onClick={onOpenAdmin}>لوحة الإدارة</Button>
+          <Button variant="danger" className="hidden sm:block" onClick={onLogout}>خروج</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExamCard({exam, onStart}){
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-lg font-black text-slate-900 dark:text-white">{exam.title || exam.subjectAr || exam.subject || "-"}</div>
+          <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr || exam.subject} • {exam.unitTitleAr || "بدون وحدة"} {exam.subunitTitleAr ? `• ${exam.subunitTitleAr}` : ""}</div>
+        </div>
+        <div className="rounded-2xl bg-brand-50 dark:bg-brand-950/40 px-3 py-2 text-brand-700 dark:text-brand-300 text-sm font-bold">{exam.examMode || "عام"}</div>
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
+        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-slate-500 dark:text-slate-400">الدقائق</div><div className="font-black mt-1">{formatMinutes(exam.duration)}</div></div>
+        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-slate-500 dark:text-slate-400">MCQ</div><div className="font-black mt-1">{(exam.questions||[]).length}</div></div>
+        <div className="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div className="text-slate-500 dark:text-slate-400">مقالي</div><div className="font-black mt-1">{(exam.openQuestions||[]).length}</div></div>
+      </div>
+      <Button variant="brand" className="w-full mt-5" onClick={() => onStart(exam.id)}>ابدأ الآن</Button>
+    </Card>
+  );
+}
+
+function MasterySection({analytics}){
+  const subjectRows = analytics?.subjectMastery || [];
+  const unitRows = analytics?.unitMastery || [];
 
   return (
     <div className="space-y-6">
-      <Card className={cls('p-6 bg-gradient-to-br text-white border-none shadow-glow', subject.colorFrom, subject.colorTo)}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <Card className="p-5">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white">الإتقان حسب المادة</h3>
+        <div className="mt-5 grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {subjectRows.length ? subjectRows.map((row, i) => (
+            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="font-black text-slate-900 dark:text-white">{row.subjectAr}</div>
+              <div className="mt-2 text-3xl font-black text-brand-600 dark:text-brand-300">{row.mastery}%</div>
+              <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">محاولات: {row.attempts} • أخطاء: {row.wrongs}</div>
+            </div>
+          )) : <div className="text-slate-500 dark:text-slate-400">لا توجد بيانات بعد.</div>}
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white">الإتقان حسب الوحدة والموضوع</h3>
+        <div className="mt-5 grid lg:grid-cols-2 gap-4">
+          {unitRows.length ? unitRows.map((row, i) => (
+            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{row.subjectAr}</div>
+              <div className="mt-1 font-black text-slate-900 dark:text-white">{row.unitTitleAr || "بدون وحدة"}</div>
+              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{row.subunitTitleAr || "بدون موضوع فرعي"}</div>
+              <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                <div className="h-full rounded-full bg-brand-600" style={{width: `${row.mastery}%`}}></div>
+              </div>
+              <div className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">{row.mastery}%</div>
+            </div>
+          )) : <div className="text-slate-500 dark:text-slate-400">لا توجد بيانات بعد.</div>}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function WrongRedoSection({filters, setFilters, analytics, onGenerateRedo, loading}){
+  const weaknessRows = analytics?.weaknessRows || [];
+  const filtered = weaknessRows.filter(row =>
+    (!filters.subjectCode || row.subjectCode === filters.subjectCode) &&
+    (!filters.unitTitleAr || row.unitTitleAr === filters.unitTitleAr) &&
+    (!filters.subunitTitleAr || row.subunitTitleAr === filters.subunitTitleAr)
+  );
+
+  const units = filters.subjectCode ? getUnits(filters.subjectCode, filters.semester || 1) : [];
+  const subs = filters.subjectCode && filters.unitTitleAr ? getSubunits(filters.subjectCode, filters.semester || 1, filters.unitTitleAr) : [];
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-5">
+        <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <Select label="المادة" value={filters.subjectCode} onChange={e => setFilters({...filters, subjectCode:e.target.value, unitTitleAr:"", subunitTitleAr:""})}>
+            <option value="">كل المواد</option>
+            {CURRICULUM.subjects.map(s => <option key={s.code} value={s.code}>{s.nameAr}</option>)}
+          </Select>
+
+          <Select label="الفصل" value={filters.semester} onChange={e => setFilters({...filters, semester:Number(e.target.value), unitTitleAr:"", subunitTitleAr:""})}>
+            <option value="1">الأول</option>
+            <option value="2">الثاني</option>
+          </Select>
+
+          <Select label="الوحدة" value={filters.unitTitleAr} onChange={e => setFilters({...filters, unitTitleAr:e.target.value, subunitTitleAr:""})}>
+            <option value="">كل الوحدات</option>
+            {units.map((u,i) => <option key={i} value={u.titleAr}>{u.titleAr}</option>)}
+          </Select>
+
+          <Select label="الموضوع الفرعي" value={filters.subunitTitleAr} onChange={e => setFilters({...filters, subunitTitleAr:e.target.value})}>
+            <option value="">كل المواضيع</option>
+            {subs.map((s,i) => <option key={i} value={s}>{s}</option>)}
+          </Select>
+
+          <div className="flex items-end"><Button variant="brand" className="w-full" onClick={onGenerateRedo} disabled={loading}>{loading ? "جارٍ التجهيز..." : "أنشئ تدريب علاجي"}</Button></div>
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white">أبرز نقاط الضعف</h3>
+        <div className="mt-5 grid lg:grid-cols-2 gap-4">
+          {filtered.length ? filtered.map((row, i) => (
+            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{row.subjectAr}</div>
+              <div className="mt-1 font-black text-slate-900 dark:text-white">{row.unitTitleAr || "بدون وحدة"}</div>
+              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{row.subunitTitleAr || "بدون موضوع فرعي"}</div>
+              <div className="mt-3 text-sm text-red-600">أخطاء: {row.wrongs}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">إتقان: {row.mastery}%</div>
+            </div>
+          )) : <div className="text-slate-500 dark:text-slate-400">لا توجد أخطاء مطابقة.</div>}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function Dashboard({data, onStartExam, onGenerateRedo, redoLoading, redoFilters, setRedoFilters}){
+  const [tab, setTab] = useState("exams");
+  const exams = data.exams || [];
+  const analytics = data.analytics || {};
+  const questionBankSummary = data.questionBankSummary || {};
+  const results = data.results || [];
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
+        <div className="grid lg:grid-cols-[1.5fr,1fr] gap-5 items-center">
           <div>
-            <div className="text-sm font-bold text-white/75">{CONFIG.APP_NAME}</div>
-            <div className="text-4xl font-black mt-2">{subject.nameAr}</div>
-            <div className="mt-3 text-white/80">اختر الوحدة لعرض امتحاناتها، أو ابنِ امتحانك المخصص من بنك الأسئلة.</div>
+            <div className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-bold">نظام تعلم موجّه </div>
+            <h1 className="mt-4 text-3xl md:text-4xl font-black">ذاكر بذكاء، ليس بكثرة</h1>
+            <p className="mt-3 text-white/80 leading-8">المادة ← الوحدة ← الموضوع الفرعي ← اختبار ← أخطاء ← تدريب علاجي ← إتقان.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 min-w-[220px]">
-            <div className="rounded-3xl bg-white/10 p-4"><div className="text-white/70 text-sm">الأسئلة</div><div className="text-3xl font-black mt-1">{totalBankQuestions}</div></div>
-            <div className="rounded-3xl bg-white/10 p-4"><div className="text-white/70 text-sm">الامتحانات</div><div className="text-3xl font-black mt-1">{subjectExams.length}</div></div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">الاختبارات</div><div className="text-3xl font-black mt-1">{exams.length}</div></div>
+            <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">نتائجك</div><div className="text-3xl font-black mt-1">{results.length}</div></div>
+            <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">بنك الأسئلة</div><div className="text-3xl font-black mt-1">{questionBankSummary.totalQuestions || 0}</div></div>
+            <div className="rounded-3xl bg-white/10 p-4"><div className="text-sm text-white/70">إتقان عام</div><div className="text-3xl font-black mt-1">{analytics.overallMastery ?? 0}%</div></div>
           </div>
         </div>
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        {[
-          ['units', 'الوحدات'],
-          ['custom', 'امتحان مخصص من البنك'],
-          ['analytics', 'التقييم'],
-          ['reviews', 'المراجعات والأخطاء']
-        ].map(([id,label]) => <button key={id} onClick={() => setTab(id)} className={cls('px-4 py-3 rounded-2xl font-bold', tab === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800')}>{label}</button>)}
-        <Button variant="outline" onClick={onBackHome}>العودة للمواد</Button>
+        {[["exams","الامتحانات"],["redo","أعد أخطائي"],["mastery","الإتقان"],["results","آخر النتائج"]].map(([id,label]) => (
+          <button key={id} onClick={() => setTab(id)} className={cls("px-4 py-3 rounded-2xl font-bold", tab===id ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800")}>{label}</button>
+        ))}
       </div>
 
-      {tab === 'units' ? (
-        <>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {unitCards.map(unit => {
-              const bankCount = unit.isComprehensive ? 0 : (unitMap[unit.key]?.count || 0);
-              const examCount = unit.isComprehensive
-                ? subjectExams.filter(ex => ex.unitTitleAr === comprehensiveLabel || String(ex.semester) === 'both').length
-                : subjectExams.filter(ex => String(ex.semester) === String(unit.semester) && ex.unitTitleAr === unit.unitTitleAr).length;
-              return <UnitStatCard key={unit.key} unit={unit} selected={selectedUnitKey === unit.key} onSelect={setSelectedUnitKey} bankCount={bankCount} examCount={examCount} />;
-            })}
-          </div>
-
-          {selectedUnit ? (
-            <Card className="p-6">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="text-sm font-bold text-brand-600 dark:text-brand-300">{selectedUnit.isComprehensive ? 'الفصلان معًا' : `الفصل ${Number(selectedUnit.semester) === 1 ? 'الأول' : 'الثاني'}`}</div>
-                  <h2 className="text-3xl font-black mt-1">{selectedUnit.unitTitleAr}</h2>
-                </div>
-                <Button variant="brand" onClick={() => setTab('custom')}>أضفها للامتحان المخصص</Button>
-              </div>
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {examsForSelectedUnit.length ? examsForSelectedUnit.map(exam => (
-                  <StartExamCard
-                    key={exam.id}
-                    exam={exam}
-                    latestAttempt={resultsByExam[exam.id]}
-                    onStart={onStartExam}
-                    onReview={onReviewAttempt}
-                    onRedoWrong={onRedoAttempt}
-                    onRetakeWhole={onStartExam}
-                  />
-                )) : <EmptyState title="لا توجد امتحانات في هذه الوحدة" body="يمكنك رفع امتحان من لوحة الإدارة أو استخدام البنك لبناء امتحان مخصص." />}
-              </div>
-            </Card>
-          ) : null}
-        </>
+      {tab === "exams" ? (
+        exams.length
+          ? <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{exams.map(exam => <ExamCard key={exam.id} exam={exam} onStart={onStartExam} />)}</div>
+          : <EmptyState title="لا توجد امتحانات بعد" body="افتح لوحة الإدارة وارفع أول امتحان." />
       ) : null}
 
-      {tab === 'custom' ? (
-        <CustomExamBuilder
-          subject={subject}
-          exams={subjectExams}
-          bankSummary={bankSummary}
-          onBuild={onOpenCustomExam}
-        />
-      ) : null}
+      {tab === "redo" ? <WrongRedoSection filters={redoFilters} setFilters={setRedoFilters} analytics={analytics} onGenerateRedo={onGenerateRedo} loading={redoLoading} /> : null}
+      {tab === "mastery" ? <MasterySection analytics={analytics} /> : null}
 
-      {tab === 'analytics' ? (
-        <Card className="p-6">
-          <h2 className="text-2xl font-black">تقييم المادة حسب الوحدات</h2>
-          <div className="mt-5 grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {subjectAnalytics.length ? subjectAnalytics.map((row, i) => (
-              <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-                <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{row.semester ? `الفصل ${Number(row.semester) === 1 ? 'الأول' : 'الثاني'}` : ''}</div>
-                <div className="mt-2 text-xl font-black">{row.unitTitleAr}</div>
-                <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">الإتقان: {row.mastery}%</div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">المحاولات: {row.attempted}</div>
-                <div className={cls('mt-3 inline-flex rounded-full px-3 py-1 text-sm font-bold', row.mastery >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-200')}>{row.mastery >= 70 ? 'نقطة قوة' : 'نقطة ضعف'}</div>
-              </div>
-            )) : <div className="text-slate-500 dark:text-slate-400">لا توجد بيانات كافية بعد.</div>}
-          </div>
-        </Card>
-      ) : null}
-
-      {tab === 'reviews' ? (
-        <Card className="p-6">
-          <h2 className="text-2xl font-black">محاولات المادة</h2>
-          <div className="mt-5 grid lg:grid-cols-2 gap-4">
-            {subjectAttempts.length ? subjectAttempts.map(attempt => (
-              <div key={attempt.attemptId} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+      {tab === "results" ? (
+        results.length
+          ? <div className="grid lg:grid-cols-2 gap-4">{results.map((r,i)=>(
+              <Card key={i} className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-black">{attempt.examTitle || attempt.subjectAr}</div>
-                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{attempt.unitTitleAr || 'بدون وحدة'} • {formatDate(attempt.createdAt)}</div>
+                    <div className="font-black text-slate-900 dark:text-white">{r.subject}</div>
+                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</div>
                   </div>
-                  <div className="text-3xl font-black text-brand-600 dark:text-brand-300">{attempt.score}%</div>
+                  <div className="text-3xl font-black text-brand-600 dark:text-brand-300">{r.score}%</div>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => onReviewAttempt(attempt.attemptId)}>مراجعة</Button>
-                  {attempt.wrongItems?.length ? <Button variant="soft" onClick={() => onRedoAttempt(attempt)}>إعادة الخاطئ فقط</Button> : null}
-                </div>
-              </div>
-            )) : <div className="text-slate-500 dark:text-slate-400">لا توجد محاولات لهذه المادة بعد.</div>}
-          </div>
-        </Card>
+              </Card>
+            ))}</div>
+          : <EmptyState title="لا توجد نتائج بعد" body="بعد إنهاء أول اختبار ستظهر نتائجك هنا." />
       ) : null}
     </div>
   );
 }
 
-function CustomExamBuilder({subject, exams, bankSummary, onBuild}){
-  const unitMap = getBankUnitMap(bankSummary);
-  const [mode, setMode] = useState('weighted');
-  const [totalQuestions, setTotalQuestions] = useState(100);
-  const [duration, setDuration] = useState(120);
-  const [selectedKeys, setSelectedKeys] = useState(subject.units.reduce((acc, unit) => ({ ...acc, [unitKey(subject.code, unit.semester, unit.titleAr)]: true }), {}));
-  const [manualCounts, setManualCounts] = useState({});
-  const [selectedExamIds, setSelectedExamIds] = useState({});
-
-  const selectedUnits = subject.units.filter(unit => selectedKeys[unitKey(subject.code, unit.semester, unit.titleAr)]).map(unit => ({
-    subjectCode: subject.code,
-    semester: unit.semester,
-    unitTitleAr: unit.titleAr,
-    weight: unit.weight,
-    key: unitKey(subject.code, unit.semester, unit.titleAr)
-  }));
-
-  const preview = useMemo(() => {
-    const grouped = {};
-    selectedUnits.forEach(unit => {
-      grouped[unit.key] = { available: unitMap[unit.key]?.count || 0 };
-    });
-    if(mode === 'manual'){
-      return selectedUnits.map(unit => ({
-        ...unit,
-        available: grouped[unit.key]?.available || 0,
-        requested: Math.min(Number(manualCounts[unit.key] || 0), grouped[unit.key]?.available || 0),
-        effectivePercent: 0,
-        mode: 'manual'
-      }));
-    }
-    const sum = selectedUnits.reduce((acc, unit) => acc + Number(unit.weight || 0), 0);
-    return selectedUnits.map(unit => {
-      const effectivePercent = sum ? round2((Number(unit.weight || 0) / sum) * 100) : 0;
-      const requested = Math.min(Math.round((Number(totalQuestions || 0) * effectivePercent) / 100), grouped[unit.key]?.available || 0);
-      return { ...unit, available: grouped[unit.key]?.available || 0, requested, effectivePercent, mode: 'weighted' };
-    });
-  }, [selectedKeys, manualCounts, totalQuestions, mode, bankSummary]);
-
-  const selectedSourceExamIds = Object.keys(selectedExamIds).filter(id => selectedExamIds[id]);
-
+function SectionBlock({title, children}){
   return (
     <Card className="p-6">
-      <div className="grid xl:grid-cols-[1fr,1.1fr] gap-6">
-        <div className="space-y-4">
-          <h2 className="text-2xl font-black">ابنِ امتحانك المخصص من البنك</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Select label="وضع التوزيع" value={mode} onChange={e => setMode(e.target.value)}>
-              <option value="weighted">توزيع وزني تلقائي</option>
-              <option value="manual">تحديد يدوي لكل وحدة</option>
-            </Select>
-            <Input label="إجمالي الأسئلة" type="number" value={totalQuestions} onChange={e => setTotalQuestions(e.target.value)} disabled={mode === 'manual'} />
-            <Input label="الوقت (بالدقائق)" type="number" value={duration} onChange={e => setDuration(e.target.value)} />
-          </div>
-
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {subject.units.map(unit => {
-              const key = unitKey(subject.code, unit.semester, unit.titleAr);
-              const available = unitMap[key]?.count || 0;
-              return (
-                <label key={key} className={cls('rounded-3xl border p-4 cursor-pointer', selectedKeys[key] ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20 dark:border-brand-700' : 'border-slate-200 dark:border-slate-800')}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-bold text-brand-600 dark:text-brand-300">الفصل {Number(unit.semester) === 1 ? 'الأول' : 'الثاني'}</div>
-                      <div className="mt-1 font-black">{unit.titleAr}</div>
-                      <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">الوزن: %{unit.weight} • البنك: {available}</div>
-                    </div>
-                    <input type="checkbox" checked={!!selectedKeys[key]} onChange={e => setSelectedKeys(prev => ({ ...prev, [key]: e.target.checked }))} />
-                  </div>
-                  {mode === 'manual' && selectedKeys[key] ? (
-                    <div className="mt-4">
-                      <Input label="عدد الأسئلة من هذه الوحدة" type="number" value={manualCounts[key] || ''} onChange={e => setManualCounts(prev => ({ ...prev, [key]: e.target.value }))} />
-                    </div>
-                  ) : null}
-                </label>
-              );
-            })}
-          </div>
-
-          <Card className="p-4 bg-slate-50 dark:bg-slate-950">
-            <div className="text-lg font-black">تحديد الامتحانات المصدرية (اختياري)</div>
-            <div className="mt-4 max-h-80 overflow-y-auto space-y-4 scroll-thin">
-              {subject.units.map(unit => {
-                const unitExams = exams.filter(ex => String(ex.semester) === String(unit.semester) && ex.unitTitleAr === unit.titleAr);
-                return (
-                  <div key={unit.titleAr} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
-                    <div className="font-black">{unit.titleAr}</div>
-                    <div className="mt-3 space-y-2">
-                      {unitExams.length ? unitExams.map(exam => (
-                        <label key={exam.id} className="flex items-center justify-between gap-3 text-sm">
-                          <span>{exam.title}</span>
-                          <input type="checkbox" checked={!!selectedExamIds[exam.id]} onChange={e => setSelectedExamIds(prev => ({ ...prev, [exam.id]: e.target.checked }))} />
-                        </label>
-                      )) : <div className="text-sm text-slate-500 dark:text-slate-400">لا توجد امتحانات مرفوعة لهذه الوحدة. سيتم السحب من البنك العام إذا وُجد.</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="p-4 bg-slate-50 dark:bg-slate-950">
-            <div className="text-lg font-black">المعاينة الحالية</div>
-            <div className="mt-4 space-y-3">
-              {preview.length ? preview.map(item => (
-                <div key={item.key} className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4">
-                  <div className="font-black">{item.unitTitleAr}</div>
-                  <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{item.mode === 'weighted' ? `النسبة بعد التطبيع: %${item.effectivePercent}` : 'توزيع يدوي'}</div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">المتاح في البنك: {item.available}</div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">المطلوب: {item.requested}</div>
-                </div>
-              )) : <div className="text-slate-500 dark:text-slate-400">حدّد وحدة واحدة على الأقل.</div>}
-            </div>
-            <Button variant="brand" className="w-full mt-4" onClick={() => onBuild({
-              subjectCode: subject.code,
-              selectedUnits: selectedUnits,
-              totalQuestions: Number(totalQuestions || 0),
-              duration: Number(duration || 0) * 60,
-              manualCounts: mode === 'manual' ? manualCounts : {},
-              sourceExamIds: selectedSourceExamIds
-            })} disabled={!selectedUnits.length}>كوّن الامتحان الآن</Button>
-          </Card>
-        </div>
-      </div>
+      <h3 className="text-xl font-black text-slate-900 dark:text-white mb-5">{title}</h3>
+      <div className="space-y-5">{children}</div>
     </Card>
   );
 }
 
-function PdfPagePreview({pdfDataUrl, pageNumber, description}){
-  const [imgSrc, setImgSrc] = useState('');
-  const [error, setError] = useState('');
+function ExamScreen({exam, user, onFinish, onExit}){
+  const mcq = exam.questions || [];
+  const openQ = exam.openQuestions || [];
+  const sections = exam.sections || [];
+  const totalSeconds = exam.duration || 3600;
+
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const [answers, setAnswers] = useState({});
+  const [openAnswers, setOpenAnswers] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [result, setResult] = useState(null);
+
   useEffect(() => {
-    let mounted = true;
-    async function renderPage(){
-      try{
-        setError('');
-        if(!pdfDataUrl || !pageNumber) return;
-        const pdf = await pdfjsLib.getDocument({ data: atob(pdfDataUrl.split(',')[1]) }).promise;
-        const page = await pdf.getPage(Number(pageNumber));
-        const viewport = page.getViewport({ scale: 1.25 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        if(mounted) setImgSrc(canvas.toDataURL('image/png'));
-      }catch(err){
-        if(mounted) setError('تعذر عرض صفحة الـ PDF');
+    if(submitted) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if(prev <= 1){ clearInterval(timer); handleSubmit(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [submitted]);
+
+  function handleSubmit(){
+    if(submitted) return;
+
+    let correct = 0;
+    const wrongItems = [];
+
+    mcq.forEach(q => {
+      const userIndex = answers[q.id];
+      if(userIndex === q.correctIndex) {
+        correct++;
+      } else {
+        wrongItems.push({
+          questionId: q.id,
+          questionText: q.text,
+          userAnswerIndex: userIndex ?? null,
+          userAnswerText: userIndex != null ? q.options?.[userIndex] : "",
+          correctIndex: q.correctIndex,
+          correctAnswerText: q.options?.[q.correctIndex] || "",
+          explanation: q.explanation || "",
+          subject: exam.subjectAr || exam.subject,
+          subjectCode: exam.subjectCode || "",
+          semester: exam.semester || "",
+          unitTitleAr: q.unitTitleAr || exam.unitTitleAr || "",
+          subunitTitleAr: q.subunitTitleAr || exam.subunitTitleAr || "",
+          questionType: q.questionType || "mcq"
+        });
       }
-    }
-    renderPage();
-    return () => { mounted = false; };
-  }, [pdfDataUrl, pageNumber]);
+    });
+
+    const score = mcq.length ? Math.round((correct / mcq.length) * 100) : 100;
+
+    const payload = {
+      userId: user.id,
+      userName: user.name,
+      examId: exam.id,
+      subject: exam.subjectAr || exam.subject,
+      subjectCode: exam.subjectCode || "",
+      score,
+      semester: exam.semester || "",
+      unitTitleAr: exam.unitTitleAr || "",
+      subunitTitleAr: exam.subunitTitleAr || "",
+      answers,
+      openAnswers,
+      wrongItems
+    };
+
+    setSubmitted(true);
+    setResult({score, wrongItems, openAnswersSnapshot: openAnswers});
+    onFinish(payload);
+  }
+
+  const minutes = String(Math.floor(timeLeft / 60)).padStart(2,"0");
+  const seconds = String(timeLeft % 60).padStart(2,"0");
+  const answered = Object.keys(answers).length + Object.values(openAnswers).filter(Boolean).length;
+  const total = mcq.length + openQ.length || 1;
+  const progress = Math.round((answered / total) * 100);
+
+  if(submitted && result){
+    return (
+      <div className="space-y-6">
+        <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="text-white/75 text-sm font-bold">تم تسليم الامتحان</div>
+              <h2 className="text-3xl font-black mt-2">{exam.title || exam.subjectAr}</h2>
+            </div>
+            <div className="rounded-[28px] bg-white/10 px-8 py-5 text-center">
+              <div className="text-sm text-white/75">النتيجة</div>
+              <div className="text-5xl font-black mt-2">{result.score}%</div>
+            </div>
+          </div>
+        </Card>
+
+        <SectionBlock title="تصحيح الاختيار من متعدد">
+          {result.wrongItems.length ? result.wrongItems.map((w,i)=>(
+            <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+              <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{w.unitTitleAr || "بدون وحدة"} {w.subunitTitleAr ? `• ${w.subunitTitleAr}` : ""}</div>
+              <div className="font-black text-slate-900 dark:text-white mt-2"><RichText text={w.questionText} /></div>
+              <div className="mt-3 text-sm text-red-600">إجابتك: {w.userAnswerText || "لم تجب"}</div>
+              <div className="text-sm text-emerald-600 mt-1">الصحيح: {w.correctAnswerText}</div>
+              {w.explanation ? <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">{w.explanation}</div> : null}
+            </div>
+          )) : <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 p-4 font-bold text-emerald-700 dark:text-emerald-200">ممتاز، لا توجد أخطاء في قسم MCQ.</div>}
+        </SectionBlock>
+
+        {openQ.length ? (
+          <SectionBlock title="الأسئلة المقالية">
+            {openQ.map((q,idx)=>(
+              <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+                <div className="font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
+                <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">إجابتك</div>
+                <div className="mt-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3 whitespace-pre-wrap">{result.openAnswersSnapshot[q.id] || "لم تتم الإجابة"}</div>
+                <div className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">الإجابة النموذجية</div>
+                <div className="mt-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-3 whitespace-pre-wrap">{q.idealAnswer || "-"}</div>
+              </div>
+            ))}
+          </SectionBlock>
+        ) : null}
+
+        <Button variant="brand" onClick={onExit}>العودة للوحة التحكم</Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950">
-      <div className="text-xs font-bold text-brand-600 dark:text-brand-300">صفحة PDF رقم {pageNumber}</div>
-      {description ? <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</div> : null}
-      {error ? <div className="mt-3 text-sm text-red-600">{error}</div> : imgSrc ? <img src={imgSrc} alt="pdf page preview" className="mt-4 w-full rounded-2xl border border-slate-200 dark:border-slate-800" /> : <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">جارٍ تجهيز الصفحة...</div>}
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+          <div>
+            <div className="text-sm font-bold text-brand-600 dark:text-brand-300">{exam.subjectAr || exam.subject}</div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-2">{exam.title || exam.subjectAr || exam.subject}</h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-sm">
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.unitTitleAr || "بدون وحدة"}</span>
+              {exam.subunitTitleAr ? <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.subunitTitleAr}</span> : null}
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">الوقت: {minutes}:{seconds}</span>
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">التقدم: {progress}%</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" onClick={onExit}>إلغاء</Button>
+            <Button variant="brand" onClick={handleSubmit}>تسليم</Button>
+          </div>
+        </div>
+        <div className="mt-5">
+          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-brand-600" style={{width:`${progress}%`}}></div></div>
+        </div>
+      </Card>
+
+      {(exam.examMode === "HYBRID" || sections.length > 0) ? (
+        <>
+          {mcq.length ? (
+            <SectionBlock title="القسم الأول: OMR / Multiple Choice">
+              {mcq.map((q, idx) => (
+                <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} />
+              ))}
+            </SectionBlock>
+          ) : null}
+
+          {openQ.length ? (
+            <SectionBlock title="الأقسام المقالية / Reading / Writing">
+              {openQ.map((q, idx) => (
+                <div key={q.id} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+                  <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.sectionTitle || q.questionType || "مقالي"}</div>
+                  <div className="mt-2 font-black text-slate-900 dark:text-white">{idx+1}. <RichText text={q.prompt} /></div>
+                  <TextArea rows={8} className="mt-4" placeholder="اكتب إجابتك هنا..." value={openAnswers[q.id] || ""} onChange={e=>setOpenAnswers(prev=>({...prev,[q.id]:e.target.value}))}/>
+                </div>
+              ))}
+            </SectionBlock>
+          ) : null}
+        </>
+      ) : (
+        <SectionBlock title="ورقة التظليل OMR">
+          <div className="grid md:grid-cols-2 gap-4">
+            {mcq.map((q, idx) => (
+              <QuestionCard key={q.id} q={q} index={idx} selected={answers[q.id]} onSelect={(value)=>setAnswers(prev=>({...prev,[q.id]:value}))} omr />
+            ))}
+          </div>
+        </SectionBlock>
+      )}
     </div>
   );
 }
 
-function RichText({text}){ return <span className="whitespace-pre-wrap">{text}</span>; }
-
-function QuestionBlock({q, index, selected, onSelect, pdfDataUrl}){
+function QuestionCard({q, index, selected, onSelect, omr=false}){
   return (
-    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4 md:p-5">
-      <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.unitTitleAr || ''} {q.subunitTitleAr ? `• ${q.subunitTitleAr}` : ''}</div>
-      <div className="mt-2 text-xl font-black">{index + 1}. <RichText text={q.text} /></div>
-      {q.pdfPageRef?.page ? <div className="mt-4"><PdfPagePreview pdfDataUrl={pdfDataUrl} pageNumber={q.pdfPageRef.page} description={q.pdfPageRef.description} /></div> : null}
-      <div className="mt-4 grid gap-3">
+    <div className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
+      <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.unitTitleAr || ""} {q.subunitTitleAr ? `• ${q.subunitTitleAr}` : ""}</div>
+      <div className="font-black text-slate-900 dark:text-white mt-2">{index+1}. <RichText text={q.text} /></div>
+      <div className={cls("mt-4 grid gap-3", omr ? "sm:grid-cols-2" : "")}>
         {(q.options || []).map((opt, i) => (
-          <button key={i} onClick={() => onSelect(i)} className={cls('rounded-2xl border p-4 text-right transition', selected === i ? 'border-brand-600 bg-brand-50 dark:bg-brand-950/30 dark:border-brand-500' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70')}>
+          <button key={i} onClick={()=>onSelect(i)} className={cls("rounded-2xl border p-4 text-right transition",
+            selected === i ? "border-brand-600 bg-brand-50 dark:bg-brand-950/30 dark:border-brand-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70"
+          )}>
             <div className="flex items-center gap-3">
-              <div className={cls('h-8 w-8 rounded-full border flex items-center justify-center text-xs font-black', selected === i ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300 dark:border-slate-700')}>{String.fromCharCode(65+i)}</div>
+              <div className={cls("h-7 w-7 rounded-full border flex items-center justify-center text-xs font-black", selected === i ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 dark:border-slate-700")}>{String.fromCharCode(65+i)}</div>
               <div className="flex-1">{opt}</div>
             </div>
           </button>
@@ -961,434 +747,232 @@ function QuestionBlock({q, index, selected, onSelect, pdfDataUrl}){
   );
 }
 
-function ExamScreen({exam, user, onBack, onSubmitExam}){
-  const questions = exam.questions || [];
-  const [viewMode, setViewMode] = useState(exam.settings?.defaultQuestionView || 'single');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(Number(exam.duration || 3600));
+function AdminModal({data, onRefresh, onClose, toast}){
+  const [password, setPassword] = useState("");
+  const [ok, setOk] = useState(false);
+  const [tab, setTab] = useState("upload");
+  const [busy, setBusy] = useState(false);
+  const [subjectCode, setSubjectCode] = useState("chemistry");
+  const [semester, setSemester] = useState(1);
+  const [unitTitleAr, setUnitTitleAr] = useState("");
+  const [subunitTitleAr, setSubunitTitleAr] = useState("");
+  const [title, setTitle] = useState("");
+  const [duration, setDuration] = useState(1800);
+  const [jsonText, setJsonText] = useState(JSON.stringify(SAMPLE_EXAM, null, 2));
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if(prev <= 1){ clearInterval(timer); handleSubmit(); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const subject = getSubjectByCode(subjectCode);
+  const units = getUnits(subjectCode, semester);
+  const subunits = getSubunits(subjectCode, semester, unitTitleAr);
 
-  const answered = Object.keys(answers).length;
-  const progress = questions.length ? Math.round((answered / questions.length) * 100) : 0;
-  const shownQuestions = viewMode === 'single' ? [questions[currentIndex]].filter(Boolean) : questions;
-  const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
-  const seconds = String(timeLeft % 60).padStart(2, '0');
+  useEffect(() => { if(!unitTitleAr && units.length) setUnitTitleAr(units[0].titleAr); }, [subjectCode, semester]);
+  useEffect(() => { if(unitTitleAr && !subunits.includes(subunitTitleAr)) setSubunitTitleAr(subunits[0] || ""); }, [unitTitleAr, subjectCode, semester]);
 
-  async function handleSubmit(){
-    if(submitting) return;
-    setSubmitting(true);
-    const correctCount = questions.reduce((count, q) => q.correctIndex != null && answers[q.id] === q.correctIndex ? count + 1 : count, 0);
-    const scorable = questions.filter(q => q.correctIndex != null);
-    const totalMcq = scorable.length;
-    const score = totalMcq ? Math.round((correctCount / totalMcq) * 100) : 100;
-    const wrongItems = scorable.filter(q => answers[q.id] !== q.correctIndex).map(q => ({
-      examId: exam.id,
-      questionId: q.id,
-      questionText: q.text,
-      userAnswerIndex: answers[q.id] ?? null,
-      userAnswerText: answers[q.id] != null ? q.options?.[answers[q.id]] : '',
-      correctIndex: q.correctIndex,
-      correctAnswerText: q.correctIndex != null ? q.options?.[q.correctIndex] : '',
-      explanation: q.explanation || '',
-      subjectCode: q.subjectCode || exam.subjectCode,
-      subjectAr: q.subjectAr || exam.subjectAr,
-      semester: q.semester ?? exam.semester,
-      unitTitleAr: q.unitTitleAr || exam.unitTitleAr,
-      subunitTitleAr: q.subunitTitleAr || exam.subunitTitleAr,
-      questionSnapshot: q
+  const filteredResults = (data.allResults || []).filter(r =>
+    !search ||
+    normalizeText(r.userName).includes(normalizeText(search)) ||
+    normalizeText(r.subject).includes(normalizeText(search))
+  );
+
+  const filteredExams = (data.exams || []).filter(e =>
+    !search ||
+    normalizeText(e.title || e.subjectAr || "").includes(normalizeText(search))
+  );
+
+  function enrichExam(exam){
+    const subj = getSubjectByCode(subjectCode);
+    const finalTitle = title.trim() || exam.title || `${subj?.nameAr || exam.subjectAr || ""}${unitTitleAr ? " - " + unitTitleAr : ""}${subunitTitleAr ? " - " + subunitTitleAr : ""}`;
+
+    exam.title = finalTitle;
+    exam.subjectCode = subjectCode;
+    exam.subjectAr = subj?.nameAr || exam.subjectAr || exam.subject || "";
+    exam.semester = Number(semester);
+    exam.unitTitleAr = unitTitleAr || exam.unitTitleAr || "";
+    exam.subunitTitleAr = subunitTitleAr || exam.subunitTitleAr || "";
+    exam.examMode = subj?.examMode || exam.examMode || "OMR_MCQ";
+    exam.duration = Number(duration || exam.duration || 1800);
+
+    exam.questions = (exam.questions || []).map((q, idx) => ({
+      ...q,
+      id: q.id || `q-${idx+1}`,
+      questionType: q.questionType || "mcq",
+      subjectCode,
+      subjectAr: subj?.nameAr || "",
+      semester: Number(semester),
+      unitTitleAr: q.unitTitleAr || unitTitleAr || "",
+      subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ""
     }));
 
-    const payload = {
-      userId: user.id,
-      userName: user.name,
-      examId: exam.id,
-      examTitle: exam.title,
-      subjectCode: exam.subjectCode,
-      subjectAr: exam.subjectAr,
-      semester: exam.semester,
-      unitTitleAr: exam.unitTitleAr,
-      subunitTitleAr: exam.subunitTitleAr,
-      score,
-      correctCount,
-      totalMcq,
-      answers,
-      wrongItems,
-      examSnapshot: stripExamDataUrl(exam),
-      customMeta: exam.customMeta || {}
-    };
-    await onSubmitExam(payload);
-  }
+    exam.openQuestions = (exam.openQuestions || []).map((q, idx) => ({
+      ...q,
+      id: q.id || `oq-${idx+1}`,
+      questionType: q.questionType || "essay",
+      sectionTitle: q.sectionTitle || (subjectCode === "english" ? "Writing / Reading" : "Essay"),
+      subjectCode,
+      subjectAr: subj?.nameAr || "",
+      semester: Number(semester),
+      unitTitleAr: q.unitTitleAr || unitTitleAr || "",
+      subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ""
+    }));
 
-  return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div>
-            <div className="text-sm font-bold text-brand-600 dark:text-brand-300">{exam.subjectAr}</div>
-            <h1 className="text-3xl font-black mt-2">{exam.title}</h1>
-            <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">{exam.unitTitleAr || 'بدون وحدة'}</span>
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">الوقت: {minutes}:{seconds}</span>
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2">التقدم: {progress}%</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {exam.settings?.allowSwitchView !== false ? (
-              <Select label="طريقة العرض" value={viewMode} onChange={e => setViewMode(e.target.value)} className="min-w-[180px]">
-                <option value="single">سؤال بسؤال</option>
-                <option value="all">عرض كامل</option>
-              </Select>
-            ) : null}
-            <div className="flex gap-2 items-end">
-              <Button variant="outline" onClick={onBack}>خروج</Button>
-              <Button variant="brand" onClick={handleSubmit} disabled={submitting}>{submitting ? 'جارٍ الحفظ...' : 'تسليم الامتحان'}</Button>
-            </div>
-          </div>
-        </div>
-        <div className="mt-5 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div className="h-full bg-brand-600" style={{ width: `${progress}%` }}></div></div>
-      </Card>
+    if(subjectCode === "english"){
+      exam.sections = [
+        {id:"mcq", title:"OMR MCQ", type:"mcq"},
+        {id:"open", title:"Reading / Literature / Writing", type:"open"}
+      ];
+    }
 
-      <div className="space-y-4">
-        {shownQuestions.map((q, localIndex) => {
-          const actualIndex = viewMode === 'single' ? currentIndex : localIndex;
-          return <QuestionBlock key={q.id} q={q} index={actualIndex} selected={answers[q.id]} onSelect={value => setAnswers(prev => ({ ...prev, [q.id]: value }))} pdfDataUrl={exam.sourcePdf?.dataUrl} />;
-        })}
-      </div>
-
-      {viewMode === 'single' ? (
-        <div className="flex flex-wrap justify-between gap-3">
-          <Button variant="outline" onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))} disabled={currentIndex === 0}>السابق</Button>
-          <div className="text-sm font-bold text-slate-500 dark:text-slate-400">{currentIndex + 1} / {questions.length}</div>
-          <Button variant="brand" onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))} disabled={currentIndex >= questions.length - 1}>التالي</Button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ReviewScreen({attempt, onBack, onRedoWrong, onRetakeWhole}){
-  const exam = attempt.examSnapshot || { questions: [] };
-  const answerMap = attempt.answers || {};
-  const correct = Number(attempt.correctCount || 0);
-  const total = Number(attempt.totalMcq || exam.questions?.filter(q => q.correctIndex != null).length || 0);
-  const wrong = Math.max(0, total - correct);
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-br from-slate-950 via-brand-700 to-slate-900 text-white border-none">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div>
-            <div className="text-sm text-white/75 font-bold">مراجعة محفوظة</div>
-            <div className="text-3xl font-black mt-2">{attempt.examTitle || exam.title}</div>
-            <div className="mt-2 text-white/80">{attempt.unitTitleAr || attempt.subjectAr} • {formatDate(attempt.createdAt)}</div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-3xl bg-white/10 p-4 text-center"><div className="text-sm text-white/70">النتيجة</div><div className="text-4xl font-black mt-2">{attempt.score}%</div></div>
-            <div className="rounded-3xl bg-white/10 p-4 text-center"><div className="text-sm text-white/70">صحيح</div><div className="text-4xl font-black mt-2">{correct}</div></div>
-            <div className="rounded-3xl bg-white/10 p-4 text-center"><div className="text-sm text-white/70">خطأ</div><div className="text-4xl font-black mt-2">{wrong}</div></div>
-          </div>
-        </div>
-      </Card>
-      <div className="flex flex-wrap gap-3">
-        <Button variant="outline" onClick={onBack}>رجوع</Button>
-        {attempt.wrongItems?.length ? <Button variant="soft" onClick={() => onRedoWrong(attempt)}>إعادة الخاطئ فقط</Button> : null}
-        {attempt.examId ? <Button variant="brand" onClick={() => onRetakeWhole(attempt.examId)}>إعادة الامتحان كاملًا</Button> : null}
-      </div>
-      <div className="space-y-4">
-        {(exam.questions || []).map((q, index) => {
-          const selected = answerMap[q.id];
-          const correctIndex = q.correctIndex;
-          const isCorrect = correctIndex != null && selected === correctIndex;
-          return (
-            <Card key={q.id} className="p-5">
-              <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{q.unitTitleAr || attempt.unitTitleAr || ''}</div>
-              <div className="mt-2 text-xl font-black">{index + 1}. <RichText text={q.text} /></div>
-              {q.pdfPageRef?.page ? <div className="mt-4"><PdfPagePreview pdfDataUrl={exam.sourcePdf?.dataUrl} pageNumber={q.pdfPageRef.page} description={q.pdfPageRef.description} /></div> : null}
-              <div className="mt-4 grid gap-3">
-                {(q.options || []).map((opt, i) => (
-                  <div key={i} className={cls('rounded-2xl border p-4', i === correctIndex ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : selected === i ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-slate-200 dark:border-slate-800')}>
-                    <div className="flex items-center gap-3"><div className="h-8 w-8 rounded-full border flex items-center justify-center text-xs font-black">{String.fromCharCode(65+i)}</div><div>{opt}</div></div>
-                  </div>
-                ))}
-              </div>
-              <div className={cls('mt-4 font-bold', isCorrect ? 'text-emerald-600' : 'text-red-600')}>{isCorrect ? 'إجابتك صحيحة' : `إجابتك: ${selected != null ? q.options?.[selected] : 'لم تجب'}`}</div>
-              {!isCorrect && correctIndex != null ? <div className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">الإجابة الصحيحة: {q.options?.[correctIndex]}</div> : null}
-              {q.explanation ? <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">{q.explanation}</div> : null}
-            </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AdminModal({catalog, allResults, onRefresh, onClose, toast}){
-  const [password, setPassword] = useState('');
-  const [ok, setOk] = useState(false);
-  const [tab, setTab] = useState('upload');
-  const [busy, setBusy] = useState(false);
-  const [subjectCode, setSubjectCode] = useState('chemistry');
-  const [semester, setSemester] = useState(1);
-  const [unitTitleAr, setUnitTitleAr] = useState('');
-  const [subunitTitleAr, setSubunitTitleAr] = useState('');
-  const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState(1800);
-  const [allowStudentTime, setAllowStudentTime] = useState(false);
-  const [minDuration, setMinDuration] = useState('');
-  const [maxDuration, setMaxDuration] = useState('');
-  const [jsonText, setJsonText] = useState(JSON.stringify(SAMPLE_EXAM, null, 2));
-  const [pdfFile, setPdfFile] = useState(null);
-  const [search, setSearch] = useState('');
-  const [settingsDraft, setSettingsDraft] = useState({});
-  const subject = getSubjectByCode(subjectCode);
-  const unitOptions = [...(subject?.units || []).map(u => ({ semester: u.semester, titleAr: u.titleAr })), { semester: 'both', titleAr: CURRICULUM.comprehensiveLabel }];
-  useEffect(() => { if(!unitTitleAr && unitOptions.length) setUnitTitleAr(unitOptions[0].titleAr); }, [subjectCode]);
-
-  const filteredExams = (catalog.exams || []).filter(ex => !search || normalizeText(ex.title).includes(normalizeText(search)) || normalizeText(ex.subjectAr).includes(normalizeText(search)) || normalizeText(ex.unitTitleAr).includes(normalizeText(search)));
-  const filteredResults = (allResults || []).filter(r => !search || normalizeText(r.userName).includes(normalizeText(search)) || normalizeText(r.subjectAr).includes(normalizeText(search)) || normalizeText(r.examTitle).includes(normalizeText(search)));
-
-  function draftFor(exam){
-    return settingsDraft[exam.id] || {
-      duration: exam.duration || '',
-      allowStudentChangeTime: !!exam.settings?.allowStudentChangeTime,
-      minDuration: exam.settings?.minDuration ?? '',
-      maxDuration: exam.settings?.maxDuration ?? ''
-    };
+    return exam;
   }
 
   async function uploadExam(){
     try{
       setBusy(true);
-      const parsed = JSON.parse(jsonText);
-      const exam = copy(parsed);
-      exam.title = title.trim() || exam.title || `${subject?.nameAr || ''} - ${unitTitleAr || ''}`;
-      exam.subjectCode = subjectCode;
-      exam.subjectAr = subject?.nameAr || exam.subjectAr || '';
-      exam.semester = unitTitleAr === CURRICULUM.comprehensiveLabel ? 'both' : Number(semester);
-      exam.unitTitleAr = unitTitleAr || exam.unitTitleAr || '';
-      exam.subunitTitleAr = subunitTitleAr || exam.subunitTitleAr || '';
-      exam.duration = Number(duration || exam.duration || 1800);
-      exam.settings = {
-        ...(exam.settings || {}),
-        allowSwitchView: true,
-        defaultQuestionView: exam.settings?.defaultQuestionView || 'single',
-        showOneQuestionPerRow: true,
-        allowStudentChangeTime: allowStudentTime,
-        minDuration: minDuration === '' ? null : Number(minDuration),
-        maxDuration: maxDuration === '' ? null : Number(maxDuration)
-      };
-      exam.questions = (exam.questions || []).map((q, idx) => ({
-        ...q,
-        id: q.id || `q${idx + 1}`,
-        subjectCode,
-        subjectAr: subject?.nameAr || '',
-        semester: q.semester ?? (unitTitleAr === CURRICULUM.comprehensiveLabel ? exam.semester : Number(semester)),
-        unitTitleAr: q.unitTitleAr || unitTitleAr || '',
-        subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ''
-      }));
-      exam.openQuestions = (exam.openQuestions || []).map((q, idx) => ({
-        ...q,
-        id: q.id || `oq${idx + 1}`,
-        subjectCode,
-        subjectAr: subject?.nameAr || '',
-        semester: q.semester ?? (unitTitleAr === CURRICULUM.comprehensiveLabel ? exam.semester : Number(semester)),
-        unitTitleAr: q.unitTitleAr || unitTitleAr || '',
-        subunitTitleAr: q.subunitTitleAr || subunitTitleAr || ''
-      }));
-      let pdfFileName = exam.sourcePdf?.fileName || 'source.pdf';
-      if(pdfFile){
-        pdfFileName = pdfFile.name;
-        await uploadPdfInChunks(pdfFile, exam);
-      } else {
-        await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, exam, pdfFileName });
-      }
-      toast('تم رفع الامتحان وPDF وفهرسة الأسئلة في البنك');
-      setPdfFile(null);
-      await onRefresh();
-    }catch(err){
-      const msg = String(err?.message || err || 'Unknown error');
-      const extra = msg.includes('NetworkError') ? ' جرّب إعادة نشر Apps Script أو تقليل حجم PDF، وهذه النسخة ترفع الملف على دفعات أصغر.' : '';
-      toast('فشل الرفع: ' + msg + extra, 'error');
-    }finally{ setBusy(false); }
-  }
-
-  async function saveExamSettings(examId){
-    try{
-      setBusy(true);
-      const patch = draftFor({ id: examId });
-      await api('updateExamSettings', { adminPassword: CONFIG.ADMIN_PASSWORD, examId, patch });
-      toast('تم تحديث إعدادات الامتحان');
-      await onRefresh();
-    }catch(err){
-      toast('تعذر تحديث الإعدادات: ' + err.message, 'error');
-    }finally{ setBusy(false); }
+      const exam = enrichExam(JSON.parse(jsonText));
+      await api("uploadExam", {adminPassword: CONFIG.ADMIN_PASSWORD, exam});
+      toast("تم رفع الامتحان وفهرسته في بنك الأسئلة");
+      onRefresh();
+    }catch(e){
+      toast("فشل الرفع: " + e.message, "error");
+    }finally{
+      setBusy(false);
+    }
   }
 
   async function deleteExam(examId){
-    if(!confirm('هل تريد حذف الامتحان نهائيًا؟')) return;
     try{
       setBusy(true);
-      await api('deleteExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examId });
-      toast('تم حذف الامتحان');
-      await onRefresh();
-    }catch(err){
-      toast('فشل الحذف: ' + err.message, 'error');
-    }finally{ setBusy(false); }
+      await api("deleteExam", {adminPassword: CONFIG.ADMIN_PASSWORD, examId});
+      toast("تم حذف الامتحان");
+      onRefresh();
+    }catch(e){
+      toast("فشل الحذف: " + e.message, "error");
+    }finally{
+      setBusy(false);
+    }
   }
 
   return (
-    <Modal title="لوحة الإدارة" subtitle="رفع JSON + PDF، إدارة البنك، وتحديث أوقات الامتحانات" onClose={onClose} maxWidth="max-w-7xl">
+    <Modal title="لوحة إدارة دراستي" subtitle="المادة ← الفصل ← الوحدة ← الموضوع الفرعي ← بنك الأسئلة ← النتائج" onClose={onClose} maxWidth="max-w-7xl">
       {!ok ? (
         <div className="max-w-lg">
-          <Input label="كلمة مرور الإدارة" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-          <div className="mt-4 flex gap-3"><Button variant="brand" onClick={() => password === CONFIG.ADMIN_PASSWORD ? setOk(true) : alert('كلمة المرور غير صحيحة')}>دخول</Button><Button variant="outline" onClick={onClose}>إلغاء</Button></div>
+          <Input label="كلمة مرور الإدارة" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+          <div className="mt-4 flex gap-3">
+            <Button variant="brand" onClick={()=> password === CONFIG.ADMIN_PASSWORD ? setOk(true) : alert("كلمة المرور غير صحيحة")}>دخول</Button>
+            <Button variant="outline" onClick={onClose}>إلغاء</Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="flex flex-wrap gap-2 overflow-x-auto">
-            {[['upload','رفع امتحان'],['bank','بنك الامتحانات'],['results','نتائج الطلاب'],['qbank','ملخص بنك الأسئلة'],['prompt','Prompt التحويل']].map(([id,label]) => <button key={id} onClick={() => setTab(id)} className={cls('px-4 py-3 rounded-2xl font-bold whitespace-nowrap', tab === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800')}>{label}</button>)}
+          <div className="flex flex-wrap gap-2">
+            {[["upload","رفع امتحان"],["bank","بنك الامتحانات"],["results","نتائج الطلاب"],["qbank","ملخص بنك الأسئلة"]].map(([id,label]) => (
+              <button key={id} onClick={()=>setTab(id)} className={cls("px-4 py-3 rounded-2xl font-bold", tab===id ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-100 dark:bg-slate-800")}>{label}</button>
+            ))}
           </div>
 
-          {tab === 'upload' ? (
-            <div className="grid xl:grid-cols-[1.1fr,1fr] gap-6">
+          {tab === "upload" ? (
+            <div className="grid xl:grid-cols-[1.05fr,1fr] gap-6">
               <Card className="p-5 space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select label="المادة" value={subjectCode} onChange={e => { setSubjectCode(e.target.value); setUnitTitleAr(''); }}>
+                  <Select label="المادة" value={subjectCode} onChange={e=>{setSubjectCode(e.target.value); setUnitTitleAr(""); setSubunitTitleAr("");}}>
                     {CURRICULUM.subjects.map(s => <option key={s.code} value={s.code}>{s.nameAr}</option>)}
                   </Select>
-                  <Select label="الفصل" value={semester} onChange={e => setSemester(Number(e.target.value))}>
+
+                  <Select label="الفصل" value={semester} onChange={e=>{setSemester(Number(e.target.value)); setUnitTitleAr(""); setSubunitTitleAr("");}}>
                     <option value="1">الفصل الأول</option>
                     <option value="2">الفصل الثاني</option>
                   </Select>
-                  <Select label="الوحدة" value={unitTitleAr} onChange={e => setUnitTitleAr(e.target.value)}>
-                    {unitOptions.map((u, i) => <option key={i} value={u.titleAr}>{u.titleAr}</option>)}
+
+                  <Select label="الوحدة" value={unitTitleAr} onChange={e=>setUnitTitleAr(e.target.value)}>
+                    <option value="">بدون وحدة</option>
+                    {units.map((u,i) => <option key={i} value={u.titleAr}>{u.titleAr}</option>)}
                   </Select>
-                  <Input label="الموضوع الفرعي (اختياري)" value={subunitTitleAr} onChange={e => setSubunitTitleAr(e.target.value)} />
+
+                  <Select label="الموضوع الفرعي" value={subunitTitleAr} onChange={e=>setSubunitTitleAr(e.target.value)}>
+                    <option value="">بدون موضوع فرعي</option>
+                    {subunits.map((s,i) => <option key={i} value={s}>{s}</option>)}
+                  </Select>
                 </div>
-                <Input label="عنوان الامتحان" value={title} onChange={e => setTitle(e.target.value)} placeholder="يُنشأ تلقائيًا إن تركته فارغًا" />
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input label="المدة بالثواني" type="number" value={duration} onChange={e => setDuration(e.target.value)} />
-                  <label className="flex items-end gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3">
-                    <input type="checkbox" checked={allowStudentTime} onChange={e => setAllowStudentTime(e.target.checked)} />
-                    <div>
-                      <div className="font-bold">السماح للطالب بتغيير الوقت</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400">فعّلها فقط للامتحانات التي تريدها.</div>
-                    </div>
+
+                <Input label="عنوان الامتحان" placeholder="يُنشأ تلقائيًا إن تركته فارغًا" value={title} onChange={e=>setTitle(e.target.value)} />
+                <Input label="المدة بالثواني" type="number" value={duration} onChange={e=>setDuration(e.target.value)} />
+                <TextArea label="JSON الامتحان" rows={18} value={jsonText} onChange={e=>setJsonText(e.target.value)} hint="يمكن أن يكون الامتحان MCQ فقط أو Hybrid للإنجليزي." />
+
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="brand" onClick={uploadExam} disabled={busy}>{busy ? "جارٍ الرفع..." : "رفع الامتحان"}</Button>
+                  <label className="px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700 cursor-pointer">
+                    استيراد JSON
+                    <input type="file" accept=".json,application/json" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if(!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => setJsonText(String(reader.result || ""));
+                      reader.readAsText(file, "utf-8");
+                    }} />
                   </label>
                 </div>
-                {allowStudentTime ? (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <Input label="أقل وقت مسموح (ثانية)" type="number" value={minDuration} onChange={e => setMinDuration(e.target.value)} />
-                    <Input label="أعلى وقت مسموح (ثانية)" type="number" value={maxDuration} onChange={e => setMaxDuration(e.target.value)} />
-                  </div>
-                ) : null}
-                <TextArea label="JSON الامتحان" rows={20} value={jsonText} onChange={e => setJsonText(e.target.value)} hint="استخدم الـ prompt الموجود هنا، وارفع معه الـ PDF نفسه." />
-                <div className="flex flex-wrap gap-3">
-                  <label className="px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700 cursor-pointer">استيراد JSON<input type="file" accept=".json,application/json" className="hidden" onChange={async e => { const file = e.target.files?.[0]; if(!file) return; setJsonText(await readFileAsText(file)); }} /></label>
-                  <label className="px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700 cursor-pointer">رفع PDF<input type="file" accept="application/pdf,.pdf" className="hidden" onChange={e => setPdfFile(e.target.files?.[0] || null)} /></label>
-                  {pdfFile ? <div className="px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">{pdfFile.name}</div> : null}
-                </div>
-                <Button variant="brand" onClick={uploadExam} disabled={busy}>{busy ? 'جارٍ الرفع...' : 'رفع JSON + PDF'}</Button>
               </Card>
-              <div className="space-y-6">
-                <Card className="p-5">
-                  <h3 className="text-xl font-black">كيف يعمل النظام الآن؟</h3>
-                  <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                    <p>1) ترفع JSON + PDF معًا من نفس الشاشة.</p>
-                    <p>2) إذا احتاج السؤال رسمًا أو جدولًا أو صورة، يكفي أن يحمل السؤال <code>pdfPageRef</code>.</p>
-                    <p>3) سيعرض الطالب صفحة الـ PDF نفسها بجانب السؤال في الاختبار والمراجعة.</p>
-                    <p>4) كل سؤال يندرج في بنك الأسئلة حسب المادة + الفصل + الوحدة.</p>
-                    <p>5) البنك المخصص سيحسب الأوزان ويطبعها على الوحدات التي اختارها الطالب فقط.</p>
-                  </div>
-                </Card>
-                <Card className="p-5"><TextArea label="Prompt التحويل المعتمد" rows={22} value={STRICT_JSON_PROMPT} readOnly /></Card>
+
+              <Card className="p-5">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">ما الذي يفعله الرفع الآن؟</h3>
+                <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  <p>1) يضيف تصنيف المادة والفصل والوحدة والموضوع الفرعي إلى الامتحان والأسئلة.</p>
+                  <p>2) يحفظ ملف الامتحان في Google Drive.</p>
+                  <p>3) يفهرس جميع الأسئلة في بنك أسئلة مخفي مرتب.</p>
+                  <p>4) يجعل “أعد أخطائي” يعمل حسب التصنيف، وليس حسب المادة فقط.</p>
+                  <p>5) يميز الإنجليزي كوضع Hybrid، والكيمياء/الأحياء/الإسلامية كـ OMR MCQ.</p>
+                </div>
+                <div className="mt-5 rounded-3xl bg-slate-100 dark:bg-slate-800 p-4 text-sm">
+                  مثال جاهز داخل الحقل يمكن رفعه مباشرة.
+                </div>
+              </Card>
+            </div>
+          ) : null}
+
+          {tab === "bank" ? (
+            <div className="space-y-4">
+              <Input placeholder="بحث..." value={search} onChange={e=>setSearch(e.target.value)} />
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredExams.length ? filteredExams.map(exam => (
+                  <Card key={exam.id} className="p-5">
+                    <div className="font-black text-slate-900 dark:text-white">{exam.title || exam.subjectAr || exam.subject}</div>
+                    <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr || exam.subject} • {exam.unitTitleAr || "بدون وحدة"}</div>
+                    <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">عدد الأسئلة: {(exam.questions||[]).length + (exam.openQuestions||[]).length}</div>
+                    <Button variant="danger" className="w-full mt-4" onClick={()=>deleteExam(exam.id)} disabled={busy}>حذف الامتحان</Button>
+                  </Card>
+                )) : <div className="text-slate-500 dark:text-slate-400">لا توجد امتحانات.</div>}
               </div>
             </div>
           ) : null}
 
-          {tab === 'bank' ? (
+          {tab === "results" ? (
             <div className="space-y-4">
-              <Input label="بحث" placeholder="ابحث بعنوان الامتحان أو المادة أو الوحدة" value={search} onChange={e => setSearch(e.target.value)} />
-              <div className="grid lg:grid-cols-2 gap-4">
-                {filteredExams.length ? filteredExams.map(exam => {
-                  const draft = draftFor(exam);
-                  return (
-                    <Card key={exam.id} className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-black text-xl">{exam.title}</div>
-                          <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exam.subjectAr} • {exam.unitTitleAr || 'بدون وحدة'} • {String(exam.semester) === 'both' ? 'شامل' : `الفصل ${Number(exam.semester) === 1 ? 'الأول' : 'الثاني'}`}</div>
-                        </div>
-                        <Button variant="danger" className="!px-3 !py-2 text-sm" onClick={() => deleteExam(exam.id)} disabled={busy}>حذف</Button>
-                      </div>
-                      <div className="mt-4 grid md:grid-cols-2 gap-3">
-                        <Input label="المدة" type="number" value={draft.duration} onChange={e => setSettingsDraft(prev => ({ ...prev, [exam.id]: { ...draft, duration: e.target.value } }))} />
-                        <label className="flex items-end gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3"><input type="checkbox" checked={!!draft.allowStudentChangeTime} onChange={e => setSettingsDraft(prev => ({ ...prev, [exam.id]: { ...draft, allowStudentChangeTime: e.target.checked } }))} /><span className="font-bold text-sm">السماح للطالب بتغيير الوقت</span></label>
-                        <Input label="أقل وقت" type="number" value={draft.minDuration} onChange={e => setSettingsDraft(prev => ({ ...prev, [exam.id]: { ...draft, minDuration: e.target.value } }))} />
-                        <Input label="أعلى وقت" type="number" value={draft.maxDuration} onChange={e => setSettingsDraft(prev => ({ ...prev, [exam.id]: { ...draft, maxDuration: e.target.value } }))} />
-                      </div>
-                      <Button variant="brand" className="w-full mt-4" onClick={() => saveExamSettings(exam.id)} disabled={busy}>حفظ الإعدادات</Button>
-                    </Card>
-                  );
-                }) : <div className="text-slate-500 dark:text-slate-400">لا توجد امتحانات.</div>}
-              </div>
-            </div>
-          ) : null}
-
-          {tab === 'results' ? (
-            <div className="space-y-4">
-              <Input label="بحث" placeholder="ابحث باسم الطالب أو المادة أو الامتحان" value={search} onChange={e => setSearch(e.target.value)} />
-              <div className="grid lg:grid-cols-2 gap-4">
-                {filteredResults.length ? filteredResults.map(attempt => (
-                  <Card key={attempt.attemptId} className="p-4">
+              <Input placeholder="ابحث بالطالب أو المادة..." value={search} onChange={e=>setSearch(e.target.value)} />
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredResults.length ? filteredResults.map((r,i)=>(
+                  <Card key={i} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="font-black">{attempt.userName}</div>
-                        <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{attempt.examTitle || attempt.subjectAr}</div>
+                        <div className="font-black text-slate-900 dark:text-white">{r.userName}</div>
+                        <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{r.subject}</div>
                       </div>
-                      <div className="text-3xl font-black text-brand-600 dark:text-brand-300">{attempt.score}%</div>
+                      <div className="text-2xl font-black text-brand-600 dark:text-brand-300">{r.score}%</div>
                     </div>
-                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{formatDate(attempt.createdAt)}</div>
+                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{formatDate(r.createdAt)}</div>
                   </Card>
                 )) : <div className="text-slate-500 dark:text-slate-400">لا توجد نتائج.</div>}
               </div>
             </div>
           ) : null}
 
-          {tab === 'qbank' ? (
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">إجمالي الأسئلة</div><div className="text-3xl font-black mt-2">{catalog.questionBankSummary?.totalQuestions || 0}</div></Card>
-                {CURRICULUM.subjects.map(subject => <Card key={subject.code} className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">{subject.nameAr}</div><div className="text-3xl font-black mt-2">{catalog.questionBankSummary?.bySubject?.[subject.code] || 0}</div></Card>)}
-              </div>
-              <Card className="p-5">
-                <div className="text-xl font-black">الوحدات</div>
-                <div className="mt-4 grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {(catalog.questionBankSummary?.units || []).map(row => (
-                    <div key={row.key} className="rounded-3xl border border-slate-200 dark:border-slate-800 p-4">
-                      <div className="text-xs font-bold text-brand-600 dark:text-brand-300">{row.subjectAr}</div>
-                      <div className="mt-2 font-black">{row.unitTitleAr}</div>
-                      <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">الفصل: {row.semester}</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400">الأسئلة: {row.count}</div>
-                      <div className="text-sm text-slate-500 dark:text-slate-400">الامتحانات: {row.examCount}</div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+          {tab === "qbank" ? (
+            <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">إجمالي الأسئلة</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.totalQuestions || 0}</div></Card>
+              <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">الكيمياء</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.bySubject?.chemistry || 0}</div></Card>
+              <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">الأحياء</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.bySubject?.life_sciences || 0}</div></Card>
+              <Card className="p-5"><div className="text-sm text-slate-500 dark:text-slate-400">الإنجليزي</div><div className="text-3xl font-black mt-2">{data.questionBankSummary?.bySubject?.english || 0}</div></Card>
             </div>
           ) : null}
-
-          {tab === 'prompt' ? <Card className="p-5"><TextArea label="Prompt التحويل" rows={28} value={STRICT_JSON_PROMPT} readOnly /></Card> : null}
         </div>
       )}
     </Modal>
@@ -1399,141 +983,128 @@ function App(){
   const [user, setUser] = useState(loadLocal(CONFIG.STORAGE_KEYS.user, null));
   const [darkMode, setDarkMode] = useState(loadLocal(CONFIG.STORAGE_KEYS.darkMode, false));
   const [loading, setLoading] = useState(false);
-  const [catalog, setCatalog] = useState({ exams: [], questionBankSummary: {} });
-  const [results, setResults] = useState([]);
-  const [allResults, setAllResults] = useState([]);
-  const [analytics, setAnalytics] = useState({});
-  const [route, setRoute] = useState({ name: 'home' });
+  const [data, setData] = useState({ exams:[], results:[], allResults:[], analytics:{}, questionBankSummary:{} });
+  const [selectedExam, setSelectedExam] = useState(null);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [redoLoading, setRedoLoading] = useState(false);
+  const [redoFilters, setRedoFilters] = useState({ subjectCode:"", semester:1, unitTitleAr:"", subunitTitleAr:"", limit:10 });
   const toast = useToast();
 
-  useEffect(() => { document.documentElement.classList.toggle('dark', !!darkMode); }, [darkMode]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", !!darkMode);
+  }, [darkMode]);
 
   async function refresh(){
     if(!user) return;
     try{
       setLoading(true);
-      const [catalogRes, resultsRes, analyticsRes] = await Promise.all([
-        api('listExams'),
-        api('getUserResults', { userId: user.id }),
-        api('getUserAnalytics', { userId: user.id })
+      const [examsRes, resultsRes, allRes, analyticsRes, bankRes] = await Promise.all([
+        api("listExams"),
+        api("getUserResults", {userId: user.id}),
+        api("listAllResults", {adminPassword: CONFIG.ADMIN_PASSWORD}),
+        api("getUserAnalytics", {userId: user.id}),
+        api("getQuestionBankSummary")
       ]);
-      setCatalog({ exams: catalogRes.exams || [], questionBankSummary: catalogRes.questionBankSummary || {} });
-      setResults(resultsRes.results || []);
-      setAnalytics(analyticsRes.analytics || {});
-      try{
-        const adminRes = await api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD });
-        setAllResults(adminRes.results || []);
-      }catch{}
-    }catch(err){
-      toast.show('خطأ في التحميل: ' + err.message, 'error');
-    }finally{ setLoading(false); }
-  }
-
-  useEffect(() => { if(user) refresh(); }, [user]);
-
-  async function startExamFromSummary(summary){
-    try{
-      setLoading(true);
-      const res = summary.questions ? { exam: summary } : await api('getExam', { examId: summary.id || summary.examId || summary });
-      let exam = res.exam;
-      if(exam.settings?.allowStudentChangeTime){
-        const min = exam.settings?.minDuration || 300;
-        const max = exam.settings?.maxDuration || 14400;
-        const currentMin = Math.round((exam.duration || min) / 60);
-        const response = prompt(`أدخل مدة الامتحان بالدقائق بين ${Math.ceil(min/60)} و ${Math.floor(max/60)}`, String(currentMin));
-        if(response != null && response !== ''){
-          const nextSeconds = Number(response) * 60;
-          if(!isNaN(nextSeconds) && nextSeconds >= min && nextSeconds <= max) exam.duration = nextSeconds;
-        }
-      }
-      setRoute({ name: 'exam', exam });
-    }catch(err){
-      toast.show('تعذر تحميل الامتحان: ' + err.message, 'error');
-    }finally{ setLoading(false); }
-  }
-
-  async function submitExam(payload){
-    try{
-      const res = await api('submitResult', payload);
-      toast.show('تم حفظ النتيجة، ويمكنك مراجعتها في أي وقت');
-      await refresh();
-      await openReview(res.attemptId);
-    }catch(err){
-      toast.show('فشل حفظ النتيجة: ' + err.message, 'error');
-      throw err;
+      setData({
+        exams: examsRes.exams || [],
+        results: resultsRes.results || [],
+        allResults: allRes.results || [],
+        analytics: analyticsRes.analytics || {},
+        questionBankSummary: bankRes.summary || {}
+      });
+    }catch(e){
+      toast.show("خطأ في التحميل: " + e.message, "error");
+    }finally{
+      setLoading(false);
     }
   }
 
-  async function openReview(attemptId){
+  useEffect(() => {
+    if(user) refresh();
+  }, [user]);
+
+  async function startExam(id){
     try{
       setLoading(true);
-      const res = await api('getAttemptReview', { attemptId });
-      setRoute({ name: 'review', attempt: res.attempt });
-    }catch(err){
-      toast.show('تعذر تحميل المراجعة: ' + err.message, 'error');
-    }finally{ setLoading(false); }
+      const res = await api("getExam", {examId: id});
+      setSelectedExam(res.exam);
+    }catch(e){
+      toast.show("تعذر تحميل الامتحان: " + e.message, "error");
+    }finally{
+      setLoading(false);
+    }
   }
 
-  async function openRedo(attempt){
+  async function finishExam(payload){
     try{
-      setLoading(true);
-      const res = await api('generateRedoExam', { userId: user.id, resultId: attempt.attemptId });
-      setRoute({ name: 'exam', exam: res.exam });
-      toast.show('تم تجهيز نفس الأسئلة الخاطئة');
-    }catch(err){
-      toast.show('تعذر إنشاء تدريب الأخطاء: ' + err.message, 'error');
-    }finally{ setLoading(false); }
+      await api("submitResult", payload);
+      toast.show("تم حفظ النتيجة وتحديث الإتقان");
+      await refresh();
+    }catch(e){
+      toast.show("فشل حفظ النتيجة: " + e.message, "error");
+    }
   }
 
-  async function buildCustomExam(payload){
+  async function generateRedo(){
     try{
-      setLoading(true);
-      const res = await api('buildCustomExam', payload);
-      setRoute({ name: 'exam', exam: res.exam });
-      toast.show('تم تكوين الامتحان المخصص من بنك الأسئلة');
-    }catch(err){
-      toast.show('تعذر بناء الامتحان المخصص: ' + err.message, 'error');
-    }finally{ setLoading(false); }
+      setRedoLoading(true);
+      const res = await api("generateRedoExam", { userId: user.id, ...redoFilters, limit: 10 });
+      setSelectedExam(res.exam);
+      toast.show("تم إنشاء تدريب علاجي جديد");
+    }catch(e){
+      toast.show("تعذر إنشاء تدريب علاجي: " + e.message, "error");
+    }finally{
+      setRedoLoading(false);
+    }
   }
 
   function logout(){
     localStorage.removeItem(CONFIG.STORAGE_KEYS.user);
     setUser(null);
-    setRoute({ name: 'home' });
+    setSelectedExam(null);
   }
 
   if(!user) return <LoginScreen onLogin={setUser} />;
 
-  const topTitle = route.name === 'subject' ? `${getSubjectByCode(route.subjectCode)?.nameAr || ''} - ${CONFIG.APP_SUBTITLE}` : CONFIG.APP_SUBTITLE;
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen text-slate-900 dark:text-slate-100">
       <TopBar
         user={user}
         darkMode={darkMode}
-        onToggleDark={() => { const next = !darkMode; setDarkMode(next); saveLocal(CONFIG.STORAGE_KEYS.darkMode, next); }}
+        onToggleDark={()=>{
+          const next=!darkMode;
+          setDarkMode(next);
+          saveLocal(CONFIG.STORAGE_KEYS.darkMode, next);
+        }}
         onLogout={logout}
-        onOpenAdmin={() => setAdminOpen(true)}
-        onGoHome={() => setRoute({ name: 'home' })}
-        title={topTitle}
+        onOpenAdmin={()=>setAdminOpen(true)}
+        onGoHome={()=>setSelectedExam(null)}
       />
 
       <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-        {loading ? <Card className="p-6">جارٍ التحميل...</Card> : null}
-        {!loading && route.name === 'home' ? <HomeScreen catalog={catalog} results={results} analytics={analytics} onOpenSubject={(subjectCode) => setRoute({ name: 'subject', subjectCode })} /> : null}
-        {!loading && route.name === 'subject' ? <SubjectPage subjectCode={route.subjectCode} catalog={catalog} results={results} analytics={analytics} onBackHome={() => setRoute({ name: 'home' })} onStartExam={startExamFromSummary} onReviewAttempt={openReview} onRedoAttempt={openRedo} onOpenCustomExam={buildCustomExam} /> : null}
-        {!loading && route.name === 'exam' ? <ExamScreen exam={route.exam} user={user} onBack={() => setRoute({ name: 'subject', subjectCode: route.exam.subjectCode })} onSubmitExam={submitExam} /> : null}
-        {!loading && route.name === 'review' ? <ReviewScreen attempt={route.attempt} onBack={() => setRoute({ name: 'subject', subjectCode: route.attempt.subjectCode })} onRedoWrong={openRedo} onRetakeWhole={startExamFromSummary} /> : null}
+        {loading ? (
+          <Card className="p-6">جارٍ التحميل...</Card>
+        ) : selectedExam ? (
+          <ExamScreen exam={selectedExam} user={user} onFinish={finishExam} onExit={()=>setSelectedExam(null)} />
+        ) : (
+          <Dashboard
+            data={data}
+            onStartExam={startExam}
+            onGenerateRedo={generateRedo}
+            redoLoading={redoLoading}
+            redoFilters={redoFilters}
+            setRedoFilters={setRedoFilters}
+          />
+        )}
       </main>
 
-      {adminOpen ? <AdminModal catalog={catalog} allResults={allResults} onRefresh={refresh} onClose={() => setAdminOpen(false)} toast={toast.show} /> : null}
+      {adminOpen ? <AdminModal data={data} onRefresh={refresh} onClose={()=>setAdminOpen(false)} toast={toast.show} /> : null}
       <Toast toast={toast.toast} onClose={toast.clear} />
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
 </html>
