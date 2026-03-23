@@ -48,13 +48,131 @@
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'محاكاة ذكية للتوجيهي مع بنك أسئلة وتحليل نقاط القوة والضعف',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbzIz-rdHokY9J9ABITVlblFwQeRmTsWWq4Ybq6DXSXxzDXJVEVL_KPRXU7glM0X2FQ_mw/exec', // <-- تأكد من وضع رابط الـ Web App الخاص بك هنا
+  API_BASE: 'https://script.google.com/macros/s/AKfycbzIz-rdHokY9J9ABITVlblFwQeRmTsWWq4Ybq6DXSXxzDXJVEVL_KPRXU7glM0X2FQ_mw/exec', // <-- ضع رابطك هنا
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: {
     user: 'dirasti_user_v6',
     darkMode: 'dirasti_dark_v6'
   }
 };
+
+const STRICT_JSON_PROMPT = `You are converting an exam PDF into a STRICT, VALID JSON file for an online exam system.
+
+Your output must be a single raw JSON object only.
+
+CRITICAL OUTPUT RULES:
+1. Output JSON only.
+2. Do NOT add markdown fences.
+3. Do NOT wrap the JSON in quotation marks.
+4. Do NOT add comments.
+5. Do NOT add explanations before or after the JSON.
+6. Every property name must be in double quotes.
+7. Every string value must be in double quotes.
+8. Escape any internal double quotes inside text using backslash, like: \"example\"
+9. Do not leave trailing commas.
+10. The result must be directly parseable by JSON.parse().
+
+SOURCE RULES:
+1. Use the provided PDF content as the absolute primary source. 
+2. SEARCH FOR THE ANSWER KEY: Answers and explanations are usually located at the end or on the last pages of the PDF/images. You must scan the entire document to find them.
+3. Do NOT invent questions, images, charts, tables, or options.
+4. FOR ANSWERS AND EXPLANATIONS: You MUST use the exact answers and explanations provided in the PDF if they exist. 
+5. ONLY IF there is absolutely no answer key or explanation anywhere in the PDF, you are then allowed to use your own AI knowledge to determine the correct answer and provide a brief, accurate explanation.
+6. If a question depends on an image, chart, graph, table, or diagram in the PDF:
+   - identify the PDF page that contains that visual
+   - add a "pdfPageRef" object to that question
+7. The visual reference must come only from the PDF itself.
+8. If no visual is needed for a question, do not add "pdfPageRef".
+
+LANGUAGE AND TEXT RULES:
+1. Preserve the original question wording from the PDF as closely as possible.
+2. Preserve Arabic exactly as it appears, but fix obvious OCR junk only when necessary for readability.
+3. If the source contains quotation marks inside text, escape them properly.
+4. Keep question order exactly as in the PDF.
+5. Keep options order exactly as in the PDF.
+6. Do not paraphrase unless OCR is clearly broken.
+
+JSON SCHEMA:
+The output must follow this exact structure:
+
+{
+  "title": "",
+  "subjectCode": "",
+  "subjectAr": "",
+  "semester": null,
+  "unitTitleAr": "",
+  "subunitTitleAr": "",
+  "examMode": "OMR_MCQ",
+  "duration": null,
+  "sourcePdf": {
+    "fileName": "source.pdf"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "text": "",
+      "options": ["", "", "", ""],
+      "correctIndex": 0,
+      "explanation": ""
+    }
+  ],
+  "openQuestions": []
+}
+
+RULES FOR QUESTIONS:
+1. "id" must be sequential:
+   q1, q2, q3, q4 ...
+2. "text" must contain the full MCQ prompt.
+3. "options" must be an array of the visible answer choices in the same order as the PDF.
+4. "correctIndex" must be:
+   - 0 for first option
+   - 1 for second option
+   - 2 for third option
+   - 3 for fourth option
+5. "correctIndex" MUST be taken from the PDF's answer key (check the last pages). If and ONLY if the PDF has no answer key, use your AI knowledge to determine the correct index.
+6. "explanation" should be:
+   - Copied from the PDF if explicitly present.
+   - If missing from the PDF, use your AI knowledge to generate a brief, clear explanation for why the chosen correctIndex is right.
+
+RULES FOR VISUAL QUESTIONS:
+If a question depends on a picture, chart, graph, table, figure, or diagram from the PDF, add this field:
+
+"pdfPageRef": {
+  "page": 1,
+  "visualType": "image",
+  "description": "",
+  "showFullPage": true
+}
+
+RULES FOR pdfPageRef:
+1. "page" must be the PDF page number where the needed visual appears.
+2. "visualType" must be one of:
+   "image"
+   "chart"
+   "graph"
+   "table"
+   "diagram"
+3. "description" must briefly describe what exists on that page and how it relates to the question.
+4. "showFullPage" must always be true.
+5. Add "pdfPageRef" only if the question actually needs a visual from the PDF.
+
+IMPORTANT VALIDATION RULES:
+1. The final result must be one JSON object starting with { and ending with }.
+2. Do not output this:
+   "{ ... }"
+   It must be:
+   { ... }
+3. Make sure every object property is separated by a comma.
+4. Make sure there is no comma after the last property in an object.
+5. Make sure there is no comma after the last item in an array.
+6. Escape internal quotes inside Arabic or English text.
+7. Use null only without quotes when needed.
+8. Use true only without quotes.
+9. Do not use undefined.
+10. Do not invent extra fields outside the schema unless the question needs "pdfPageRef".
+
+FINAL INSTRUCTION:
+Return raw valid JSON only, matching the schema exactly, with no markdown, no surrounding quotes, no comments, and no extra text.`;
 
 const CURRICULUM = {
   gradeAr: 'الصف الثاني عشر',
@@ -65,7 +183,15 @@ const CURRICULUM = {
       code: 'chemistry',
       nameAr: 'الكيمياء',
       examMode: 'OMR_MCQ',
-      weights: { '1|حالات المادة': 13.5, '1|المحاليل': 8, '1|الاتزان الكيميائي': 10.8, '1|الحموض والقواعد وتطبيقاتها': 18.9, '2|الكيمياء الحركيه': 13.5, '2|الكيمياء الكهربائيه': 17.5, '2|الكيمياء العضويه': 17.5 },
+      weights: {
+        '1|حالات المادة': 13.5,
+        '1|المحاليل': 8,
+        '1|الاتزان الكيميائي': 10.8,
+        '1|الحموض والقواعد وتطبيقاتها': 18.9,
+        '2|الكيمياء الحركيه': 13.5,
+        '2|الكيمياء الكهربائيه': 17.5,
+        '2|الكيمياء العضويه': 17.5
+      },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['حالات المادة','المحاليل','الاتزان الكيميائي','الحموض والقواعد وتطبيقاتها'] },
         { semester: 2, titleAr: 'الفصل الثاني', units: ['الكيمياء الحركيه','الكيمياء الكهربائيه','الكيمياء العضويه'] }
@@ -75,7 +201,17 @@ const CURRICULUM = {
       code: 'life_sciences',
       nameAr: 'الأحياء',
       examMode: 'OMR_MCQ',
-      weights: { '1|كيمياء الحياة': 16.9, '1|دوره الخليه وتصنيع البروتينات': 12.8, '1|الوراثة': 14.9, '1|التكنولوجيا الحيوية': 8.2, '2|التنظيم والاتزان': 11.8, '2|الدعامه والحركه': 6.1, '2|الهضم والنقل وتبادل الغازات': 10.7, '2|الاخراج والتكاثر': 11.3, '2|المناعه والمضادات الحيويه': 6.9 },
+      weights: {
+        '1|كيمياء الحياة': 16.9,
+        '1|دوره الخليه وتصنيع البروتينات': 12.8,
+        '1|الوراثة': 14.9,
+        '1|التكنولوجيا الحيوية': 8.2,
+        '2|التنظيم والاتزان': 11.8,
+        '2|الدعامه والحركه': 6.1,
+        '2|الهضم والنقل وتبادل الغازات': 10.7,
+        '2|الاخراج والتكاثر': 11.3,
+        '2|المناعه والمضادات الحيويه': 6.9
+      },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['كيمياء الحياة','دوره الخليه وتصنيع البروتينات','الوراثة','التكنولوجيا الحيوية'] },
         { semester: 2, titleAr: 'الفصل الثاني', units: ['التنظيم والاتزان','الدعامه والحركه','الهضم والنقل وتبادل الغازات','الاخراج والتكاثر','المناعه والمضادات الحيويه'] }
@@ -85,7 +221,14 @@ const CURRICULUM = {
       code: 'islamic_education',
       nameAr: 'التربيه الاسلاميه',
       examMode: 'OMR_MCQ',
-      weights: { '1|علاقه الانسان بربه': 16.66, '1|علاقه الانسان بنفسه': 16.66, '1|علاقه الانسان بمن حوله': 16.66, '2|علاقه الانسان بربه': 16.66, '2|علاقه الانسان بنفسه': 16.66, '2|علاقه الانسان بمن حوله': 16.66 },
+      weights: {
+        '1|علاقه الانسان بربه': 16.66,
+        '1|علاقه الانسان بنفسه': 16.66,
+        '1|علاقه الانسان بمن حوله': 16.66,
+        '2|علاقه الانسان بربه': 16.66,
+        '2|علاقه الانسان بنفسه': 16.66,
+        '2|علاقه الانسان بمن حوله': 16.66
+      },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] },
         { semester: 2, titleAr: 'الفصل الثاني', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] }
@@ -95,7 +238,18 @@ const CURRICULUM = {
       code: 'english',
       nameAr: 'Advance English',
       examMode: 'HYBRID',
-      weights: { '1|Unit 1': 10, '1|Unit 2': 10, '1|Unit 3': 10, '1|Unit 4': 10, '1|Unit 5': 10, '2|Unit 6': 10, '2|Unit 7': 10, '2|Unit 8': 10, '2|Unit 9': 10, '2|Unit 10': 10 },
+      weights: {
+        '1|Unit 1': 10,
+        '1|Unit 2': 10,
+        '1|Unit 3': 10,
+        '1|Unit 4': 10,
+        '1|Unit 5': 10,
+        '2|Unit 6': 10,
+        '2|Unit 7': 10,
+        '2|Unit 8': 10,
+        '2|Unit 9': 10,
+        '2|Unit 10': 10
+      },
       semesters: [
         { semester: 1, titleAr: 'Semester 1', units: ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5'] },
         { semester: 2, titleAr: 'Semester 2', units: ['Unit 6','Unit 7','Unit 8','Unit 9','Unit 10'] }
@@ -124,7 +278,12 @@ const SAMPLE_EXAM = {
       options: ['يبقى ثابتًا', 'يزداد', 'يقل', 'لا يمكن التحديد'],
       correctIndex: 1,
       explanation: '',
-      pdfPageRef: { page: 2, visualType: 'chart', description: 'الرسم البياني', showFullPage: true }
+      pdfPageRef: {
+        page: 2,
+        visualType: 'chart',
+        description: 'هذه الصفحة تعرض الرسم البياني المستخدم مباشرة في السؤال.',
+        showFullPage: true
+      }
     }
   ],
   openQuestions: []
@@ -172,7 +331,7 @@ const state = {
   },
   builder: {
     totalQuestions: 100,
-    duration: 7200,
+    duration: 120,
     selectedUnitKeys: [],
     explicitCounts: {},
     selectedExamIds: [],
@@ -186,10 +345,14 @@ function loadLocal(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
-  } catch (err) { return fallback; }
+  } catch (err) {
+    return fallback;
+  }
 }
 
-function saveLocal(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function saveLocal(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
 
 function setDarkMode(value) {
   state.darkMode = !!value;
@@ -200,10 +363,17 @@ function setDarkMode(value) {
 setDarkMode(state.darkMode);
 
 function escapeHtml(value) {
-  return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-function normalizeText(value) { return String(value || '').trim().toLowerCase(); }
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
 
 function initials(name) {
   return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'ط';
@@ -211,28 +381,41 @@ function initials(name) {
 
 function formatDate(value) {
   if (!value) return '-';
-  try { return new Date(value).toLocaleString('ar-JO'); } catch (err) { return String(value); }
+  try {
+    return new Date(value).toLocaleString('ar-JO');
+  } catch (err) {
+    return String(value);
+  }
 }
 
-function minutesLabel(seconds) { return Math.max(1, Math.round(Number(seconds || 0) / 60)); }
+function minutesLabel(seconds) {
+  return Math.max(1, Math.round(Number(seconds || 0) / 60));
+}
 
 function percent(correct, total) {
   if (!total) return 0;
   return Math.round((Number(correct || 0) / Number(total || 1)) * 100);
 }
 
-function getSubject(code) { return CURRICULUM.subjects.find(s => s.code === code) || null; }
-
-function getSubjectSummary(code) {
-  return (state.data.questionBankSummary.subjects || []).find(s => s.subjectCode === code) || { totalQuestions: 0, totalExams: 0, units: [] };
+function getSubject(code) {
+  return CURRICULUM.subjects.find(subject => subject.code === code) || null;
 }
 
-// Fixed Key Builder to explicitly match the Backend || split format
-function makeUnitKey(subjectCode, semester, unitTitleAr) { return [subjectCode, Number(semester || 0), unitTitleAr || ''].join('||'); }
+function getSubjectSummary(code) {
+  return (state.data.questionBankSummary.subjects || []).find(subject => subject.subjectCode === code) || { totalQuestions: 0, totalExams: 0, units: [] };
+}
+
+function makeUnitKey(subjectCode, semester, unitTitleAr) {
+  return [subjectCode, Number(semester || 0), unitTitleAr || ''].join('||');
+}
 
 function parseUnitKey(unitKey) {
   const parts = String(unitKey || '').split('||');
-  return { subjectCode: parts[0] || '', semester: Number(parts[1] || 0), unitTitleAr: parts.slice(2).join('||') || '' };
+  return {
+    subjectCode: parts[0] || '',
+    semester: Number(parts[1] || 0),
+    unitTitleAr: parts.slice(2).join('||') || ''
+  };
 }
 
 function buildSubjectUnits(subjectCode) {
@@ -242,31 +425,58 @@ function buildSubjectUnits(subjectCode) {
   subject.semesters.forEach(semester => {
     semester.units.forEach(unitTitleAr => {
       const key = makeUnitKey(subjectCode, semester.semester, unitTitleAr);
-      // Look up weight using the single | specifically configured in CURRICULUM above
-      const weightKey = `${semester.semester}|${unitTitleAr}`;
-      units.push({ key, subjectCode, semester: semester.semester, semesterTitleAr: semester.titleAr, unitTitleAr, weight: Number(subject.weights[weightKey] || 0) });
+      units.push({
+        key,
+        subjectCode,
+        semester: semester.semester,
+        semesterTitleAr: semester.titleAr,
+        unitTitleAr,
+        weight: Number(subject.weights[`${semester.semester}|${unitTitleAr}`] || 0)
+      });
     });
   });
-  units.push({ key: makeUnitKey(subjectCode, 0, CURRICULUM.comprehensiveLabel), subjectCode, semester: 0, semesterTitleAr: 'الفصلان معًا', unitTitleAr: CURRICULUM.comprehensiveLabel, weight: 0, comprehensive: true });
+  units.push({
+    key: makeUnitKey(subjectCode, 0, CURRICULUM.comprehensiveLabel),
+    subjectCode,
+    semester: 0,
+    semesterTitleAr: 'الفصلان معًا',
+    unitTitleAr: CURRICULUM.comprehensiveLabel,
+    weight: 0,
+    comprehensive: true
+  });
   return units;
 }
 
-function getExamsForSubject(subjectCode) { return (state.data.exams || []).filter(e => e.subjectCode === subjectCode); }
+function getExamsForSubject(subjectCode) {
+  return (state.data.exams || []).filter(exam => exam.subjectCode === subjectCode);
+}
 
 function getExamsForUnit(subjectCode, unitKey) {
   const info = parseUnitKey(unitKey);
-  return getExamsForSubject(subjectCode).filter(e => Number(e.semester || 0) === Number(info.semester || 0) && String(e.unitTitleAr || '') === String(info.unitTitleAr || ''));
+  return getExamsForSubject(subjectCode).filter(exam => {
+    return Number(exam.semester || 0) === Number(info.semester || 0) && String(exam.unitTitleAr || '') === String(info.unitTitleAr || '');
+  });
 }
 
-function getQuestionCountForUnit(unitKey) { return Number((state.data.questionBankSummary.byUnitKey || {})[unitKey] || 0); }
+function getQuestionCountForUnit(unitKey) {
+  return Number((state.data.questionBankSummary.byUnitKey || {})[unitKey] || 0);
+}
 
-function getAttemptsForSubject(subjectCode) { return (state.data.results || []).filter(r => r.subjectCode === subjectCode); }
+function getAttemptsForSubject(subjectCode) {
+  return (state.data.results || []).filter(result => result.subjectCode === subjectCode);
+}
 
-function getUnitAnalytics(subjectCode) { return (state.data.analytics.unitMastery || []).filter(item => item.subjectCode === subjectCode); }
+function getUnitAnalytics(subjectCode) {
+  return (state.data.analytics.unitMastery || []).filter(item => item.subjectCode === subjectCode);
+}
 
-function getSubjectAnalytics(subjectCode) { return (state.data.analytics.subjectMastery || []).find(item => item.subjectCode === subjectCode) || null; }
+function getSubjectAnalytics(subjectCode) {
+  return (state.data.analytics.subjectMastery || []).find(item => item.subjectCode === subjectCode) || null;
+}
 
-function hasApiBase() { return String(CONFIG.API_BASE || '').startsWith('https://script.google.com/macros/s/'); }
+function hasApiBase() {
+  return String(CONFIG.API_BASE || '').startsWith('https://script.google.com/macros/s/');
+}
 
 async function api(action, payload) {
   if (!hasApiBase()) throw new Error('ضع رابط Google Apps Script أولًا داخل CONFIG.API_BASE');
@@ -285,24 +495,31 @@ function showToast(message, type) {
   state.toast = { message, type: type || 'success' };
   render();
   clearTimeout(showToast._timer);
-  showToast._timer = setTimeout(() => { state.toast = null; render(); }, 3200);
+  showToast._timer = setTimeout(() => {
+    state.toast = null;
+    render();
+  }, 3200);
 }
 
-function setLoading(value) { state.loading = !!value; render(); }
+function setLoading(value) {
+  state.loading = !!value;
+  render();
+}
 
 async function refreshData() {
   if (!state.user) return;
   try {
     setLoading(true);
-    const [catalogRes, resultsRes, analyticsRes] = await Promise.all([
+    const [examsRes, resultsRes, analyticsRes, bankRes] = await Promise.all([
       api('getCatalog'),
       api('getUserResults', { userId: state.user.id }),
-      api('getUserAnalytics', { userId: state.user.id })
+      api('getUserAnalytics', { userId: state.user.id }),
+      api('getQuestionBankSummary')
     ]);
-    state.data.exams = catalogRes.exams || [];
-    state.data.questionBankSummary = catalogRes.questionBank || { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] };
+    state.data.exams = examsRes.exams || [];
     state.data.results = resultsRes.results || [];
     state.data.analytics = analyticsRes.analytics || { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] };
+    state.data.questionBankSummary = bankRes.summary || { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] };
     render();
   } catch (err) {
     showToast('خطأ في التحميل: ' + err.message, 'error');
@@ -313,13 +530,13 @@ async function refreshData() {
 }
 
 function resetBuilderForSubject(subjectCode) {
-  const units = buildSubjectUnits(subjectCode).filter(u => !u.comprehensive);
-  state.builder.selectedUnitKeys = units.slice(0, Math.min(4, units.length)).map(u => u.key);
+  const units = buildSubjectUnits(subjectCode).filter(unit => !unit.comprehensive);
+  state.builder.selectedUnitKeys = units.slice(0, Math.min(4, units.length)).map(unit => unit.key);
   state.builder.selectedExamIds = [];
   state.builder.explicitCounts = {};
   state.builder.mode = 'weighted';
   state.builder.totalQuestions = 100;
-  state.builder.duration = 7200;
+  state.builder.duration = 120;
 }
 
 function openSubject(subjectCode) {
@@ -340,11 +557,21 @@ function backToHome() {
   render();
 }
 
-function openAdmin() { state.admin.open = true; render(); }
-function closeAdmin() { state.admin.open = false; render(); }
+function openAdmin() {
+  state.admin.open = true;
+  render();
+}
+
+function closeAdmin() {
+  state.admin.open = false;
+  render();
+}
 
 async function adminLogin(password) {
-  if (password !== CONFIG.ADMIN_PASSWORD) { showToast('كلمة مرور الإدارة غير صحيحة', 'error'); return; }
+  if (password !== CONFIG.ADMIN_PASSWORD) {
+    showToast('كلمة مرور الإدارة غير صحيحة', 'error');
+    return;
+  }
   state.admin.authenticated = true;
   try {
     const res = await api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD });
@@ -387,10 +614,17 @@ function renderLogin() {
           <div class="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-bold">جاهز للمذاكرة والتدريب العلاجي</div>
           <h1 class="mt-6 text-4xl md:text-5xl font-black">${escapeHtml(CONFIG.APP_NAME)}</h1>
           <p class="mt-4 text-white/80 leading-8">${escapeHtml(CONFIG.APP_SUBTITLE)}</p>
+          <div class="mt-8 grid sm:grid-cols-2 gap-4">
+            <div class="rounded-3xl bg-white/10 p-4"><div class="text-2xl font-black">4</div><div class="text-white/75 text-sm">مواد رئيسية</div></div>
+            <div class="rounded-3xl bg-white/10 p-4"><div class="text-2xl font-black">PDF + JSON</div><div class="text-white/75 text-sm">ربط مباشر للصور والرسوم</div></div>
+            <div class="rounded-3xl bg-white/10 p-4"><div class="text-2xl font-black">مراجعة</div><div class="text-white/75 text-sm">حفظ دائم للمحاولات</div></div>
+            <div class="rounded-3xl bg-white/10 p-4"><div class="text-2xl font-black">بنك ذكي</div><div class="text-white/75 text-sm">توزيع وزني للوحدات</div></div>
+          </div>
         </div>
         <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-8">
           <div class="text-sm font-bold text-brand-600 dark:text-brand-300">دخول الطالب</div>
           <h2 class="mt-2 text-3xl font-black text-slate-900 dark:text-white">ابدأ من الصفحة الرئيسية</h2>
+          <p class="mt-2 text-slate-500 dark:text-slate-400">بعد الدخول ستظهر المواد الأربع كصناديق كبيرة، ثم الوحدات، ثم الامتحانات داخل كل وحدة.</p>
           <div class="mt-6 space-y-4">
             <label class="block">
               <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">الاسم الكامل</div>
@@ -452,13 +686,57 @@ function renderHome() {
         </div>
       </div>
       <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4">${buildSubjectCards()}</div>
+      <div class="grid xl:grid-cols-[1.4fr,1fr] gap-6">
+        <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-5">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-xl font-black text-slate-900 dark:text-white">أحدث المحاولات المحفوظة</h3>
+            <span class="text-sm text-slate-500 dark:text-slate-400">المراجعة متاحة دائمًا</span>
+          </div>
+          <div class="mt-5 space-y-3">
+            ${recentResults.length ? recentResults.map(result => `
+              <div class="rounded-3xl border border-slate-200 dark:border-slate-800 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div class="font-black text-slate-900 dark:text-white">${escapeHtml(result.examTitle || result.subjectAr || result.subject || '')}</div>
+                  <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">${escapeHtml(result.subjectAr || '')} • ${escapeHtml(result.unitTitleAr || '')}</div>
+                  <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(formatDate(result.createdAt))}</div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-2xl font-black text-brand-600 dark:text-brand-300">${escapeHtml(result.score)}%</div>
+                  <button data-action="review-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-4 py-3 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900">مراجعة</button>
+                </div>
+              </div>
+            `).join('') : `<div class="text-slate-500 dark:text-slate-400">لم تقم بأي محاولة بعد.</div>`}
+          </div>
+        </div>
+        <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-5">
+          <h3 class="text-xl font-black text-slate-900 dark:text-white">أضعف الوحدات حاليًا</h3>
+          <div class="mt-5 space-y-3">
+            ${(state.data.analytics.weaknessRows || []).slice(0, 6).map(row => `
+              <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-4">
+                <div class="text-xs font-bold text-brand-600 dark:text-brand-300">${escapeHtml(row.subjectAr || '')}</div>
+                <div class="mt-1 font-black text-slate-900 dark:text-white">${escapeHtml(row.unitTitleAr || 'بدون وحدة')}</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">إتقان ${escapeHtml(row.mastery)}% • أخطاء ${escapeHtml(row.wrongs)}</div>
+              </div>
+            `).join('') || '<div class="text-slate-500 dark:text-slate-400">لا توجد بيانات بعد.</div>'}
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
 
 function renderSubjectTabs(subjectCode) {
-  const tabs = [['units', 'الوحدات'], ['builder', 'امتحان مخصص من البنك'], ['overview', 'التقييم'], ['attempts', 'المراجعات والأخطاء']];
-  return `<div class="flex flex-wrap gap-2">${tabs.map(tab => `<button data-action="subject-tab" data-tab="${tab[0]}" class="px-4 py-3 rounded-2xl font-bold ${state.subjectTab === tab[0] ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">${escapeHtml(tab[1])}</button>`).join('')}</div>`;
+  const tabs = [
+    ['units', 'الوحدات'],
+    ['builder', 'امتحان مخصص من البنك'],
+    ['overview', 'التقييم'],
+    ['attempts', 'المراجعات والأخطاء']
+  ];
+  return `
+    <div class="flex flex-wrap gap-2">${tabs.map(tab => `
+      <button data-action="subject-tab" data-tab="${tab[0]}" class="px-4 py-3 rounded-2xl font-bold ${state.subjectTab === tab[0] ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">${escapeHtml(tab[1])}</button>
+    `).join('')}</div>
+  `;
 }
 
 function renderUnitCards(subjectCode) {
@@ -488,52 +766,6 @@ function renderUnitCards(subjectCode) {
   `;
 }
 
-function renderExamCard(exam) {
-  const attempts = (state.data.results || []).filter(r => String(r.examId) === String(exam.id));
-  const latestAttempt = attempts.length > 0 ? attempts[0] : null;
-
-  let resultHtml = '';
-  if (latestAttempt) {
-    const wrongs = JSON.parse(latestAttempt.wrongItemsJson || '[]');
-    const corrects = latestAttempt.correctCount || 0;
-    resultHtml = `
-      <div class="mt-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-bold text-slate-700 dark:text-slate-300">آخر نتيجة محفوظة:</span>
-          <span class="text-lg font-black text-brand-600 dark:text-brand-300">${latestAttempt.score}%</span>
-        </div>
-        <div class="flex gap-4 text-sm mb-3">
-          <span class="text-emerald-600 dark:text-emerald-400">صحيح: ${corrects}</span>
-          <span class="text-red-600 dark:text-red-400">خاطئ: ${wrongs.length}</span>
-        </div>
-        <div class="flex gap-2">
-          <button data-action="review-attempt" data-attempt-id="${escapeHtml(latestAttempt.resultId || latestAttempt.id)}" class="flex-1 py-2 rounded-xl text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white hover:opacity-80">مراجعة</button>
-          ${wrongs.length > 0 ? `<button data-action="redo-attempt" data-attempt-id="${escapeHtml(latestAttempt.resultId || latestAttempt.id)}" class="flex-1 py-2 rounded-xl text-sm font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:opacity-80">إعادة الأخطاء</button>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 p-5 bg-white dark:bg-slate-900 shadow-soft">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <div class="text-lg font-black text-slate-900 dark:text-white">${escapeHtml(exam.title || exam.subjectAr || '')}</div>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">${escapeHtml(exam.subjectAr || '')} • ${escapeHtml(exam.unitTitleAr || '')}</div>
-        </div>
-        <div class="rounded-2xl bg-brand-50 dark:bg-brand-950/40 px-3 py-2 text-brand-700 dark:text-brand-300 text-sm font-bold">${escapeHtml(exam.examMode || 'عام')}</div>
-      </div>
-      <div class="mt-5 grid grid-cols-3 gap-3 text-sm">
-        <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div class="text-slate-500 dark:text-slate-400">الدقائق</div><div class="font-black mt-1">${minutesLabel(exam.duration)}</div></div>
-        <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div class="text-slate-500 dark:text-slate-400">الأسئلة</div><div class="font-black mt-1">${exam.questionCount || 0}</div></div>
-        <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div class="text-slate-500 dark:text-slate-400">الوقت</div><div class="font-black mt-1">${exam.allowStudentTimeOverride ? 'مسموح' : 'مغلق'}</div></div>
-      </div>
-      ${resultHtml}
-      <button data-action="prepare-exam" data-exam-id="${escapeHtml(exam.id)}" class="w-full mt-4 px-4 py-3 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 transition hover:bg-slate-700">${latestAttempt ? 'إعادة الامتحان بالكامل' : 'ابدأ الامتحان'}</button>
-    </div>
-  `;
-}
-
 function renderSelectedUnitPanel(subjectCode) {
   if (!state.unitKey) return '';
   const unit = parseUnitKey(state.unitKey);
@@ -554,35 +786,69 @@ function renderSelectedUnitPanel(subjectCode) {
   `;
 }
 
+function renderExamCard(exam) {
+  return `
+    <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 p-5 bg-white dark:bg-slate-900 shadow-soft">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-lg font-black text-slate-900 dark:text-white">${escapeHtml(exam.title || exam.subjectAr || '')}</div>
+          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">${escapeHtml(exam.subjectAr || '')} • ${escapeHtml(exam.unitTitleAr || '')}</div>
+        </div>
+        <div class="rounded-2xl bg-brand-50 dark:bg-brand-950/40 px-3 py-2 text-brand-700 dark:text-brand-300 text-sm font-bold">${escapeHtml(exam.examMode || 'عام')}</div>
+      </div>
+      <div class="mt-5 grid grid-cols-3 gap-3 text-sm">
+        <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div class="text-slate-500 dark:text-slate-400">الدقائق</div><div class="font-black mt-1">${minutesLabel(exam.duration)}</div></div>
+        <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div class="text-slate-500 dark:text-slate-400">MCQ</div><div class="font-black mt-1">${exam.questionCount || 0}</div></div>
+        <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3"><div class="text-slate-500 dark:text-slate-400">تغيير الوقت</div><div class="font-black mt-1">${exam.allowStudentTimeOverride ? 'مسموح' : 'مغلق'}</div></div>
+      </div>
+      <button data-action="prepare-exam" data-exam-id="${escapeHtml(exam.id)}" class="w-full mt-5 px-4 py-3 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900">ابدأ الامتحان</button>
+    </div>
+  `;
+}
+
 function computeBuilderPreview(subjectCode) {
   const subject = getSubject(subjectCode);
-  const selectedUnits = buildSubjectUnits(subjectCode).filter(u => state.builder.selectedUnitKeys.includes(u.key) && !u.comprehensive);
+  const selectedUnits = buildSubjectUnits(subjectCode).filter(unit => state.builder.selectedUnitKeys.includes(unit.key) && !unit.comprehensive);
   const preview = [];
   if (!selectedUnits.length) return preview;
 
   if (state.builder.mode === 'manual') {
     selectedUnits.forEach(unit => {
-      preview.push({ key: unit.key, semester: unit.semester, unitTitleAr: unit.unitTitleAr, available: getQuestionCountForUnit(unit.key), requested: Number(state.builder.explicitCounts[unit.key] || 0), normalizedWeight: null });
+      preview.push({
+        key: unit.key,
+        semester: unit.semester,
+        unitTitleAr: unit.unitTitleAr,
+        available: getQuestionCountForUnit(unit.key),
+        requested: Number(state.builder.explicitCounts[unit.key] || 0),
+        normalizedWeight: null
+      });
     });
     return preview;
   }
 
   const weights = selectedUnits.map(unit => Number(subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 1));
-  const totalWeight = weights.reduce((sum, val) => sum + val, 0) || selectedUnits.length;
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0) || selectedUnits.length;
   selectedUnits.forEach((unit, index) => {
     const normalizedWeight = ((weights[index] / totalWeight) * 100);
-    preview.push({ key: unit.key, semester: unit.semester, unitTitleAr: unit.unitTitleAr, available: getQuestionCountForUnit(unit.key), requested: Math.round((normalizedWeight / 100) * Number(state.builder.totalQuestions || 0)), normalizedWeight });
+    preview.push({
+      key: unit.key,
+      semester: unit.semester,
+      unitTitleAr: unit.unitTitleAr,
+      available: getQuestionCountForUnit(unit.key),
+      requested: Math.round((normalizedWeight / 100) * Number(state.builder.totalQuestions || 0)),
+      normalizedWeight: normalizedWeight
+    });
   });
   return preview;
 }
 
 function renderBuilder(subjectCode) {
   const subject = getSubject(subjectCode);
-  const units = buildSubjectUnits(subjectCode).filter(u => !u.comprehensive);
+  const units = buildSubjectUnits(subjectCode).filter(unit => !unit.comprehensive);
   const selectedUnitKeys = state.builder.selectedUnitKeys;
   const preview = computeBuilderPreview(subjectCode);
   const examsByUnit = {};
-  units.forEach(u => { examsByUnit[u.key] = getExamsForUnit(subjectCode, u.key); });
+  units.forEach(unit => { examsByUnit[unit.key] = getExamsForUnit(subjectCode, unit.key); });
   return `
     <div class="space-y-6">
       <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-5">
@@ -603,7 +869,7 @@ function renderBuilder(subjectCode) {
               </label>
               <label class="block">
                 <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">الوقت (بالدقائق)</div>
-                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3" value="${escapeHtml(minutesLabel(state.builder.duration) || 120)}" />
+                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3" value="${escapeHtml(state.builder.duration || 120)}" />
               </label>
             </div>
             <div class="mt-5 grid md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -613,10 +879,10 @@ function renderBuilder(subjectCode) {
                   <div class="flex-1">
                     <div class="text-xs font-bold text-brand-600 dark:text-brand-300">${escapeHtml(unit.semesterTitleAr)}</div>
                     <div class="mt-1 font-black text-slate-900 dark:text-white">${escapeHtml(unit.unitTitleAr)}</div>
-                    <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">البنك: <span class="font-bold text-brand-600 dark:text-brand-300">${getQuestionCountForUnit(unit.key)}</span> سؤال • الوزن: ${subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 0}%</div>
+                    <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">البنك: ${getQuestionCountForUnit(unit.key)} سؤال • الوزن: ${subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 0}%</div>
                     ${state.builder.mode === 'manual' && selectedUnitKeys.includes(unit.key) ? `
                       <div class="mt-3">
-                        <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة من هذه الوحدة">
+                        <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة المطلوبة">
                       </div>
                     ` : ''}
                   </div>
@@ -704,8 +970,8 @@ function renderSubjectAttempts(subjectCode) {
               </div>
               <div class="flex flex-wrap items-center gap-3">
                 <div class="text-2xl font-black text-brand-600 dark:text-brand-300">${escapeHtml(result.score)}%</div>
-                <button data-action="review-attempt" data-attempt-id="${escapeHtml(result.resultId || result.id)}" class="px-4 py-3 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900">مراجعة</button>
-                <button data-action="redo-attempt" data-attempt-id="${escapeHtml(result.resultId || result.id)}" class="px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700">إعادة نفس الأخطاء</button>
+                <button data-action="review-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-4 py-3 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900">مراجعة</button>
+                <button data-action="redo-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700">إعادة نفس الأخطاء</button>
               </div>
             </div>
           `).join('') : '<div class="text-slate-500 dark:text-slate-400">لا توجد محاولات محفوظة لهذه المادة بعد.</div>'}
@@ -742,12 +1008,18 @@ function renderSubjectScreen(subjectCode) {
   `;
 }
 
-function getQuestionPdfSource(question, exam) { return question.sourcePdfBase64 || (exam && exam.sourcePdf && exam.sourcePdf.base64) || ''; }
+function getQuestionPdfSource(question, exam) {
+  return question.sourcePdfBase64 || (exam && exam.sourcePdf && exam.sourcePdf.base64) || '';
+}
 
 function stripBase64Exam(exam) {
   const clone = JSON.parse(JSON.stringify(exam));
   if (clone.sourcePdf && clone.sourcePdf.base64) delete clone.sourcePdf.base64;
-  ['questions', 'openQuestions'].forEach(field => { (clone[field] || []).forEach(item => { if (item && item.sourcePdfBase64) delete item.sourcePdfBase64; }); });
+  ['questions', 'openQuestions'].forEach(field => {
+    (clone[field] || []).forEach(item => {
+      if (item && item.sourcePdfBase64) delete item.sourcePdfBase64;
+    });
+  });
   return clone;
 }
 
@@ -1429,19 +1701,34 @@ async function generateRedo(payload) {
   }
 }
 
+// ** تم إصلاح إرسال بيانات الامتحان المخصص هنا لضمان مطابقته الصحيحة مع البنك **
 async function generateCustomExam() {
   try {
-    const selectedUnits = state.builder.selectedUnitKeys.map(key => {
-      const info = parseUnitKey(key);
-      return { semester: info.semester, unitTitleAr: info.unitTitleAr, key };
-    });
-    if (!selectedUnits.length) { showToast('اختر وحدة واحدة على الأقل.', 'error'); return; }
+    const selectedUnits = state.builder.selectedUnitKeys;
+    if (!selectedUnits.length) { 
+      showToast('اختر وحدة واحدة على الأقل.', 'error'); 
+      return; 
+    }
+    
+    // منع الإرسال إذا كان الوضع يدوياً والـ input فارغ
+    if (state.builder.mode === 'manual') {
+      let hasCounts = false;
+      selectedUnits.forEach(key => {
+        if (Number(state.builder.explicitCounts[key] || 0) > 0) hasCounts = true;
+      });
+      if (!hasCounts) {
+        showToast('يرجى تحديد عدد الأسئلة لوحدة واحدة على الأقل في الوضع اليدوي.', 'error');
+        return;
+      }
+    }
+
     setLoading(true);
     const payload = {
       subjectCode: state.subjectCode,
       totalQuestions: Number(state.builder.totalQuestions || 100),
-      duration: Number(state.builder.duration || 7200) * 60,
-      selectedUnits,
+      duration: Number(state.builder.duration || 120) * 60,
+      mode: state.builder.mode,
+      selectedUnits: selectedUnits, // إرسال المفاتيح لتفكيكها في الباك إند
       selectedExamIds: state.builder.selectedExamIds.slice(),
       explicitUnitCounts: state.builder.explicitCounts,
       title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '')
