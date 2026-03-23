@@ -48,7 +48,7 @@
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'محاكاة ذكية للتوجيهي مع بنك أسئلة وتحليل نقاط القوة والضعف',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbzIz-rdHokY9J9ABITVlblFwQeRmTsWWq4Ybq6DXSXxzDXJVEVL_KPRXU7glM0X2FQ_mw/exec', // <-- Paste your deployed Web App URL here
+  API_BASE: 'https://script.google.com/macros/s/AKfycbzIz-rdHokY9J9ABITVlblFwQeRmTsWWq4Ybq6DXSXxzDXJVEVL_KPRXU7glM0X2FQ_mw/exec', // <-- تأكد من وضع رابط الـ Web App الخاص بك هنا
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: {
     user: 'dirasti_user_v6',
@@ -227,11 +227,12 @@ function getSubjectSummary(code) {
   return (state.data.questionBankSummary.subjects || []).find(s => s.subjectCode === code) || { totalQuestions: 0, totalExams: 0, units: [] };
 }
 
-function makeUnitKey(subjectCode, semester, unitTitleAr) { return [subjectCode, Number(semester || 0), unitTitleAr || ''].join('|'); }
+// Fixed Key Builder to explicitly match the Backend || split format
+function makeUnitKey(subjectCode, semester, unitTitleAr) { return [subjectCode, Number(semester || 0), unitTitleAr || ''].join('||'); }
 
 function parseUnitKey(unitKey) {
-  const parts = String(unitKey || '').split('|');
-  return { subjectCode: parts[0] || '', semester: Number(parts[1] || 0), unitTitleAr: parts.slice(2).join('|') || '' };
+  const parts = String(unitKey || '').split('||');
+  return { subjectCode: parts[0] || '', semester: Number(parts[1] || 0), unitTitleAr: parts.slice(2).join('||') || '' };
 }
 
 function buildSubjectUnits(subjectCode) {
@@ -241,7 +242,9 @@ function buildSubjectUnits(subjectCode) {
   subject.semesters.forEach(semester => {
     semester.units.forEach(unitTitleAr => {
       const key = makeUnitKey(subjectCode, semester.semester, unitTitleAr);
-      units.push({ key, subjectCode, semester: semester.semester, semesterTitleAr: semester.titleAr, unitTitleAr, weight: Number(subject.weights[key.split('|').slice(1).join('|')] || 0) });
+      // Look up weight using the single | specifically configured in CURRICULUM above
+      const weightKey = `${semester.semester}|${unitTitleAr}`;
+      units.push({ key, subjectCode, semester: semester.semester, semesterTitleAr: semester.titleAr, unitTitleAr, weight: Number(subject.weights[weightKey] || 0) });
     });
   });
   units.push({ key: makeUnitKey(subjectCode, 0, CURRICULUM.comprehensiveLabel), subjectCode, semester: 0, semesterTitleAr: 'الفصلان معًا', unitTitleAr: CURRICULUM.comprehensiveLabel, weight: 0, comprehensive: true });
@@ -1430,7 +1433,7 @@ async function generateCustomExam() {
   try {
     const selectedUnits = state.builder.selectedUnitKeys.map(key => {
       const info = parseUnitKey(key);
-      return { semester: info.semester, unitTitleAr: info.unitTitleAr };
+      return { semester: info.semester, unitTitleAr: info.unitTitleAr, key };
     });
     if (!selectedUnits.length) { showToast('اختر وحدة واحدة على الأقل.', 'error'); return; }
     setLoading(true);
@@ -1626,7 +1629,6 @@ document.addEventListener('click', async event => {
     if (action === 'close-admin') { closeAdmin(); return; }
     if (action === 'admin-login') { const input = document.getElementById('admin-password'); await adminLogin(input ? input.value : ''); return; }
     if (action === 'admin-tab') { state.admin.tab = target.getAttribute('data-tab'); render(); return; }
-    if (action === 'copy-prompt') { await navigator.clipboard.writeText(STRICT_JSON_PROMPT); showToast('تم نسخ الـ prompt'); return; }
     if (action === 'upload-exam') { await uploadExamFromAdmin(); return; }
     if (action === 'save-exam-settings') { await saveExamSettings(target.getAttribute('data-exam-id')); return; }
     if (action === 'delete-exam') { await deleteExam(target.getAttribute('data-exam-id')); return; }
