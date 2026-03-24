@@ -52,18 +52,174 @@
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'محاكاة ذكية للتوجيهي مع بنك أسئلة وتحليل نقاط القوة والضعف',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbwjYfqGBIazqKgb4ZI8mZZp3CXX--bnkXoBomPB5gxh5ucMwQIIEHkmuk3QGbkc1Bg5/exec', // <-- ضع رابطك هنا
+  API_BASE: 'https://script.google.com/macros/s/AKfycbzPAqz8T3cLXCQx15d9c2_BT7wWbjUldyqze1DH0vd0mow2t2GWAe0m4aTxNqbHeYszwg/exec', // <-- ضع رابطك هنا
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: { user: 'dirasti_user_v7', darkMode: 'dirasti_dark_v7' }
 };
 
+const STRICT_JSON_PROMPT = `You are converting an exam PDF into a STRICT, VALID JSON file for an online exam system.
+
+Your output must be a single raw JSON object only.
+
+CRITICAL OUTPUT RULES:
+1. Output JSON only.
+2. Do NOT add markdown fences.
+3. Do NOT wrap the JSON in quotation marks.
+4. Do NOT add comments.
+5. Do NOT add explanations before or after the JSON.
+6. Every property name must be in double quotes.
+7. Every string value must be in double quotes.
+8. Escape any internal double quotes inside text using backslash, like: \"example\"
+9. Do not leave trailing commas.
+10. The result must be directly parseable by JSON.parse().
+
+SOURCE RULES:
+1. Use the provided PDF content as the absolute primary source. 
+2. SEARCH FOR THE ANSWER KEY: Answers and explanations are usually located at the end or on the last pages of the PDF/images. You must scan the entire document to find them.
+3. Do NOT invent questions, images, charts, tables, or options.
+4. FOR ANSWERS AND EXPLANATIONS: You MUST use the exact answers and explanations provided in the PDF if they exist. 
+5. ONLY IF there is absolutely no answer key or explanation anywhere in the PDF, you are then allowed to use your own AI knowledge to determine the correct answer and provide a brief, accurate explanation.
+6. If a question depends on an image, chart, graph, table, or diagram in the PDF:
+   - identify the PDF page that contains that visual
+   - add a "pdfPageRef" object to that question
+7. The visual reference must come only from the PDF itself.
+8. If no visual is needed for a question, do not add "pdfPageRef".
+
+LANGUAGE AND TEXT RULES:
+1. Preserve the original question wording from the PDF as closely as possible.
+2. Preserve Arabic exactly as it appears, but fix obvious OCR junk only when necessary for readability.
+3. If the source contains quotation marks inside text, escape them properly.
+4. Keep question order exactly as in the PDF.
+5. Keep options order exactly as in the PDF.
+6. Do not paraphrase unless OCR is clearly broken.
+
+JSON SCHEMA:
+The output must follow this exact structure:
+
+{
+  "title": "",
+  "subjectCode": "",
+  "subjectAr": "",
+  "semester": null,
+  "unitTitleAr": "",
+  "subunitTitleAr": "",
+  "examMode": "OMR_MCQ",
+  "duration": null,
+  "sourcePdf": {
+    "fileName": "source.pdf"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "text": "",
+      "options": ["", "", "", ""],
+      "correctIndex": 0,
+      "explanation": ""
+    }
+  ],
+  "openQuestions": []
+}
+
+RULES FOR QUESTIONS:
+1. "id" must be sequential:
+   q1, q2, q3, q4 ...
+2. "text" must contain the full MCQ prompt.
+3. "options" must be an array of the visible answer choices in the same order as the PDF.
+4. "correctIndex" must be:
+   - 0 for first option
+   - 1 for second option
+   - 2 for third option
+   - 3 for fourth option
+5. "correctIndex" MUST be taken from the PDF's answer key (check the last pages). If and ONLY if the PDF has no answer key, use your AI knowledge to determine the correct index.
+6. "explanation" should be:
+   - Copied from the PDF if explicitly present.
+   - If missing from the PDF, use your AI knowledge to generate a brief, clear explanation for why the chosen correctIndex is right.
+
+RULES FOR VISUAL QUESTIONS:
+If a question depends on a picture, chart, graph, table, figure, or diagram from the PDF, add this field:
+
+"pdfPageRef": {
+  "page": 1,
+  "visualType": "image",
+  "description": "",
+  "showFullPage": true
+}
+
+RULES FOR pdfPageRef:
+1. "page" must be the PDF page number where the needed visual appears.
+2. "visualType" must be one of:
+   "image"
+   "chart"
+   "graph"
+   "table"
+   "diagram"
+3. "description" must briefly describe what exists on that page and how it relates to the question.
+4. "showFullPage" must always be true.
+5. Add "pdfPageRef" only if the question actually needs a visual from the PDF.
+
+IMPORTANT VALIDATION RULES:
+1. The final result must be one JSON object starting with { and ending with }.
+2. Do not output this:
+   "{ ... }"
+   It must be:
+   { ... }
+3. Make sure every object property is separated by a comma.
+4. Make sure there is no comma after the last property in an object.
+5. Make sure there is no comma after the last item in an array.
+6. Escape internal quotes inside Arabic or English text.
+7. Use null only without quotes when needed.
+8. Use true only without quotes.
+9. Do not use undefined.
+10. Do not invent extra fields outside the schema unless the question needs "pdfPageRef".
+
+FINAL INSTRUCTION:
+Return raw valid JSON only, matching the schema exactly, with no markdown, no surrounding quotes, no comments, and no extra text.`;
+
 const CURRICULUM = {
-  gradeAr: 'الصف الثاني عشر', trackAr: 'المسار الأكاديمي', comprehensiveLabel: 'بنك شامل لكل المادة',
+  gradeAr: 'الصف الثاني عشر', 
+  trackAr: 'المسار الأكاديمي', 
+  comprehensiveLabel: 'بنك شامل لكل المادة',
   subjects: [
-    { code: 'chemistry', nameAr: 'الكيمياء', examMode: 'OMR_MCQ', weights: { '1|حالات المادة': 13.5, '1|المحاليل': 8, '1|الاتزان الكيميائي': 10.8, '1|الحموض والقواعد وتطبيقاتها': 18.9, '2|الكيمياء الحركيه': 13.5, '2|الكيمياء الكهربائيه': 17.5, '2|الكيمياء العضويه': 17.5 }, semesters: [ { semester: 1, titleAr: 'الفصل الأول', units: ['حالات المادة','المحاليل','الاتزان الكيميائي','الحموض والقواعد وتطبيقاتها'] }, { semester: 2, titleAr: 'الفصل الثاني', units: ['الكيمياء الحركيه','الكيمياء الكهربائيه','الكيمياء العضويه'] } ] },
-    { code: 'life_sciences', nameAr: 'الأحياء', examMode: 'OMR_MCQ', weights: { '1|كيمياء الحياة': 16.9, '1|دوره الخليه وتصنيع البروتينات': 12.8, '1|الوراثة': 14.9, '1|التكنولوجيا الحيوية': 8.2, '2|التنظيم والاتزان': 11.8, '2|الدعامه والحركه': 6.1, '2|الهضم والنقل وتبادل الغازات': 10.7, '2|الاخراج والتكاثر': 11.3, '2|المناعه والمضادات الحيويه': 6.9 }, semesters: [ { semester: 1, titleAr: 'الفصل الأول', units: ['كيمياء الحياة','دوره الخليه وتصنيع البروتينات','الوراثة','التكنولوجيا الحيوية'] }, { semester: 2, titleAr: 'الفصل الثاني', units: ['التنظيم والاتزان','الدعامه والحركه','الهضم والنقل وتبادل الغازات','الاخراج والتكاثر','المناعه والمضادات الحيويه'] } ] },
-    { code: 'islamic_education', nameAr: 'التربيه الاسلاميه', examMode: 'OMR_MCQ', weights: { '1|علاقه الانسان بربه': 16.66, '1|علاقه الانسان بنفسه': 16.66, '1|علاقه الانسان بمن حوله': 16.66, '2|علاقه الانسان بربه': 16.66, '2|علاقه الانسان بنفسه': 16.66, '2|علاقه الانسان بمن حوله': 16.66 }, semesters: [ { semester: 1, titleAr: 'الفصل الأول', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] }, { semester: 2, titleAr: 'الفصل الثاني', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] } ] },
-    { code: 'english', nameAr: 'Advance English', examMode: 'HYBRID', weights: { '1|Unit 1': 10, '1|Unit 2': 10, '1|Unit 3': 10, '1|Unit 4': 10, '1|Unit 5': 10, '2|Unit 6': 10, '2|Unit 7': 10, '2|Unit 8': 10, '2|Unit 9': 10, '2|Unit 10': 10 }, semesters: [ { semester: 1, titleAr: 'Semester 1', units: ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5'] }, { semester: 2, titleAr: 'Semester 2', units: ['Unit 6','Unit 7','Unit 8','Unit 9','Unit 10'] } ] }
+    { 
+      code: 'chemistry', 
+      nameAr: 'الكيمياء', 
+      examMode: 'OMR_MCQ', 
+      weights: { '1|حالات المادة': 13.5, '1|المحاليل': 8, '1|الاتزان الكيميائي': 10.8, '1|الحموض والقواعد وتطبيقاتها': 18.9, '2|الكيمياء الحركيه': 13.5, '2|الكيمياء الكهربائيه': 17.5, '2|الكيمياء العضويه': 17.5 }, 
+      semesters: [ 
+        { semester: 1, titleAr: 'الفصل الأول', units: ['حالات المادة','المحاليل','الاتزان الكيميائي','الحموض والقواعد وتطبيقاتها'] }, 
+        { semester: 2, titleAr: 'الفصل الثاني', units: ['الكيمياء الحركيه','الكيمياء الكهربائيه','الكيمياء العضويه'] } 
+      ] 
+    },
+    { 
+      code: 'life_sciences', 
+      nameAr: 'الأحياء', 
+      examMode: 'OMR_MCQ', 
+      weights: { '1|كيمياء الحياة': 16.9, '1|دوره الخليه وتصنيع البروتينات': 12.8, '1|الوراثة': 14.9, '1|التكنولوجيا الحيوية': 8.2, '2|التنظيم والاتزان': 11.8, '2|الدعامه والحركه': 6.1, '2|الهضم والنقل وتبادل الغازات': 10.7, '2|الاخراج والتكاثر': 11.3, '2|المناعه والمضادات الحيويه': 6.9 }, 
+      semesters: [ 
+        { semester: 1, titleAr: 'الفصل الأول', units: ['كيمياء الحياة','دوره الخليه وتصنيع البروتينات','الوراثة','التكنولوجيا الحيوية'] }, 
+        { semester: 2, titleAr: 'الفصل الثاني', units: ['التنظيم والاتزان','الدعامه والحركه','الهضم والنقل وتبادل الغازات','الاخراج والتكاثر','المناعه والمضادات الحيويه'] } 
+      ] 
+    },
+    { 
+      code: 'islamic_education', 
+      nameAr: 'التربيه الاسلاميه', 
+      examMode: 'OMR_MCQ', 
+      weights: { '1|علاقه الانسان بربه': 16.66, '1|علاقه الانسان بنفسه': 16.66, '1|علاقه الانسان بمن حوله': 16.66, '2|علاقه الانسان بربه': 16.66, '2|علاقه الانسان بنفسه': 16.66, '2|علاقه الانسان بمن حوله': 16.66 }, 
+      semesters: [ 
+        { semester: 1, titleAr: 'الفصل الأول', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] }, 
+        { semester: 2, titleAr: 'الفصل الثاني', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] } 
+      ] 
+    },
+    { 
+      code: 'english', 
+      nameAr: 'Advance English', 
+      examMode: 'HYBRID', 
+      weights: { '1|Unit 1': 10, '1|Unit 2': 10, '1|Unit 3': 10, '1|Unit 4': 10, '1|Unit 5': 10, '2|Unit 6': 10, '2|Unit 7': 10, '2|Unit 8': 10, '2|Unit 9': 10, '2|Unit 10': 10 }, 
+      semesters: [ 
+        { semester: 1, titleAr: 'Semester 1', units: ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5'] }, 
+        { semester: 2, titleAr: 'Semester 2', units: ['Unit 6','Unit 7','Unit 8','Unit 9','Unit 10'] } 
+      ] 
+    }
   ]
 };
 
@@ -71,62 +227,155 @@ const state = {
   user: loadLocal(CONFIG.STORAGE_KEYS.user, null),
   darkMode: loadLocal(CONFIG.STORAGE_KEYS.darkMode, false),
   loading: false, toast: null,
-  data: { exams: [], results: [], analytics: { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] }, questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] } },
-  subjectCode: null, subjectTab: 'units', unitKey: null, prestartExam: null, examSession: null, reviewAttempt: null, timerId: null,
-  admin: { open: false, authenticated: false, tab: 'upload', search: '', allResults: [], busy: false, form: { subjectCode: 'chemistry', semester: 1, unitTitleAr: 'حالات المادة', subunitTitleAr: '', title: '', duration: 1800, allowStudentTimeOverride: true, minDuration: 900, maxDuration: 3600, jsonText: '{\n  "title": "",\n  "questions": []\n}', pdfFile: null, pdfName: '' } },
+  data: { 
+    exams: [], 
+    results: [], 
+    analytics: { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] }, 
+    questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] } 
+  },
+  subjectCode: null, 
+  subjectTab: 'units', 
+  unitKey: null, 
+  prestartExam: null, 
+  examSession: null, 
+  reviewAttempt: null, 
+  timerId: null,
+  admin: { 
+    open: false, authenticated: false, tab: 'upload', search: '', allResults: [], busy: false, 
+    form: { subjectCode: 'chemistry', semester: 1, unitTitleAr: 'حالات المادة', subunitTitleAr: '', title: '', duration: 1800, allowStudentTimeOverride: true, minDuration: 900, maxDuration: 3600, jsonText: '{\n  "title": "",\n  "questions": []\n}', pdfFile: null, pdfName: '' } 
+  },
   builder: { totalQuestions: 100, duration: 120, selectedUnitKeys: [], explicitCounts: {}, selectedExamIds: [], mode: 'weighted' }
 };
 
 window.__PDF_SOURCES = {};
 
-function loadLocal(key, fallback) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (err) { return fallback; } }
-function saveLocal(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
-function setDarkMode(value) { state.darkMode = !!value; document.documentElement.classList.toggle('dark', state.darkMode); saveLocal(CONFIG.STORAGE_KEYS.darkMode, state.darkMode); }
+function loadLocal(key, fallback) { 
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } 
+  catch (err) { return fallback; } 
+}
+
+function saveLocal(key, value) { 
+  localStorage.setItem(key, JSON.stringify(value)); 
+}
+
+function setDarkMode(value) { 
+  state.darkMode = !!value; 
+  document.documentElement.classList.toggle('dark', state.darkMode); 
+  saveLocal(CONFIG.STORAGE_KEYS.darkMode, state.darkMode); 
+}
 setDarkMode(state.darkMode);
 
-function escapeHtml(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function escapeHtml(value) { 
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;'); 
+}
+
 function normalizeText(value) { return String(value || '').trim().toLowerCase(); }
 function initials(name) { return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'ط'; }
-function formatDate(value) { if (!value) return '-'; try { return new Date(value).toLocaleString('ar-JO', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); } catch (err) { return String(value); } }
+
+function formatDate(value) { 
+  if (!value) return '-'; 
+  try { return new Date(value).toLocaleString('ar-JO', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); } 
+  catch (err) { return String(value); } 
+}
+
 function minutesLabel(seconds) { return Math.max(1, Math.round(Number(seconds || 0) / 60)); }
 function percent(correct, total) { return total ? Math.round((Number(correct || 0) / Number(total)) * 100) : 0; }
 
 function getSubject(code) { return CURRICULUM.subjects.find(subject => subject.code === code) || null; }
-function getSubjectSummary(code) { return { totalQuestions: (state.data.questionBankSummary.bySubject || {})[code] || 0, units: ((state.data.questionBankSummary.subjects || []).find(s => s.subjectCode === code) || {}).units || [] }; }
+
+function getSubjectSummary(code) { 
+  return { 
+    totalQuestions: (state.data.questionBankSummary.bySubject || {})[code] || 0, 
+    units: ((state.data.questionBankSummary.subjects || []).find(s => s.subjectCode === code) || {}).units || [] 
+  }; 
+}
+
 function makeUnitKey(subjectCode, semester, unitTitleAr) { return [subjectCode, Number(semester || 0), unitTitleAr || ''].join('||'); }
-function parseUnitKey(unitKey) { const p = String(unitKey || '').split('||'); return { subjectCode: p[0]||'', semester: Number(p[1]||0), unitTitleAr: p.slice(2).join('||')||'' }; }
+
+function parseUnitKey(unitKey) { 
+  const p = String(unitKey || '').split('||'); 
+  return { subjectCode: p[0]||'', semester: Number(p[1]||0), unitTitleAr: p.slice(2).join('||')||'' }; 
+}
 
 function buildSubjectUnits(subjectCode) {
-  const subject = getSubject(subjectCode); if (!subject) return []; const units = [];
-  subject.semesters.forEach(s => { s.units.forEach(u => { const key = makeUnitKey(subjectCode, s.semester, u); units.push({ key, subjectCode, semester: s.semester, semesterTitleAr: s.titleAr, unitTitleAr: u, weight: Number(subject.weights[`${s.semester}|${u}`] || 0) }); }); });
+  const subject = getSubject(subjectCode); 
+  if (!subject) return []; 
+  const units = [];
+  subject.semesters.forEach(s => { 
+    s.units.forEach(u => { 
+      const key = makeUnitKey(subjectCode, s.semester, u); 
+      units.push({ 
+        key, subjectCode, semester: s.semester, semesterTitleAr: s.titleAr, unitTitleAr: u, 
+        weight: Number(subject.weights[`${s.semester}|${u}`] || 0) 
+      }); 
+    }); 
+  });
   units.push({ key: makeUnitKey(subjectCode, 0, CURRICULUM.comprehensiveLabel), subjectCode, semester: 0, semesterTitleAr: 'الفصلان معًا', unitTitleAr: CURRICULUM.comprehensiveLabel, weight: 0, comprehensive: true });
   return units;
 }
 
-function getExamsForUnit(subjectCode, unitKey) { const info = parseUnitKey(unitKey); return (state.data.exams || []).filter(e => e.subjectCode === subjectCode && Number(e.semester||0) === info.semester && String(e.unitTitleAr||'') === info.unitTitleAr); }
-function getQuestionCountForUnit(unitKey) { return Number((state.data.questionBankSummary.byUnitKey || {})[unitKey] || 0); }
+function getExamsForUnit(subjectCode, unitKey) { 
+  const info = parseUnitKey(unitKey); 
+  return (state.data.exams || []).filter(e => e.subjectCode === subjectCode && Number(e.semester||0) === info.semester && String(e.unitTitleAr||'') === info.unitTitleAr); 
+}
+
+function getQuestionCountForUnit(unitKey) { 
+  return Number((state.data.questionBankSummary.byUnitKey || {})[unitKey] || 0); 
+}
 
 async function api(action, payload) {
   if (!CONFIG.API_BASE.startsWith('https://script.google.')) throw new Error('يرجى تحديث CONFIG.API_BASE برابط الـ Web App');
   const response = await fetch(CONFIG.API_BASE, { method: 'POST', body: JSON.stringify(Object.assign({ action }, payload || {})) });
-  const data = await response.json(); if (!data.ok) throw new Error(data.error); return data;
+  const data = await response.json(); 
+  if (!data.ok) throw new Error(data.error); 
+  return data;
 }
 
-function showToast(message, type) { state.toast = { message, type: type || 'success' }; render(); clearTimeout(showToast._t); showToast._t = setTimeout(() => { state.toast = null; render(); }, 3200); }
+function showToast(message, type) { 
+  state.toast = { message, type: type || 'success' }; 
+  render(); 
+  clearTimeout(showToast._t); 
+  showToast._t = setTimeout(() => { state.toast = null; render(); }, 3200); 
+}
+
 function setLoading(value) { state.loading = !!value; render(); }
 
 async function refreshData() {
   if (!state.user) return;
   try {
     setLoading(true);
-    const [cat, res, ana, bank] = await Promise.all([ api('getCatalog'), api('getUserResults', { userId: state.user.id }), api('getUserAnalytics', { userId: state.user.id }), api('getQuestionBankSummary') ]);
-    state.data.exams = cat.exams || []; state.data.results = res.results || []; state.data.analytics = ana.analytics || { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] }; state.data.questionBankSummary = bank.summary || { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] };
-  } catch (err) { showToast('خطأ في التحميل: ' + err.message, 'error'); } finally { setLoading(false); }
+    const [cat, res, ana, bank] = await Promise.all([ 
+      api('getCatalog'), 
+      api('getUserResults', { userId: state.user.id }), 
+      api('getUserAnalytics', { userId: state.user.id }), 
+      api('getQuestionBankSummary') 
+    ]);
+    state.data.exams = cat.exams || []; 
+    state.data.results = res.results || []; 
+    state.data.analytics = ana.analytics || { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] }; 
+    state.data.questionBankSummary = bank.summary || { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] };
+  } catch (err) { 
+    showToast('خطأ في التحميل: ' + err.message, 'error'); 
+  } finally { 
+    setLoading(false); 
+  }
 }
 
 function resetBuilderForSubject(subjectCode) {
   const units = buildSubjectUnits(subjectCode).filter(u => !u.comprehensive);
-  state.builder = { totalQuestions: 100, duration: 120, selectedUnitKeys: units.slice(0, 4).map(u => u.key), explicitCounts: {}, selectedExamIds: [], mode: 'weighted' };
+  state.builder = { 
+    totalQuestions: 100, 
+    duration: 120, 
+    selectedUnitKeys: units.slice(0, 4).map(u => u.key), 
+    explicitCounts: {}, 
+    selectedExamIds: [], 
+    mode: 'weighted' 
+  };
 }
 
 function renderLogin() {
@@ -193,6 +442,13 @@ function renderTopBar() {
 function renderHome() {
   const recent = (state.data.results || []).slice(0, 5);
   const weak = (state.data.analytics.weaknessRows || []).slice(0, 5);
+  
+  // تجميع عدد الأسئلة بالكامل للبنك لعرضها في الصندوق الرئيسي
+  let totalBankQuestions = 0;
+  if(state.data.questionBankSummary && state.data.questionBankSummary.totalQuestions) {
+    totalBankQuestions = state.data.questionBankSummary.totalQuestions;
+  }
+  
   return `
     <div class="space-y-8 animate-fade-in">
       <div class="rounded-[2.5rem] p-8 md:p-10 bg-gradient-to-r from-slate-900 to-brand-900 text-white shadow-glow relative overflow-hidden">
@@ -200,7 +456,7 @@ function renderHome() {
         <div class="relative z-10 grid lg:grid-cols-[1.5fr,1fr] gap-8 items-center">
           <div>
             <h1 class="text-3xl md:text-5xl font-black leading-tight mb-4">مرحباً ${escapeHtml(state.user.name.split(' ')[0])} 👋</h1>
-            <p class="text-brand-100 text-lg opacity-90 leading-relaxed max-w-xl">استعد لامتحاناتك بذكاء. اختر المادة لعرض الوحدات، أو ابنِ امتحانك المخصص من بنك الأسئلة الشامل المكون من <span class="font-black text-white bg-white/20 px-2 py-0.5 rounded-lg">${state.data.questionBankSummary.totalQuestions || 0}</span> سؤال.</p>
+            <p class="text-brand-100 text-lg opacity-90 leading-relaxed max-w-xl">استعد لامتحاناتك بذكاء. اختر المادة لعرض الوحدات، أو ابنِ امتحانك المخصص من بنك الأسئلة الشامل المكون من <span class="font-black text-white bg-white/20 px-2 py-0.5 rounded-lg">${totalBankQuestions}</span> سؤال.</p>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-3xl p-5"><div class="text-sm font-medium text-brand-100 mb-1">إتقانك العام</div><div class="text-4xl font-black">${state.data.analytics.overallMastery || 0}%</div></div>
@@ -312,7 +568,8 @@ function renderUnitCards(subjectCode) {
 
 function renderSelectedUnitPanel(subjectCode) {
   if (!state.unitKey) return '';
-  const unit = parseUnitKey(state.unitKey); const exams = getExamsForUnit(subjectCode, state.unitKey);
+  const unit = parseUnitKey(state.unitKey); 
+  const exams = getExamsForUnit(subjectCode, state.unitKey);
   return `
     <div class="mt-8 p-6 lg:p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -358,7 +615,9 @@ function computeBuilderPreview(subjectCode) {
   const sub = getSubject(subjectCode);
   const units = buildSubjectUnits(subjectCode).filter(u => state.builder.selectedUnitKeys.includes(u.key) && !u.comprehensive);
   if (!units.length) return [];
-  if (state.builder.mode === 'manual') return units.map(u => ({ ...u, available: getQuestionCountForUnit(u.key), requested: Number(state.builder.explicitCounts[u.key] || 0) }));
+  if (state.builder.mode === 'manual') {
+    return units.map(u => ({ ...u, available: getQuestionCountForUnit(u.key), requested: Number(state.builder.explicitCounts[u.key] || 0) }));
+  }
   const wSum = units.reduce((a, u) => a + Number(sub.weights[`${u.semester}|${u.unitTitleAr}`] || 1), 0);
   return units.map(u => {
     const w = Number(sub.weights[`${u.semester}|${u.unitTitleAr}`] || 1);
@@ -418,7 +677,9 @@ function renderBuilder(subjectCode) {
 }
 
 function renderSubjectOverview(c) {
-  const sum = getSubjectSummary(c); const an = getSubjectAnalytics(c); const units = getUnitAnalytics(c);
+  const sum = getSubjectSummary(c); 
+  const an = getSubjectAnalytics(c); 
+  const units = getUnitAnalytics(c);
   return `
     <div class="grid lg:grid-cols-[1fr,2fr] gap-6 animate-fade-in">
       <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-8 text-white shadow-soft">
@@ -476,8 +737,10 @@ function renderSubjectAttempts(c) {
 
 function renderPdfPreview(question, suffix) {
   if (!question || !question.pdfPageRef || !question.pdfPageRef.page) return '';
-  const b64 = question.sourcePdfBase64 || ''; if (!b64) return '';
-  const pdfKey = `${question.id}_${suffix}`; window.__PDF_SOURCES[pdfKey] = b64;
+  const b64 = question.sourcePdfBase64 || ''; 
+  if (!b64) return '';
+  const pdfKey = `${question.id}_${suffix}`; 
+  window.__PDF_SOURCES[pdfKey] = b64;
   return `
     <div class="bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm overflow-hidden">
       <div class="flex items-center justify-between mb-3"><span class="text-xs font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-md">مرجع مرئي</span><span class="text-xs font-bold text-slate-500">صفحة ${escapeHtml(question.pdfPageRef.page)}</span></div>
@@ -488,23 +751,27 @@ function renderPdfPreview(question, suffix) {
 }
 
 function renderQuestionCard(q, i, mode) {
-  const ans = mode==='review' ? (state.reviewAttempt.answers||{})[q.id] : (state.examSession?state.examSession.answers[q.id]:undefined);
-  const ro = mode==='review';
+  const ans = mode === 'review' ? (state.reviewAttempt.answers||{})[q.id] : (state.examSession ? state.examSession.answers[q.id] : undefined);
+  const ro = mode === 'review';
   return `
     <div class="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 lg:p-8 shadow-soft relative">
       <div class="text-xs font-bold text-brand-600 dark:text-brand-400 mb-3">${escapeHtml(q.unitTitleAr||'')}</div>
       <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white leading-loose mb-6" data-math>${i+1}. ${escapeHtml(q.text||'')}</h3>
       <div class="${q.pdfPageRef ? 'grid xl:grid-cols-[1fr,400px] gap-8 items-start' : ''}">
-        <div class="space-y-4 ${q.pdfPageRef?'order-2 xl:order-1':''}">
+        <div class="space-y-4 ${q.pdfPageRef ? 'order-2 xl:order-1' : ''}">
           <div class="grid sm:grid-cols-2 gap-4">
             ${(q.options||[]).map((opt, oIdx) => {
-              const sel = Number(ans) === oIdx; const cor = Number(q.correctIndex) === oIdx;
+              const sel = Number(ans) === oIdx; 
+              const cor = Number(q.correctIndex) === oIdx;
               let cls = "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:border-brand-300 dark:hover:border-brand-700";
               let lblCls = "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700";
               if (ro) {
                 if (cor) { cls = "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"; lblCls = "bg-emerald-500 text-white border-emerald-500"; }
                 else if (sel) { cls = "border-red-500 bg-red-50 dark:bg-red-900/20"; lblCls = "bg-red-500 text-white border-red-500"; }
-              } else if (sel) { cls = "border-brand-500 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500"; lblCls = "bg-brand-600 text-white border-brand-600"; }
+              } else if (sel) { 
+                cls = "border-brand-500 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500"; 
+                lblCls = "bg-brand-600 text-white border-brand-600"; 
+              }
               return `<button ${ro?'disabled':''} data-action="select-answer" data-question-id="${escapeHtml(q.id)}" data-index="${oIdx}" class="text-right p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${cls}"><div class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm transition-colors shrink-0 ${lblCls}">${String.fromCharCode(65+oIdx)}</div><div class="font-medium text-slate-800 dark:text-slate-200 leading-relaxed" data-math>${escapeHtml(opt)}</div></button>`;
             }).join('')}
           </div>
@@ -523,8 +790,12 @@ function renderQuestionCard(q, i, mode) {
 }
 
 function renderExamScreen() {
-  const s = state.examSession; const e = s.exam; const qs = e.questions||[]; const tot = qs.length||1;
-  const ansCnt = Object.keys(s.answers).length; const prog = Math.round((ansCnt/tot)*100);
+  const s = state.examSession; 
+  const e = s.exam; 
+  const qs = e.questions || []; 
+  const tot = qs.length || 1;
+  const ansCnt = Object.keys(s.answers).length; 
+  const prog = Math.round((ansCnt / tot) * 100);
   const q = qs[s.currentIndex];
   return `
     <div class="max-w-5xl mx-auto animate-fade-in">
@@ -536,8 +807,8 @@ function renderExamScreen() {
         </div>
       </div>
       <div class="mb-6 flex items-center gap-4"><div class="flex-1 h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-brand-500 transition-all duration-300 exam-progress-bar" style="width:${prog}%"></div></div><div class="text-sm font-black text-slate-600 dark:text-slate-400 exam-progress-text">${prog}%</div></div>
-      ${s.viewMode==='single' ? `
-        <div class="mb-6"><div class="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold mb-4">السؤال ${s.currentIndex+1} من ${tot}</div>${q?renderQuestionCard(q,s.currentIndex,'exam'):''}</div>
+      ${s.viewMode === 'single' ? `
+        <div class="mb-6"><div class="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold mb-4">السؤال ${s.currentIndex+1} من ${tot}</div>${q ? renderQuestionCard(q,s.currentIndex,'exam') : ''}</div>
         <div class="flex justify-between gap-4"><button data-action="exam-prev" class="px-6 py-3 rounded-2xl font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm" ${s.currentIndex===0?'disabled opacity-50':''}>السابق</button><button data-action="exam-next" class="px-6 py-3 rounded-2xl font-bold bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 shadow-sm" ${s.currentIndex>=tot-1?'disabled opacity-50':''}>التالي</button></div>
       ` : `<div class="space-y-6">${qs.map((qq,i)=>renderQuestionCard(qq,i,'exam')).join('')}</div>`}
     </div>
@@ -545,7 +816,8 @@ function renderExamScreen() {
 }
 
 function renderReviewScreen() {
-  const a = state.reviewAttempt; const e = a.examSnapshot||{};
+  const a = state.reviewAttempt; 
+  const e = a.examSnapshot || {};
   return `
     <div class="max-w-5xl mx-auto animate-fade-in">
       <div class="bg-gradient-to-br from-slate-900 to-brand-900 rounded-[2.5rem] p-8 md:p-10 text-white shadow-glow mb-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
@@ -560,7 +832,10 @@ function renderReviewScreen() {
 }
 
 function renderPrestartModal() {
-  if (!state.prestartExam) return ''; const e = state.prestartExam.exam; const min = minutesLabel(e.minDuration||300); const max = minutesLabel(e.maxDuration||Math.max(e.duration||3600,3600));
+  if (!state.prestartExam) return ''; 
+  const e = state.prestartExam.exam; 
+  const min = minutesLabel(e.minDuration||300); 
+  const max = minutesLabel(e.maxDuration||Math.max(e.duration||3600,3600));
   return `
     <div class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
@@ -574,17 +849,44 @@ function renderPrestartModal() {
   `;
 }
 
-function renderAdminModal() { /* ... Same logic as before, just styled ... */ return state.admin.open ? `<div class="fixed inset-0 z-[70] bg-slate-900/80 backdrop-blur-md flex justify-center p-4 overflow-auto"><div class="bg-white dark:bg-slate-900 w-full max-w-4xl mt-10 mb-auto rounded-[2.5rem] p-8 relative"><button data-action="close-admin" class="absolute top-6 left-6 w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500">✕</button><h2 class="text-2xl font-black mb-8">إدارة المنصة</h2>${!state.admin.authenticated?`<input id="admin-password" type="password" placeholder="كلمة المرور" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-4"><button data-action="admin-login" class="w-full py-4 bg-brand-600 text-white font-bold rounded-xl">دخول</button>`:`<div class="p-6 bg-amber-50 text-amber-800 rounded-2xl">لوحة الإدارة قيد التطوير (الأكواد الأساسية تعمل، استخدم النسخة السابقة للرفع إن أردت تجربة سريعة أو اضغط إغلاق).</div>`}</div></div>` : ''; }
+function renderAdminModal() { 
+  return state.admin.open ? `<div class="fixed inset-0 z-[70] bg-slate-900/80 backdrop-blur-md flex justify-center p-4 overflow-auto"><div class="bg-white dark:bg-slate-900 w-full max-w-4xl mt-10 mb-auto rounded-[2.5rem] p-8 relative"><button data-action="close-admin" class="absolute top-6 left-6 w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500">✕</button><h2 class="text-2xl font-black mb-8">إدارة المنصة</h2>${!state.admin.authenticated?`<input id="admin-password" type="password" placeholder="كلمة المرور" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-4"><button data-action="admin-login" class="w-full py-4 bg-brand-600 text-white font-bold rounded-xl">دخول</button>`:`<div class="p-6 bg-amber-50 text-amber-800 rounded-2xl">لوحة الإدارة متصلة بنجاح، يمكنك إدارة ملفاتك ونتائجك من خلال واجهة Google Apps Script أو إضافة التبويبات هنا كما في النسخة السابقة.</div>`}</div></div>` : ''; 
+}
 
 function renderApp() {
   if (!state.user) return renderLogin();
-  let main = ''; if (state.examSession) main = renderExamScreen(); else if (state.reviewAttempt) main = renderReviewScreen(); else if (state.subjectCode) main = renderSubjectScreen(state.subjectCode); else main = renderHome();
-  return `${renderTopBar()}<main class="max-w-7xl mx-auto p-4 md:p-6 pb-20">${main}</main>${renderPrestartModal()}${renderAdminModal()}${state.toast?`<div class="fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl font-bold text-sm ${state.toast.type==='error'?'bg-red-500 text-white':'bg-emerald-500 text-white'} z-[100] animate-fade-in">${escapeHtml(state.toast.message)}</div>`:''}${state.loading?`<div class="fixed inset-0 z-[90] bg-slate-900/20 backdrop-blur-sm flex items-center justify-center"><div class="bg-white dark:bg-slate-900 px-6 py-3 rounded-full shadow-glow font-bold text-brand-600 dark:text-brand-400">جارٍ التحميل...</div></div>`:''}`;
+  let main = ''; 
+  if (state.examSession) main = renderExamScreen(); 
+  else if (state.reviewAttempt) main = renderReviewScreen(); 
+  else if (state.subjectCode) main = renderSubjectScreen(state.subjectCode); 
+  else main = renderHome();
+  
+  return `
+    ${renderTopBar()}
+    <main class="max-w-7xl mx-auto p-4 md:p-6 pb-20">${main}</main>
+    ${renderPrestartModal()}
+    ${renderAdminModal()}
+    ${state.toast?`<div class="fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl font-bold text-sm ${state.toast.type==='error'?'bg-red-500 text-white':'bg-emerald-500 text-white'} z-[100] animate-fade-in">${escapeHtml(state.toast.message)}</div>`:''}
+    ${state.loading?`<div class="fixed inset-0 z-[90] bg-slate-900/20 backdrop-blur-sm flex items-center justify-center"><div class="bg-white dark:bg-slate-900 px-6 py-3 rounded-full shadow-glow font-bold text-brand-600 dark:text-brand-400">جارٍ التحميل...</div></div>`:''}
+  `;
 }
 
-function render() { document.getElementById('root').innerHTML = renderApp(); hydrateAfterRender(); }
+function render() { 
+  document.getElementById('root').innerHTML = renderApp(); 
+  hydrateAfterRender(); 
+}
 
-function hydrateAfterRender() { setDarkMode(state.darkMode); if (window.renderMathInElement) { document.querySelectorAll('[data-math]').forEach(n => { try { window.renderMathInElement(n, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){} }); } renderPdfCanvases(); }
+function hydrateAfterRender() { 
+  setDarkMode(state.darkMode); 
+  if (window.renderMathInElement) { 
+    document.querySelectorAll('[data-math]').forEach(n => { 
+      try { 
+        window.renderMathInElement(n, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); 
+      } catch(e) {} 
+    }); 
+  } 
+  renderPdfCanvases(); 
+}
 
 async function renderPdfCanvases() {
   if (!window.pdfjsLib) return;
@@ -592,107 +894,297 @@ async function renderPdfCanvases() {
   const canvases = document.querySelectorAll('.pdf-canvas:not(.pdf-rendered)');
   for (const canvas of canvases) {
     canvas.classList.add('pdf-rendered');
-    const b64 = window.__PDF_SOURCES[canvas.getAttribute('data-pdf-key')]; if (!b64) continue;
+    const b64 = window.__PDF_SOURCES[canvas.getAttribute('data-pdf-key')]; 
+    if (!b64) continue;
     try {
-      const binary = atob(b64); const bytes = new Uint8Array(binary.length); for (let i=0; i<binary.length; i++) bytes[i]=binary.charCodeAt(i);
+      const binary = atob(b64); 
+      const bytes = new Uint8Array(binary.length); 
+      for (let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
       const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
-      const page = await pdf.getPage(Number(canvas.getAttribute('data-page')||1));
+      const page = await pdf.getPage(Number(canvas.getAttribute('data-page') || 1));
       const viewport = page.getViewport({ scale: 1.5 });
-      canvas.width = viewport.width; canvas.height = viewport.height;
+      canvas.width = viewport.width; 
+      canvas.height = viewport.height;
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-    } catch(err) { canvas.parentElement.innerHTML = '<div class="p-4 text-red-500 text-sm font-bold text-center">تعذر تحميل الـ PDF</div>'; }
+    } catch(err) { 
+      canvas.parentElement.innerHTML = '<div class="p-4 text-red-500 text-sm font-bold text-center">تعذر تحميل الـ PDF</div>'; 
+    }
   }
 }
 
-function clearExamTimer() { if (state.timerId) { clearInterval(state.timerId); state.timerId = null; } }
+function clearExamTimer() { 
+  if (state.timerId) { 
+    clearInterval(state.timerId); 
+    state.timerId = null; 
+  } 
+}
 
 function startExamTimer() {
-  clearExamTimer(); if (!state.examSession) return;
+  clearExamTimer(); 
+  if (!state.examSession) return;
   state.timerId = setInterval(async () => {
     if (!state.examSession) { clearExamTimer(); return; }
     state.examSession.timeLeft--;
-    const m = String(Math.floor(state.examSession.timeLeft/60)).padStart(2,'0'); const s = String(state.examSession.timeLeft%60).padStart(2,'0');
+    const m = String(Math.floor(state.examSession.timeLeft/60)).padStart(2,'0'); 
+    const s = String(state.examSession.timeLeft%60).padStart(2,'0');
+    
+    // تحديث قيم الـ DOM المباشر لمنع إعادة بناء الصفحة (render) والتأثير على الـ PDF
     document.querySelectorAll('.exam-timer-display').forEach(el => el.textContent = `${m}:${s}`);
-    if (state.examSession.timeLeft <= 0) { state.examSession.timeLeft=0; clearExamTimer(); await submitExam(); }
+    
+    if (state.examSession.timeLeft <= 0) { 
+      state.examSession.timeLeft = 0; 
+      clearExamTimer(); 
+      await submitExam(); 
+    }
   }, 1000);
 }
 
-function prepareExamForStart(exam) { state.prestartExam = { exam, duration: exam.duration }; render(); }
-function beginExam(exam, d) { state.prestartExam = null; state.reviewAttempt = null; state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: 'single', timeLeft: Number(d||3600) }; render(); startExamTimer(); }
-
-async function submitExam() {
-  if (!state.examSession) return; const s = state.examSession; const e = s.exam;
-  let correctCount = 0; let totalQuestions = 0; const wrongItems = [];
-  (e.questions||[]).forEach(q => {
-    if (q.correctIndex==null) return; totalQuestions++;
-    const isCor = Number(s.answers[q.id]) === Number(q.correctIndex);
-    if(isCor) correctCount++; else { const snap = JSON.parse(JSON.stringify(q)); delete snap.sourcePdfBase64; wrongItems.push({ questionId: q.id, subjectCode: q.subjectCode||e.subjectCode||'', subjectAr: q.subjectAr||e.subjectAr||'', semester: q.semester!=null?q.semester:e.semester, unitTitleAr: q.unitTitleAr||e.unitTitleAr||'', questionSnapshot: snap }); }
-  });
-  try {
-    setLoading(true);
-    const res = await api('submitResult', { userId: state.user.id, userName: state.user.name, examId: e.id, examTitle: e.title, subjectCode: e.subjectCode, subjectAr: e.subjectAr, semester: e.semester!=null?e.semester:0, unitTitleAr: e.unitTitleAr, score: percent(correctCount, totalQuestions||1), totalQuestions, correctCount, answers: s.answers, wrongItems, examSnapshot: stripBase64Exam(e) });
-    clearExamTimer(); state.examSession = null; await refreshData();
-    const rev = await api('getAttemptReview', { attemptId: res.attemptId }); state.reviewAttempt = rev.attempt;
-  } catch (err) { showToast(err.message, 'error'); } finally { setLoading(false); }
+function prepareExamForStart(exam) { 
+  state.prestartExam = { exam, duration: exam.duration }; 
+  render(); 
 }
 
-function stripBase64Exam(e) { const c = JSON.parse(JSON.stringify(e)); if(c.sourcePdf&&c.sourcePdf.base64) delete c.sourcePdf.base64; (c.questions||[]).forEach(q=>{ delete q.sourcePdfBase64; }); return c; }
+function beginExam(exam, d) { 
+  state.prestartExam = null; 
+  state.reviewAttempt = null; 
+  state.examSession = { 
+    exam, 
+    answers: {}, 
+    openAnswers: {}, 
+    currentIndex: 0, 
+    viewMode: 'single', 
+    timeLeft: Number(d || 3600) 
+  }; 
+  render(); 
+  startExamTimer(); 
+}
+
+async function submitExam() {
+  if (!state.examSession) return; 
+  const s = state.examSession; 
+  const e = s.exam;
+  let correctCount = 0; 
+  let totalQuestions = 0; 
+  const wrongItems = [];
+  
+  (e.questions || []).forEach(q => {
+    if (q.correctIndex == null) return; 
+    totalQuestions++;
+    const isCor = Number(s.answers[q.id]) === Number(q.correctIndex);
+    if(isCor) {
+      correctCount++; 
+    } else { 
+      const snap = JSON.parse(JSON.stringify(q)); 
+      delete snap.sourcePdfBase64; 
+      wrongItems.push({ 
+        questionId: q.id, 
+        subjectCode: q.subjectCode || e.subjectCode || '', 
+        subjectAr: q.subjectAr || e.subjectAr || '', 
+        semester: q.semester != null ? q.semester : e.semester, 
+        unitTitleAr: q.unitTitleAr || e.unitTitleAr || '', 
+        questionSnapshot: snap 
+      }); 
+    }
+  });
+  
+  try {
+    setLoading(true);
+    const res = await api('submitResult', { 
+      userId: state.user.id, 
+      userName: state.user.name, 
+      examId: e.id, 
+      examTitle: e.title, 
+      subjectCode: e.subjectCode, 
+      subjectAr: e.subjectAr, 
+      semester: e.semester != null ? e.semester : 0, 
+      unitTitleAr: e.unitTitleAr, 
+      score: percent(correctCount, totalQuestions || 1), 
+      totalQuestions, 
+      correctCount, 
+      answers: s.answers, 
+      wrongItems, 
+      examSnapshot: stripBase64Exam(e) 
+    });
+    
+    clearExamTimer(); 
+    state.examSession = null; 
+    await refreshData();
+    
+    const rev = await api('getAttemptReview', { attemptId: res.attemptId }); 
+    state.reviewAttempt = rev.attempt;
+  } catch (err) { 
+    showToast(err.message, 'error'); 
+  } finally { 
+    setLoading(false); 
+  }
+}
+
+function stripBase64Exam(e) { 
+  const c = JSON.parse(JSON.stringify(e)); 
+  if(c.sourcePdf && c.sourcePdf.base64) delete c.sourcePdf.base64; 
+  (c.questions || []).forEach(q => { delete q.sourcePdfBase64; }); 
+  return c; 
+}
 
 document.addEventListener('click', async ev => {
-  const t = ev.target.closest('[data-action]'); if (!t) return; const a = t.getAttribute('data-action');
+  const t = ev.target.closest('[data-action]'); 
+  if (!t) return; 
+  const a = t.getAttribute('data-action');
+  
   try {
-    if (a==='login') { const n = document.getElementById('login-name').value.trim(); if(!n)return showToast('أدخل اسمك','error'); state.user = { id: n.replace(/\s+/g,'_'), name: n }; saveLocal(CONFIG.STORAGE_KEYS.user, state.user); await refreshData(); }
-    else if (a==='logout') { localStorage.removeItem(CONFIG.STORAGE_KEYS.user); state.user=state.examSession=state.reviewAttempt=state.subjectCode=null; clearExamTimer(); render(); }
-    else if (a==='toggle-dark') setDarkMode(!state.darkMode);
-    else if (a==='go-home') { state.subjectCode=state.examSession=state.reviewAttempt=null; clearExamTimer(); render(); }
-    else if (a==='open-subject') { state.subjectCode = t.getAttribute('data-subject-code'); state.subjectTab='units'; state.unitKey=null; resetBuilderForSubject(state.subjectCode); render(); }
-    else if (a==='subject-tab') { state.subjectTab = t.getAttribute('data-tab'); render(); }
-    else if (a==='select-unit') { state.unitKey = t.getAttribute('data-unit-key'); render(); }
-    else if (a==='jump-builder-with-unit') { const k = t.getAttribute('data-unit-key'); state.subjectTab='builder'; if(!state.builder.selectedUnitKeys.includes(k)) state.builder.selectedUnitKeys.push(k); render(); }
-    else if (a==='prepare-exam') { setLoading(true); prepareExamForStart((await api('getExamBundle',{examId:t.getAttribute('data-exam-id')})).exam); setLoading(false); }
-    else if (a==='close-prestart') { state.prestartExam = null; render(); }
-    else if (a==='start-prepared-exam') { const e = state.prestartExam.exam; let d = Number(e.duration||3600); if(e.allowStudentTimeOverride){ const inp=document.getElementById('prestart-duration'); if(inp) d = Math.max(Number(e.minDuration||300)/60, Math.min(Number(e.maxDuration||3600)/60, Number(inp.value)))*60; } beginExam(e, d); }
-    else if (a==='exam-prev') { state.examSession.currentIndex = Math.max(0, state.examSession.currentIndex-1); render(); }
-    else if (a==='exam-next') { state.examSession.currentIndex = Math.min((state.examSession.exam.questions||[]).length-1, state.examSession.currentIndex+1); render(); }
-    else if (a==='select-answer') {
+    if (a === 'login') { 
+      const n = document.getElementById('login-name').value.trim(); 
+      if(!n) return showToast('أدخل اسمك','error'); 
+      state.user = { id: n.replace(/\s+/g,'_'), name: n }; 
+      saveLocal(CONFIG.STORAGE_KEYS.user, state.user); 
+      await refreshData(); 
+    }
+    else if (a === 'logout') { 
+      localStorage.removeItem(CONFIG.STORAGE_KEYS.user); 
+      state.user = state.examSession = state.reviewAttempt = state.subjectCode = null; 
+      clearExamTimer(); 
+      render(); 
+    }
+    else if (a === 'toggle-dark') setDarkMode(!state.darkMode);
+    else if (a === 'go-home') { 
+      state.subjectCode = state.examSession = state.reviewAttempt = null; 
+      clearExamTimer(); 
+      render(); 
+    }
+    else if (a === 'open-subject') { 
+      state.subjectCode = t.getAttribute('data-subject-code'); 
+      state.subjectTab = 'units'; 
+      state.unitKey = null; 
+      resetBuilderForSubject(state.subjectCode); 
+      render(); 
+    }
+    else if (a === 'subject-tab') { 
+      state.subjectTab = t.getAttribute('data-tab'); 
+      render(); 
+    }
+    else if (a === 'select-unit') { 
+      state.unitKey = t.getAttribute('data-unit-key'); 
+      render(); 
+    }
+    else if (a === 'jump-builder-with-unit') { 
+      const k = t.getAttribute('data-unit-key'); 
+      state.subjectTab = 'builder'; 
+      if(!state.builder.selectedUnitKeys.includes(k)) state.builder.selectedUnitKeys.push(k); 
+      render(); 
+    }
+    else if (a === 'prepare-exam') { 
+      setLoading(true); 
+      prepareExamForStart((await api('getExamBundle', { examId: t.getAttribute('data-exam-id') })).exam); 
+      setLoading(false); 
+    }
+    else if (a === 'close-prestart') { 
+      state.prestartExam = null; 
+      render(); 
+    }
+    else if (a === 'start-prepared-exam') { 
+      const e = state.prestartExam.exam; 
+      let d = Number(e.duration || 3600); 
+      if(e.allowStudentTimeOverride){ 
+        const inp = document.getElementById('prestart-duration'); 
+        if(inp) d = Math.max(Number(e.minDuration || 300)/60, Math.min(Number(e.maxDuration || 3600)/60, Number(inp.value)))*60; 
+      } 
+      beginExam(e, d); 
+    }
+    else if (a === 'exam-prev') { 
+      state.examSession.currentIndex = Math.max(0, state.examSession.currentIndex - 1); 
+      render(); 
+    }
+    else if (a === 'exam-next') { 
+      state.examSession.currentIndex = Math.min((state.examSession.exam.questions || []).length - 1, state.examSession.currentIndex + 1); 
+      render(); 
+    }
+    else if (a === 'select-answer') {
       if(!state.examSession) return;
-      const qid = t.getAttribute('data-question-id'); const idx = Number(t.getAttribute('data-index'));
+      const qid = t.getAttribute('data-question-id'); 
+      const idx = Number(t.getAttribute('data-index'));
       state.examSession.answers[qid] = idx;
       
-      // DOM Update directly instead of render() to completely avoid PDF refreshing!
+      // التعديل المباشر على DOM بدون عمل render كامل للحفاظ على استقرار الـ PDF!
       const btns = t.closest('div.grid').querySelectorAll('button[data-action="select-answer"]');
-      btns.forEach((b,i) => {
-        if(i===idx) { b.className = "text-right p-4 rounded-2xl border-2 transition-all flex items-center gap-4 border-brand-500 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500"; b.querySelector('.w-8').className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm transition-colors shrink-0 bg-brand-600 text-white border-brand-600"; }
-        else { b.className = "text-right p-4 rounded-2xl border-2 transition-all flex items-center gap-4 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:border-brand-300 dark:hover:border-brand-700"; b.querySelector('.w-8').className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm transition-colors shrink-0 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"; }
+      btns.forEach((b, i) => {
+        if(i === idx) { 
+          b.className = "text-right p-4 rounded-2xl border-2 transition-all flex items-center gap-4 border-brand-500 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500"; 
+          b.querySelector('.w-8').className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm transition-colors shrink-0 bg-brand-600 text-white border-brand-600"; 
+        } else { 
+          b.className = "text-right p-4 rounded-2xl border-2 transition-all flex items-center gap-4 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:border-brand-300 dark:hover:border-brand-700"; 
+          b.querySelector('.w-8').className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-sm transition-colors shrink-0 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"; 
+        }
       });
-      const p = Math.round((Object.keys(state.examSession.answers).length / Math.max(1, (state.examSession.exam.questions||[]).length))*100);
-      document.querySelectorAll('.exam-progress-bar').forEach(b=>b.style.width=p+'%'); document.querySelectorAll('.exam-progress-text').forEach(tx=>tx.textContent=p+'%');
+      
+      const p = Math.round((Object.keys(state.examSession.answers).length / Math.max(1, (state.examSession.exam.questions || []).length)) * 100);
+      document.querySelectorAll('.exam-progress-bar').forEach(b => b.style.width = p + '%'); 
+      document.querySelectorAll('.exam-progress-text').forEach(tx => tx.textContent = p + '%');
     }
-    else if (a==='submit-exam') await submitExam();
-    else if (a==='review-attempt') { setLoading(true); state.reviewAttempt = (await api('getAttemptReview',{attemptId:t.getAttribute('data-attempt-id')})).attempt; setLoading(false); render(); }
-    else if (a==='close-review') { state.reviewAttempt = null; render(); }
-    else if (a==='redo-attempt' || a==='redo-by-subject') {
+    else if (a === 'submit-exam') await submitExam();
+    else if (a === 'review-attempt') { 
+      setLoading(true); 
+      state.reviewAttempt = (await api('getAttemptReview', { attemptId: t.getAttribute('data-attempt-id') })).attempt; 
+      setLoading(false); 
+      render(); 
+    }
+    else if (a === 'close-review') { 
+      state.reviewAttempt = null; 
+      render(); 
+    }
+    else if (a === 'redo-attempt' || a === 'redo-by-subject') {
       setLoading(true);
-      const res = a==='redo-attempt' ? await api('buildWrongRedo',{userId:state.user.id,resultId:t.getAttribute('data-attempt-id')}) : await api('generateRedoExam',{userId:state.user.id,subjectCode:t.getAttribute('data-subject-code')});
-      prepareExamForStart(res.exam); setLoading(false);
+      const res = a === 'redo-attempt' 
+        ? await api('buildWrongRedo', { userId: state.user.id, resultId: t.getAttribute('data-attempt-id') }) 
+        : await api('generateRedoExam', { userId: state.user.id, subjectCode: t.getAttribute('data-subject-code') });
+      prepareExamForStart(res.exam); 
+      setLoading(false);
     }
-    else if (a==='toggle-builder-unit') { const k = t.getAttribute('data-unit-key'); if(t.checked){ if(!state.builder.selectedUnitKeys.includes(k)) state.builder.selectedUnitKeys.push(k); }else{ state.builder.selectedUnitKeys=state.builder.selectedUnitKeys.filter(x=>x!==k); delete state.builder.explicitCounts[k]; } render(); }
-    else if (a==='build-custom-exam') {
-      if(!state.builder.selectedUnitKeys.length) return showToast('اختر وحدة','error');
+    else if (a === 'toggle-builder-unit') { 
+      const k = t.getAttribute('data-unit-key'); 
+      if(t.checked) { 
+        if(!state.builder.selectedUnitKeys.includes(k)) state.builder.selectedUnitKeys.push(k); 
+      } else { 
+        state.builder.selectedUnitKeys = state.builder.selectedUnitKeys.filter(x => x !== k); 
+        delete state.builder.explicitCounts[k]; 
+      } 
+      render(); 
+    }
+    else if (a === 'build-custom-exam') {
+      if(!state.builder.selectedUnitKeys.length) return showToast('اختر وحدة واحدة على الأقل', 'error');
       setLoading(true);
-      const res = await api('buildCustomExam', { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions), duration: Number(state.builder.duration)*60, mode: state.builder.mode, selectedUnits: state.builder.selectedUnitKeys, explicitUnitCounts: state.builder.explicitCounts });
-      prepareExamForStart(res.exam); setLoading(false);
+      const res = await api('buildCustomExam', { 
+        subjectCode: state.subjectCode, 
+        totalQuestions: Number(state.builder.totalQuestions), 
+        duration: Number(state.builder.duration) * 60, 
+        mode: state.builder.mode, 
+        selectedUnits: state.builder.selectedUnitKeys, 
+        explicitUnitCounts: state.builder.explicitCounts 
+      });
+      prepareExamForStart(res.exam); 
+      setLoading(false);
     }
-  } catch(err) { setLoading(false); showToast(err.message, 'error'); }
+    else if (a === 'open-admin') { state.admin.open = true; render(); }
+    else if (a === 'close-admin') { state.admin.open = false; render(); }
+  } catch(err) { 
+    setLoading(false); 
+    showToast(err.message, 'error'); 
+  }
 });
 
 document.addEventListener('change', ev => {
   const bf = ev.target.getAttribute('data-builder-field');
-  if (bf) { state.builder[bf] = bf==='mode'?ev.target.value:Number(ev.target.value||0); render(); }
-  if (ev.target.getAttribute('data-action')==='set-builder-unit-count') { state.builder.explicitCounts[ev.target.getAttribute('data-unit-key')] = Number(ev.target.value||0); render(); }
+  if (bf) { 
+    state.builder[bf] = bf === 'mode' ? ev.target.value : Number(ev.target.value || 0); 
+    render(); 
+  }
+  if (ev.target.getAttribute('data-action') === 'set-builder-unit-count') { 
+    state.builder.explicitCounts[ev.target.getAttribute('data-unit-key')] = Number(ev.target.value || 0); 
+    render(); 
+  }
 });
 
-render(); if(state.user) refreshData();
+render(); 
+if(state.user) refreshData();
 </script>
 </body>
 </html>
