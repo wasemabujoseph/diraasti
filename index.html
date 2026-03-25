@@ -341,7 +341,7 @@ function renderLogin() {
           <div class="mt-8 space-y-5">
             <label class="block">
               <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">الاسم الكامل</div>
-              <input id="login-name" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 transition-colors outline-none text-lg" placeholder="مثال: أحمد محمد" />
+              <input id="login-name" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 transition-colors outline-none text-lg text-slate-900 dark:text-white placeholder-slate-400" placeholder="مثال: أحمد محمد" />
             </label>
             <button data-action="login" class="w-full px-5 py-4 rounded-2xl font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-all transform hover:-translate-y-1 text-lg">الدخول إلى المنصة</button>
           </div>
@@ -552,7 +552,7 @@ function renderBuilder(subjectCode) {
             <div class="grid md:grid-cols-3 gap-5">
               <label class="block">
                 <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">طريقة التوزيع</div>
-                <select data-builder-field="mode" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-semibold">
+                <select data-builder-field="mode" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-semibold text-slate-900 dark:text-white">
                   <option value="weighted" ${state.builder.mode === 'weighted' ? 'selected' : ''}>تلقائي حسب وزن الوحدة</option>
                   <option value="manual" ${state.builder.mode === 'manual' ? 'selected' : ''}>يدوي (تحديد عدد الأسئلة لكل وحدة)</option>
                 </select>
@@ -569,7 +569,7 @@ function renderBuilder(subjectCode) {
                      <span class="text-xs">بدون مؤقت</span>
                    </label>
                 </div>
-                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black ${state.builder.noTimer ? 'opacity-50 cursor-not-allowed' : ''}" value="${escapeHtml(state.builder.duration || 120)}" ${state.builder.noTimer ? 'disabled' : ''} />
+                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black text-slate-900 dark:text-white ${state.builder.noTimer ? 'opacity-50 cursor-not-allowed' : ''}" value="${escapeHtml(state.builder.duration || 120)}" ${state.builder.noTimer ? 'disabled' : ''} />
               </div>
             </div>
             <div>
@@ -602,7 +602,7 @@ function renderBuilder(subjectCode) {
                       </div>
                       ${state.builder.mode === 'manual' ? `
                         <div class="mt-2 pl-8 pt-2">
-                          <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-center font-bold" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة المطلوب من هنا">
+                          <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-center font-bold text-slate-900 dark:text-white" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة المطلوب من هنا">
                         </div>
                       ` : ''}
                     ` : ''}
@@ -626,7 +626,7 @@ function renderBuilder(subjectCode) {
                 `).join('') : '<div class="text-slate-500 dark:text-slate-400 text-sm text-center py-4">اختر وحدة واحدة على الأقل لترى الملخص.</div>'}
               </div>
               <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center font-black">
-                <span>الإجمالي:</span>
+                <span class="text-slate-900 dark:text-white">الإجمالي:</span>
                 <span class="text-brand-600 dark:text-brand-400 text-xl">${preview.reduce((sum, row) => sum + row.requested, 0)} سؤال</span>
               </div>
               <button data-action="build-custom-exam" class="w-full mt-6 px-4 py-4 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-all transform hover:-translate-y-1 text-lg">بناء وبدء الامتحان</button>
@@ -786,7 +786,7 @@ function renderQuestionCard(question, index, exam, mode) {
                 <button ${readOnly ? 'disabled' : ''} data-action="select-answer" data-question-id="${escapeHtml(question.id)}" data-index="${escapeHtml(optionIndex)}" class="rounded-2xl border-2 p-4 text-right transition-all duration-200 ${reviewClasses}">
                   <div class="flex items-center gap-4">
                     <div class="h-8 w-8 rounded-full border-2 flex shrink-0 items-center justify-center text-sm font-black ${isSelected && mode !== 'review' ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400'}">${String.fromCharCode(65 + optionIndex)}</div>
-                    <div class="flex-1 font-semibold text-base" data-math>${escapeHtml(option)}</div>
+                    <div class="flex-1 font-semibold text-base text-slate-900 dark:text-white" data-math>${escapeHtml(option)}</div>
                   </div>
                 </button>
               `;
@@ -820,7 +820,7 @@ function renderEssayCard(question, index, exam, mode) {
       ${question.pdfPageRef ? `<div class="mt-6">${renderPdfPreview(question, exam, mode)}</div>` : ''}
       ${mode === 'review'
         ? `<div class="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-5 whitespace-pre-wrap font-semibold leading-relaxed">${escapeHtml(value || 'لم تتم الإجابة')}</div>`
-        : `<textarea data-action="set-open-answer" data-question-id="${escapeHtml(question.id)}" rows="6" class="w-full mt-6 rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 font-semibold outline-none transition-colors" placeholder="اكتب إجابتك هنا بوضوح...">${escapeHtml(value)}</textarea>`}
+        : `<textarea data-action="set-open-answer" data-question-id="${escapeHtml(question.id)}" rows="6" class="w-full mt-6 rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 font-semibold outline-none transition-colors text-slate-900 dark:text-white" placeholder="اكتب إجابتك هنا بوضوح...">${escapeHtml(value)}</textarea>`}
       ${question.idealAnswer ? `<div class="mt-6 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5"><div class="text-xs font-black text-emerald-600 dark:text-emerald-400 mb-2">الإجابة النموذجية (للمقارنة):</div><div class="text-emerald-900 dark:text-emerald-200 whitespace-pre-wrap font-semibold leading-relaxed">${escapeHtml(question.idealAnswer)}</div></div>` : ''}
     </div>
   `;
@@ -948,7 +948,7 @@ function renderPrestartModal() {
             <div class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200 flex justify-between">
                <span>كم دقيقة تحتاج؟ (تعديل الوقت)</span>
             </div>
-            <input id="prestart-duration" type="number" min="${minMinutes}" max="${maxMinutes}" value="${escapeHtml(minutesLabel(state.prestartExam.duration || exam.duration))}" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-950 px-5 py-4 text-xl font-black outline-none text-center transition-colors">
+            <input id="prestart-duration" type="number" min="${minMinutes}" max="${maxMinutes}" value="${escapeHtml(minutesLabel(state.prestartExam.duration || exam.duration))}" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-950 px-5 py-4 text-xl font-black outline-none text-center transition-colors text-slate-900 dark:text-white">
             <div class="mt-3 flex items-center justify-between text-xs font-semibold text-slate-500">
                <span>المسموح: من ${minMinutes} إلى ${maxMinutes} دقيقة</span>
                <label class="flex items-center gap-2 cursor-pointer text-brand-600 dark:text-brand-400 text-sm">
@@ -972,9 +972,9 @@ function renderAdminModal() {
         <div class="max-w-md w-full rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow p-8 text-center">
            <h2 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">لوحة الإدارة</h2>
            <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">أدخل كلمة مرور الإدارة للمتابعة</p>
-           <input type="password" id="admin-password-input" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 mb-6 outline-none text-center font-black" placeholder="••••••••">
+           <input type="password" id="admin-password-input" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 mb-6 outline-none text-center font-black text-slate-900 dark:text-white" placeholder="••••••••">
            <div class="flex gap-3">
-             <button data-action="close-admin" class="flex-1 py-3.5 rounded-2xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50">إلغاء</button>
+             <button data-action="close-admin" class="flex-1 py-3.5 rounded-2xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-900 dark:text-white">إلغاء</button>
              <button data-action="admin-login-submit" class="flex-[2] py-3.5 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-colors">تسجيل الدخول</button>
            </div>
         </div>
@@ -990,6 +990,7 @@ function renderAdminModal() {
              <div class="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
                <button data-action="admin-tab" data-tab="upload" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='upload'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">رفع امتحان</button>
                <button data-action="admin-tab" data-tab="manage" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='manage'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">الامتحانات المرفوعة</button>
+               <button data-action="admin-tab" data-tab="results" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='results'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">نتائج الطلاب</button>
              </div>
            </div>
            <button data-action="close-admin" class="font-black text-red-500 bg-red-50 dark:bg-red-900/30 px-5 py-2.5 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">إغلاق وتخزين</button>
@@ -1004,12 +1005,12 @@ function renderAdminModal() {
                <div class="space-y-4">
                  <label class="block">
                     <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">كود الامتحان (JSON)</span>
-                    <textarea id="admin-json-input" rows="12" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-900 px-5 py-4 font-mono text-sm outline-none text-left" dir="ltr" placeholder='{ "title": "امتحان تجريبي...", "questions": [...] }'></textarea>
+                    <textarea id="admin-json-input" rows="12" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-900 px-5 py-4 font-mono text-sm outline-none text-left text-slate-900 dark:text-white" dir="ltr" placeholder='{ "title": "امتحان تجريبي...", "questions": [...] }'></textarea>
                  </label>
                  <div class="grid md:grid-cols-2 gap-4">
                    <label class="block">
                       <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ملف الـ PDF المرجعي (اختياري)</span>
-                      <input type="file" id="admin-pdf-file" accept="application/pdf" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                      <input type="file" id="admin-pdf-file" accept="application/pdf" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 text-slate-900 dark:text-white">
                    </label>
                    <div class="flex items-end pb-1">
                       ${state.admin.form.pdfFileName ? `<div class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-sm p-3 rounded-xl border border-emerald-200 w-full text-center">تم إرفاق: ${escapeHtml(state.admin.form.pdfFileName)}</div>` : '<div class="text-slate-400 text-sm font-semibold p-3 w-full text-center">لم يتم إرفاق ملف PDF.</div>'}
@@ -1018,7 +1019,7 @@ function renderAdminModal() {
                </div>
                <button data-action="admin-upload-submit" class="w-full mt-4 px-8 py-4 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1 text-lg">رفع وحفظ الامتحان في البنك</button>
              </div>
-           ` : `
+           ` : state.admin.tab === 'manage' ? `
              <div class="space-y-6">
                <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">إدارة الامتحانات المرفوعة مسبقاً (${state.data.exams.length})</h3>
                <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -1035,6 +1036,42 @@ function renderAdminModal() {
                       </div>
                     </div>
                  `).join('') || '<div class="col-span-full text-center py-10 text-slate-500">لا توجد امتحانات مرفوعة حالياً.</div>'}
+               </div>
+             </div>
+           ` : `
+             <div class="space-y-6">
+               <div class="flex justify-between items-center mb-4">
+                 <h3 class="text-xl font-black text-slate-900 dark:text-white">نتائج وإحصائيات الطلاب</h3>
+                 <div class="text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">إجمالي المحاولات: ${state.admin.allResults.length}</div>
+               </div>
+               <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                 <table class="w-full text-right text-sm">
+                   <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                     <tr>
+                       <th class="p-4 whitespace-nowrap">الطالب</th>
+                       <th class="p-4 whitespace-nowrap">المادة / الوحدة</th>
+                       <th class="p-4 min-w-[200px]">الامتحان</th>
+                       <th class="p-4 whitespace-nowrap">النتيجة</th>
+                       <th class="p-4 whitespace-nowrap">التاريخ</th>
+                     </tr>
+                   </thead>
+                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                     ${state.admin.allResults.map(r => `
+                       <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                         <td class="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">${escapeHtml(r.userName || r.userId)}</td>
+                         <td class="p-4 text-slate-600 dark:text-slate-300">
+                           <div class="font-bold">${escapeHtml(r.subjectAr)}</div>
+                           <div class="text-xs text-slate-400 mt-1 truncate max-w-[200px]">${escapeHtml(r.unitTitleAr)}</div>
+                         </td>
+                         <td class="p-4 font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(r.examTitle)}</td>
+                         <td class="p-4">
+                            <span class="inline-flex items-center justify-center px-3 py-1 rounded-lg font-black ${r.score >= 80 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : r.score >= 50 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}">${escapeHtml(r.score)}%</span>
+                         </td>
+                         <td class="p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">${escapeHtml(formatDate(r.createdAt))}</td>
+                       </tr>
+                     `).join('') || '<tr><td colspan="5" class="p-8 text-center text-slate-500 dark:text-slate-400">لا توجد نتائج مسجلة حتى الآن.</td></tr>'}
+                   </tbody>
+                 </table>
                </div>
              </div>
            `}
@@ -1252,7 +1289,6 @@ async function generateCustomExam() {
       if (!hasCounts) { showToast('يرجى تحديد عدد الأسئلة لوحدة واحدة على الأقل.', 'error'); return; }
     }
     setLoading(true);
-    // duration 0 means no timer
     const finalDuration = state.builder.noTimer ? 0 : Number(state.builder.duration || 120) * 60;
     const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: finalDuration, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
     const res = await api('buildCustomExam', payload);
@@ -1287,7 +1323,7 @@ document.addEventListener('click', async event => {
       if (exam.allowStudentTimeOverride) {
         const noTimerChk = document.getElementById('prestart-no-timer');
         if (noTimerChk && noTimerChk.checked) {
-          duration = 0; // Infinite
+          duration = 0; 
         } else {
           const input = document.getElementById('prestart-duration'); 
           const minutes = Number(input ? input.value : minutesLabel(exam.duration));
@@ -1359,7 +1395,6 @@ document.addEventListener('click', async event => {
     
     if (action === 'build-custom-exam') { await generateCustomExam(); return; }
     
-    // Admin Actions
     if (action === 'open-admin') { openAdmin(); return; }
     if (action === 'close-admin') { closeAdmin(); return; }
     if (action === 'admin-login-submit') {
@@ -1368,10 +1403,20 @@ document.addEventListener('click', async event => {
        return;
     }
     if (action === 'admin-tab') { state.admin.tab = target.getAttribute('data-tab'); render(); return; }
+    
     if (action === 'admin-upload-submit') {
+       const jsonText = document.getElementById('admin-json-input').value;
+       
+       // JSON Validation before sending to server
+       try {
+           JSON.parse(jsonText);
+       } catch (e) {
+           showToast('كود الـ JSON غير صالح. يرجى التأكد من صحة التنسيق والأقواس.', 'error');
+           return;
+       }
+
        try {
          setLoading(true);
-         const jsonText = document.getElementById('admin-json-input').value;
          const pdfFile = state.admin.form.pdfDataUrl;
          const pdfName = state.admin.form.pdfFileName;
          if(!jsonText) throw new Error('يجب وضع كود الـ JSON');
@@ -1383,6 +1428,7 @@ document.addEventListener('click', async event => {
        finally { setLoading(false); render(); }
        return;
     }
+    
     if (action === 'admin-delete-exam') {
        if (!confirm('هل أنت متأكد من حذف هذا الامتحان بالكامل من المنصة؟')) return;
        try {
