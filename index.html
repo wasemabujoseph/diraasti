@@ -143,16 +143,10 @@ const state = {
     open: false,
     authenticated: false,
     tab: 'upload',
-    search: '',
     allResults: [],
-    busy: false,
-    form: {
-      subjectCode: 'chemistry', semester: 1, unitTitleAr: 'حالات المادة', subunitTitleAr: '',
-      title: '', duration: 1800, allowStudentTimeOverride: true, minDuration: 900, maxDuration: 3600,
-      jsonText: '', pdfFile: null, pdfName: ''
-    }
+    form: { pdfDataUrl: null, pdfFileName: '' }
   },
-  builder: { totalQuestions: 100, duration: 120, selectedUnitKeys: [], explicitCounts: {}, selectedExamIds: [], mode: 'weighted' }
+  builder: { totalQuestions: 100, duration: 120, selectedUnitKeys: [], explicitCounts: {}, selectedExamIds: [], mode: 'weighted', noTimer: false }
 };
 
 window.__PDF_SOURCES = {};
@@ -175,8 +169,6 @@ setDarkMode(state.darkMode);
 function escapeHtml(value) {
   return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-
-function normalizeText(value) { return String(value || '').trim().toLowerCase(); }
 
 function initials(name) { return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'ط'; }
 
@@ -271,8 +263,17 @@ async function refreshData() {
 function resetBuilderForSubject(subjectCode) {
   const units = buildSubjectUnits(subjectCode).filter(unit => !unit.comprehensive);
   state.builder.selectedUnitKeys = units.slice(0, Math.min(4, units.length)).map(unit => unit.key);
-  state.builder.selectedExamIds = []; state.builder.explicitCounts = {};
-  state.builder.mode = 'weighted'; state.builder.totalQuestions = 100; state.builder.duration = 120;
+  state.builder.selectedExamIds = []; 
+  
+  // Auto-select exams for default checked units
+  state.builder.selectedUnitKeys.forEach(uk => {
+     getExamsForUnit(subjectCode, uk).forEach(e => {
+        if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id);
+     });
+  });
+
+  state.builder.explicitCounts = {};
+  state.builder.mode = 'weighted'; state.builder.totalQuestions = 100; state.builder.duration = 120; state.builder.noTimer = false;
 }
 
 function openSubject(subjectCode) { state.subjectCode = subjectCode; state.subjectTab = 'units'; state.unitKey = null; resetBuilderForSubject(subjectCode); render(); }
@@ -286,17 +287,18 @@ async function adminLogin(password) {
   if (password !== CONFIG.ADMIN_PASSWORD) { showToast('كلمة مرور الإدارة غير صحيحة', 'error'); return; }
   state.admin.authenticated = true;
   try {
+    setLoading(true);
     const res = await api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD });
     state.admin.allResults = res.results || [];
   } catch (err) { showToast('تعذر تحميل نتائج الإدارة: ' + err.message, 'error'); }
-  render();
+  finally { setLoading(false); render(); }
 }
 
 function buildSubjectCards() {
   return CURRICULUM.subjects.map(subject => {
     const summary = getSubjectSummary(subject.code);
     const analytics = getSubjectAnalytics(subject.code);
-    const subjectQuestions = state.data.questionBankSummary.bySubject[subject.code] || 0; // Fixed subject question count!
+    const subjectQuestions = state.data.questionBankSummary.bySubject[subject.code] || 0;
     return `
       <button data-action="open-subject" data-subject-code="${escapeHtml(subject.code)}" class="rounded-[32px] p-6 text-right border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft hover:shadow-glow transition-all duration-300 transform hover:-translate-y-1 group">
         <div class="flex items-start justify-between gap-4">
@@ -559,31 +561,53 @@ function renderBuilder(subjectCode) {
                 <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">عدد الأسئلة الكلي</div>
                 <input data-builder-field="totalQuestions" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black text-brand-600 dark:text-brand-400" value="${escapeHtml(state.builder.totalQuestions)}" ${state.builder.mode === 'manual' ? 'disabled opacity-50' : ''} />
               </label>
-              <label class="block">
-                <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">وقت الامتحان (دقائق)</div>
-                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black" value="${escapeHtml(state.builder.duration || 120)}" />
-              </label>
+              <div class="block">
+                <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+                   <span>وقت الامتحان (دقائق)</span>
+                   <label class="flex items-center gap-1.5 cursor-pointer text-brand-600 dark:text-brand-400 hover:text-brand-700">
+                     <input type="checkbox" data-builder-field="noTimer" class="rounded text-brand-600" ${state.builder.noTimer ? 'checked' : ''}>
+                     <span class="text-xs">بدون مؤقت</span>
+                   </label>
+                </div>
+                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black ${state.builder.noTimer ? 'opacity-50 cursor-not-allowed' : ''}" value="${escapeHtml(state.builder.duration || 120)}" ${state.builder.noTimer ? 'disabled' : ''} />
+              </div>
             </div>
             <div>
-              <div class="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">اختر الوحدات المراد تضمينها:</div>
+              <div class="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">اختر الوحدات والامتحانات المراد تضمينها:</div>
               <div class="grid md:grid-cols-2 gap-4">
-                ${units.map(unit => `
-                  <label class="rounded-3xl border-2 ${selectedUnitKeys.includes(unit.key) ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950'} p-5 flex flex-col gap-3 cursor-pointer transition-colors">
-                    <div class="flex items-start gap-3">
-                      <input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(unit.key)}" ${selectedUnitKeys.includes(unit.key) ? 'checked' : ''} class="mt-1 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                ${units.map(unit => {
+                  const isUnitSelected = selectedUnitKeys.includes(unit.key);
+                  const unitExams = getExamsForUnit(subjectCode, unit.key);
+                  return `
+                  <div class="rounded-3xl border-2 ${isUnitSelected ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950'} p-5 flex flex-col gap-3 transition-colors">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(unit.key)}" ${isUnitSelected ? 'checked' : ''} class="mt-1 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
                       <div class="flex-1">
                         <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(unit.semesterTitleAr)}</div>
                         <div class="mt-1 font-black text-slate-900 dark:text-white leading-snug">${escapeHtml(unit.unitTitleAr)}</div>
                         <div class="mt-2 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/40 inline-block px-2 py-1 rounded-md">البنك: ${getQuestionCountForUnit(unit.key)} • الوزن: ${subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 0}%</div>
                       </div>
-                    </div>
-                    ${state.builder.mode === 'manual' && selectedUnitKeys.includes(unit.key) ? `
-                      <div class="mt-2 pl-8 border-t border-slate-200 dark:border-slate-800 pt-3">
-                        <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-center font-bold" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة المطلوب من هنا">
+                    </label>
+                    
+                    ${isUnitSelected ? `
+                      <div class="mt-2 pl-8 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
+                        <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">تحديد مصادر الأسئلة:</div>
+                        ${unitExams.map(ex => `
+                           <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
+                              <input type="checkbox" data-action="toggle-builder-exam" data-exam-id="${escapeHtml(ex.id)}" ${state.builder.selectedExamIds.includes(ex.id) ? 'checked' : ''} class="rounded text-brand-600 focus:ring-brand-500">
+                              <span class="text-slate-700 dark:text-slate-300 font-semibold truncate">${escapeHtml(ex.title)}</span>
+                           </label>
+                        `).join('')}
+                        ${unitExams.length === 0 ? '<div class="text-xs text-slate-400">لا توجد امتحانات، سيتم سحب الأسئلة الفردية المضافة للبنك مباشرة.</div>' : ''}
                       </div>
+                      ${state.builder.mode === 'manual' ? `
+                        <div class="mt-2 pl-8 pt-2">
+                          <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-center font-bold" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة المطلوب من هنا">
+                        </div>
+                      ` : ''}
                     ` : ''}
-                  </label>
-                `).join('')}
+                  </div>
+                `}).join('')}
               </div>
             </div>
           </div>
@@ -614,7 +638,6 @@ function renderBuilder(subjectCode) {
   `;
 }
 
-// ... Overview, Attempts, SubjectScreen remains mostly same just with updated Tailwind classes
 function renderSubjectOverview(subjectCode) {
   const subject = getSubject(subjectCode);
   const analytics = getSubjectAnalytics(subjectCode);
@@ -813,8 +836,13 @@ function renderExamScreen() {
   const answeredCount = Object.keys(session.answers).length + Object.values(session.openAnswers).filter(Boolean).length;
   const totalItems = items.length || 1;
   const progress = percent(answeredCount, totalItems);
-  const minutes = String(Math.floor(session.timeLeft / 60)).padStart(2, '0');
-  const seconds = String(session.timeLeft % 60).padStart(2, '0');
+  
+  let timerDisplay = 'مفتوح ∞';
+  if (!session.noTimer) {
+     const minutes = String(Math.floor(session.timeLeft / 60)).padStart(2, '0');
+     const seconds = String(session.timeLeft % 60).padStart(2, '0');
+     timerDisplay = `${minutes}:${seconds}`;
+  }
   
   return `
     <div class="space-y-6">
@@ -827,7 +855,7 @@ function renderExamScreen() {
               <span class="rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5">${escapeHtml(exam.unitTitleAr || '')}</span>
               <span class="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-3 py-1.5 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span id="exam-timer-display" class="font-black text-base tracking-wider">${minutes}:${seconds}</span>
+                <span id="exam-timer-display" class="font-black text-base tracking-wider">${timerDisplay}</span>
               </span>
               <span id="exam-progress-text" class="rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1.5">التقدم: ${progress}%</span>
             </div>
@@ -896,7 +924,6 @@ function renderReviewScreen() {
   `;
 }
 
-// ... prestart and admin modals are same structurally but inherit the new tailwind styles nicely
 function renderPrestartModal() {
   if (!state.prestartExam) return '';
   const exam = state.prestartExam.exam;
@@ -914,23 +941,108 @@ function renderPrestartModal() {
         </div>
         <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
           <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 dark:text-slate-400 font-bold">عدد الأسئلة</div><div class="mt-2 text-2xl font-black text-brand-700 dark:text-brand-400">${(exam.questions || []).length + (exam.openQuestions || []).length}</div></div>
-          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 dark:text-slate-400 font-bold">الوقت الافتراضي</div><div class="mt-2 text-2xl font-black text-brand-700 dark:text-brand-400">${minutesLabel(exam.duration)} دقيقة</div></div>
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 dark:text-slate-400 font-bold">الوقت الافتراضي</div><div class="mt-2 text-2xl font-black text-brand-700 dark:text-brand-400">${exam.duration ? minutesLabel(exam.duration) + ' دقيقة' : 'مفتوح ∞'}</div></div>
         </div>
         ${exam.allowStudentTimeOverride ? `
           <label class="block mt-8">
-            <div class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">كم دقيقة تحتاج؟ (يمكنك تعديل الوقت)</div>
+            <div class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200 flex justify-between">
+               <span>كم دقيقة تحتاج؟ (تعديل الوقت)</span>
+            </div>
             <input id="prestart-duration" type="number" min="${minMinutes}" max="${maxMinutes}" value="${escapeHtml(minutesLabel(state.prestartExam.duration || exam.duration))}" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-950 px-5 py-4 text-xl font-black outline-none text-center transition-colors">
-            <div class="mt-3 text-xs font-semibold text-slate-500 text-center">المسموح: من ${minMinutes} إلى ${maxMinutes} دقيقة</div>
+            <div class="mt-3 flex items-center justify-between text-xs font-semibold text-slate-500">
+               <span>المسموح: من ${minMinutes} إلى ${maxMinutes} دقيقة</span>
+               <label class="flex items-center gap-2 cursor-pointer text-brand-600 dark:text-brand-400 text-sm">
+                  <input type="checkbox" id="prestart-no-timer" class="rounded text-brand-600 focus:ring-brand-500" ${!exam.duration ? 'checked' : ''}>
+                  بدون مؤقت (وقت مفتوح)
+               </label>
+            </div>
           </label>
-        ` : `<div class="mt-8 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 p-5 text-sm font-bold text-blue-700 dark:text-blue-300 text-center">الوقت ثابت من قِبل الإدارة ولا يمكن تغييره.</div>`}
+        ` : (exam.duration ? `<div class="mt-8 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 p-5 text-sm font-bold text-blue-700 dark:text-blue-300 text-center">الوقت ثابت من قِبل الإدارة ولا يمكن تغييره.</div>` : '')}
         <button data-action="start-prepared-exam" class="w-full mt-8 px-6 py-4 rounded-2xl font-black text-lg bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1">ابدأ الامتحان الآن</button>
       </div>
     </div>
   `;
 }
 
-// ... Admin omitted for brevity (unchanged logic)
-function renderAdminModal() { return state.admin.open ? `<div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 overflow-auto"><div class="max-w-7xl mx-auto mt-6 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow overflow-hidden"><div class="glass flex justify-between p-5 border-b border-slate-200 dark:border-slate-800"><h2 class="text-2xl font-black">لوحة الإدارة</h2><button data-action="close-admin" class="font-bold text-red-500">إغلاق</button></div><div class="p-5 flex justify-center items-center h-40 font-bold">الإدارة تعمل بشكل ممتاز كالسابق. يرجى مراجعة الكود الأصلي لتفاصيل الواجهة هنا لتوفير المساحة</div></div></div>` : ''; }
+function renderAdminModal() {
+  if (!state.admin.open) return '';
+  if (!state.admin.authenticated) {
+    return `
+      <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 flex items-center justify-center animate-fade-in">
+        <div class="max-w-md w-full rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow p-8 text-center">
+           <h2 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">لوحة الإدارة</h2>
+           <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">أدخل كلمة مرور الإدارة للمتابعة</p>
+           <input type="password" id="admin-password-input" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 mb-6 outline-none text-center font-black" placeholder="••••••••">
+           <div class="flex gap-3">
+             <button data-action="close-admin" class="flex-1 py-3.5 rounded-2xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50">إلغاء</button>
+             <button data-action="admin-login-submit" class="flex-[2] py-3.5 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-colors">تسجيل الدخول</button>
+           </div>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 overflow-auto animate-fade-in">
+      <div class="max-w-6xl mx-auto mt-6 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow overflow-hidden flex flex-col min-h-[80vh]">
+        <div class="glass flex flex-wrap items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 gap-4">
+           <div class="flex flex-wrap items-center gap-4">
+             <h2 class="text-2xl font-black text-slate-900 dark:text-white border-l-2 border-slate-200 dark:border-slate-700 pl-4">إدارة المنصة</h2>
+             <div class="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
+               <button data-action="admin-tab" data-tab="upload" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='upload'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">رفع امتحان</button>
+               <button data-action="admin-tab" data-tab="manage" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='manage'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">الامتحانات المرفوعة</button>
+             </div>
+           </div>
+           <button data-action="close-admin" class="font-black text-red-500 bg-red-50 dark:bg-red-900/30 px-5 py-2.5 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">إغلاق وتخزين</button>
+        </div>
+        <div class="p-6 md:p-8 flex-1 bg-slate-50 dark:bg-slate-950/50 overflow-y-auto">
+           ${state.admin.tab === 'upload' ? `
+             <div class="max-w-3xl mx-auto space-y-6">
+               <div>
+                 <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">رفع امتحان جديد</h3>
+                 <p class="text-sm text-slate-500 dark:text-slate-400">الصق كود الـ JSON الخاص بالامتحان وأرفق ملف الـ PDF المرتبط به إن وجد.</p>
+               </div>
+               <div class="space-y-4">
+                 <label class="block">
+                    <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">كود الامتحان (JSON)</span>
+                    <textarea id="admin-json-input" rows="12" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-900 px-5 py-4 font-mono text-sm outline-none text-left" dir="ltr" placeholder='{ "title": "امتحان تجريبي...", "questions": [...] }'></textarea>
+                 </label>
+                 <div class="grid md:grid-cols-2 gap-4">
+                   <label class="block">
+                      <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ملف الـ PDF المرجعي (اختياري)</span>
+                      <input type="file" id="admin-pdf-file" accept="application/pdf" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                   </label>
+                   <div class="flex items-end pb-1">
+                      ${state.admin.form.pdfFileName ? `<div class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-sm p-3 rounded-xl border border-emerald-200 w-full text-center">تم إرفاق: ${escapeHtml(state.admin.form.pdfFileName)}</div>` : '<div class="text-slate-400 text-sm font-semibold p-3 w-full text-center">لم يتم إرفاق ملف PDF.</div>'}
+                   </div>
+                 </div>
+               </div>
+               <button data-action="admin-upload-submit" class="w-full mt-4 px-8 py-4 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1 text-lg">رفع وحفظ الامتحان في البنك</button>
+             </div>
+           ` : `
+             <div class="space-y-6">
+               <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">إدارة الامتحانات المرفوعة مسبقاً (${state.data.exams.length})</h3>
+               <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                 ${state.data.exams.map(ex => `
+                    <div class="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-full">
+                      <div class="font-black text-lg text-slate-900 dark:text-white mb-1 leading-tight line-clamp-2">${escapeHtml(ex.title)}</div>
+                      <div class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4">${escapeHtml(ex.subjectAr)} • ${escapeHtml(ex.unitTitleAr)}</div>
+                      <div class="mt-auto space-y-2">
+                        <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
+                           <span>الأسئلة: ${ex.questionCount || 0}</span>
+                           <span>الوقت: ${ex.duration ? (ex.duration/60)+' دقيقة' : 'مفتوح'}</span>
+                        </div>
+                        <button data-action="admin-delete-exam" data-exam-id="${ex.id}" class="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 rounded-xl font-bold transition-colors">حذف الامتحان</button>
+                      </div>
+                    </div>
+                 `).join('') || '<div class="col-span-full text-center py-10 text-slate-500">لا توجد امتحانات مرفوعة حالياً.</div>'}
+               </div>
+             </div>
+           `}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 function renderToast() {
   if (!state.toast) return '';
@@ -998,10 +1110,9 @@ async function renderPdfCanvases() {
   if (!window.pdfjsLib) return;
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   
-  // Only target canvases that haven't been rendered yet to stop flashing
   const canvases = Array.from(document.querySelectorAll('.pdf-canvas:not([data-rendered="true"])'));
   for (const canvas of canvases) {
-    canvas.setAttribute('data-rendered', 'true'); // mark immediately
+    canvas.setAttribute('data-rendered', 'true');
     const pdfKey = canvas.getAttribute('data-pdf-key');
     const pageNumber = Number(canvas.getAttribute('data-page') || 1);
     const base64 = window.__PDF_SOURCES[pdfKey];
@@ -1017,7 +1128,7 @@ async function renderPdfCanvases() {
       
       const pdf = window.__PDF_DOCS[pdfKey];
       const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 1.2 }); // slightly sharper
+      const viewport = page.getViewport({ scale: 1.2 });
       const ctx = canvas.getContext('2d');
       canvas.width = viewport.width;
       canvas.height = viewport.height;
@@ -1029,9 +1140,6 @@ async function renderPdfCanvases() {
   }
 }
 
-// ----------------------------------------------------
-// TIMER AND PROGRESS DECOUPLING (Fixes the refreshing)
-// ----------------------------------------------------
 function clearExamTimer() {
   if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
 }
@@ -1051,42 +1159,38 @@ function updateProgressUI() {
 
 function startExamTimer() {
   clearExamTimer();
-  if (!state.examSession) return;
+  if (!state.examSession || state.examSession.noTimer) return;
   
-  // Only update the specific DOM element instead of calling full render()
   state.timerId = setInterval(async () => {
-    if (!state.examSession) { clearExamTimer(); return; }
+    if (!state.examSession || state.examSession.noTimer) { clearExamTimer(); return; }
     state.examSession.timeLeft -= 1;
     
     if (state.examSession.timeLeft <= 0) {
       state.examSession.timeLeft = 0;
       clearExamTimer();
-      render(); // Final render needed for submission overlay
+      render();
       await submitExam();
       return;
     }
     
-    // Update DOM directly! No more flashing PDFs!
     const clockEl = document.getElementById('exam-timer-display');
     if (clockEl) {
       const minutes = String(Math.floor(state.examSession.timeLeft / 60)).padStart(2, '0');
       const seconds = String(state.examSession.timeLeft % 60).padStart(2, '0');
       clockEl.innerText = `${minutes}:${seconds}`;
-      if (state.examSession.timeLeft < 300) { // last 5 mins turn red
-         clockEl.classList.add('animate-pulse', 'text-red-600');
-      }
+      if (state.examSession.timeLeft < 300) clockEl.classList.add('animate-pulse', 'text-red-600');
     }
   }, 1000);
 }
 
-// Data fetching and handling (same as before)
 async function loadExam(examId) { const res = await api('getExamBundle', { examId }); return res.exam; }
 
 function prepareExamForStart(exam) { state.prestartExam = { exam, duration: exam.duration }; render(); }
 
 function beginExam(exam, durationSeconds) {
   state.prestartExam = null; state.reviewAttempt = null;
-  state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single', timeLeft: Number(durationSeconds || exam.duration || 3600) };
+  const noTimer = durationSeconds === 0;
+  state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single', timeLeft: durationSeconds, noTimer: noTimer };
   render(); startExamTimer();
 }
 
@@ -1148,7 +1252,9 @@ async function generateCustomExam() {
       if (!hasCounts) { showToast('يرجى تحديد عدد الأسئلة لوحدة واحدة على الأقل.', 'error'); return; }
     }
     setLoading(true);
-    const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: Number(state.builder.duration || 120) * 60, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
+    // duration 0 means no timer
+    const finalDuration = state.builder.noTimer ? 0 : Number(state.builder.duration || 120) * 60;
+    const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: finalDuration, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
     const res = await api('buildCustomExam', payload);
     prepareExamForStart(res.exam);
   } catch (err) { showToast('تعذر تكوين الامتحان: ' + err.message, 'error'); } 
@@ -1167,20 +1273,29 @@ document.addEventListener('click', async event => {
       await refreshData(); return;
     }
     if (action === 'logout') { localStorage.removeItem(CONFIG.STORAGE_KEYS.user); state.user = null; state.examSession = null; state.reviewAttempt = null; state.subjectCode = null; clearExamTimer(); render(); return; }
-    if (action === 'toggle-dark') { setDarkMode(!state.darkMode); return; } // Removed render() so it doesn't flash
+    if (action === 'toggle-dark') { setDarkMode(!state.darkMode); return; } 
     if (action === 'go-home') { backToHome(); return; }
     if (action === 'open-subject') { openSubject(target.getAttribute('data-subject-code')); return; }
     if (action === 'subject-tab') { state.subjectTab = target.getAttribute('data-tab'); render(); return; }
     if (action === 'select-unit') { state.unitKey = target.getAttribute('data-unit-key'); render(); return; }
-    if (action === 'jump-builder-with-unit') { const unitKey = target.getAttribute('data-unit-key'); state.subjectTab = 'builder'; if (!state.builder.selectedUnitKeys.includes(unitKey)) state.builder.selectedUnitKeys.push(unitKey); render(); return; }
+    if (action === 'jump-builder-with-unit') { const unitKey = target.getAttribute('data-unit-key'); state.subjectTab = 'builder'; if (!state.builder.selectedUnitKeys.includes(unitKey)) { state.builder.selectedUnitKeys.push(unitKey); getExamsForUnit(state.subjectCode, unitKey).forEach(e => { if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id); }); } render(); return; }
     if (action === 'prepare-exam') { setLoading(true); const exam = await loadExam(target.getAttribute('data-exam-id')); prepareExamForStart(exam); state.loading = false; render(); return; }
     if (action === 'close-prestart') { state.prestartExam = null; render(); return; }
     if (action === 'start-prepared-exam') {
-      const exam = state.prestartExam.exam; let duration = Number(state.prestartExam.duration || exam.duration || 3600);
+      const exam = state.prestartExam.exam; 
+      let duration = Number(state.prestartExam.duration || exam.duration || 3600);
       if (exam.allowStudentTimeOverride) {
-        const input = document.getElementById('prestart-duration'); const minutes = Number(input ? input.value : minutesLabel(exam.duration));
-        const minMinutes = minutesLabel(exam.minDuration || 300); const maxMinutes = minutesLabel(exam.maxDuration || Math.max(exam.duration || 3600, 3600));
-        duration = Math.max(minMinutes, Math.min(maxMinutes, minutes)) * 60;
+        const noTimerChk = document.getElementById('prestart-no-timer');
+        if (noTimerChk && noTimerChk.checked) {
+          duration = 0; // Infinite
+        } else {
+          const input = document.getElementById('prestart-duration'); 
+          const minutes = Number(input ? input.value : minutesLabel(exam.duration));
+          const minMinutes = minutesLabel(exam.minDuration || 300); const maxMinutes = minutesLabel(exam.maxDuration || Math.max(exam.duration || 3600, 3600));
+          duration = Math.max(minMinutes, Math.min(maxMinutes, minutes)) * 60;
+        }
+      } else if (!exam.duration) {
+         duration = 0;
       }
       beginExam(exam, duration); return;
     }
@@ -1194,7 +1309,6 @@ document.addEventListener('click', async event => {
       const index = Number(target.getAttribute('data-index'));
       state.examSession.answers[qid] = index;
       
-      // DOM MUTATION INSTEAD OF RENDER() TO STOP PDF FLASHING!
       const container = target.closest('.question-options-container');
       if (container) {
          const buttons = container.querySelectorAll('button[data-action="select-answer"]');
@@ -1208,7 +1322,7 @@ document.addEventListener('click', async event => {
          });
       }
       updateProgressUI();
-      return; // IMPORTANT: Do NOT call render() here
+      return;
     }
     
     if (action === 'submit-exam') { await submitExam(); return; }
@@ -1217,13 +1331,69 @@ document.addEventListener('click', async event => {
     if (action === 'close-review') { state.reviewAttempt = null; render(); return; }
     if (action === 'redo-attempt') { await generateRedo({ attemptId: target.getAttribute('data-attempt-id') }); return; }
     if (action === 'redo-by-subject') { await generateRedo({ subjectCode: target.getAttribute('data-subject-code') }); return; }
-    if (action === 'toggle-builder-unit') {
-      const unitKey = target.getAttribute('data-unit-key');
-      if (target.checked) { if (!state.builder.selectedUnitKeys.includes(unitKey)) state.builder.selectedUnitKeys.push(unitKey); } 
-      else { state.builder.selectedUnitKeys = state.builder.selectedUnitKeys.filter(k => k !== unitKey); delete state.builder.explicitCounts[unitKey]; }
+    
+    if (action === 'toggle-builder-exam') {
+      const eid = target.getAttribute('data-exam-id');
+      if (target.checked && !state.builder.selectedExamIds.includes(eid)) state.builder.selectedExamIds.push(eid);
+      else if (!target.checked) state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => id !== eid);
       render(); return;
     }
+    
+    if (action === 'toggle-builder-unit') {
+      const unitKey = target.getAttribute('data-unit-key');
+      if (target.checked) { 
+         if (!state.builder.selectedUnitKeys.includes(unitKey)) {
+             state.builder.selectedUnitKeys.push(unitKey); 
+             getExamsForUnit(state.subjectCode, unitKey).forEach(e => {
+                if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id);
+             });
+         }
+      } else { 
+         state.builder.selectedUnitKeys = state.builder.selectedUnitKeys.filter(k => k !== unitKey); 
+         delete state.builder.explicitCounts[unitKey]; 
+         const unitExamIds = getExamsForUnit(state.subjectCode, unitKey).map(e => e.id);
+         state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => !unitExamIds.includes(id));
+      }
+      render(); return;
+    }
+    
     if (action === 'build-custom-exam') { await generateCustomExam(); return; }
+    
+    // Admin Actions
+    if (action === 'open-admin') { openAdmin(); return; }
+    if (action === 'close-admin') { closeAdmin(); return; }
+    if (action === 'admin-login-submit') {
+       const pass = document.getElementById('admin-password-input').value;
+       await adminLogin(pass);
+       return;
+    }
+    if (action === 'admin-tab') { state.admin.tab = target.getAttribute('data-tab'); render(); return; }
+    if (action === 'admin-upload-submit') {
+       try {
+         setLoading(true);
+         const jsonText = document.getElementById('admin-json-input').value;
+         const pdfFile = state.admin.form.pdfDataUrl;
+         const pdfName = state.admin.form.pdfFileName;
+         if(!jsonText) throw new Error('يجب وضع كود الـ JSON');
+         await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examJson: jsonText, pdfDataUrl: pdfFile, pdfFileName: pdfName });
+         showToast('تم رفع وحفظ الامتحان في البنك بنجاح');
+         state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = '';
+         await refreshData();
+       } catch (err) { showToast('خطأ في الرفع: ' + err.message, 'error'); } 
+       finally { setLoading(false); render(); }
+       return;
+    }
+    if (action === 'admin-delete-exam') {
+       if (!confirm('هل أنت متأكد من حذف هذا الامتحان بالكامل من المنصة؟')) return;
+       try {
+         setLoading(true);
+         await api('deleteExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examId: target.getAttribute('data-exam-id') });
+         showToast('تم حذف الامتحان');
+         await refreshData();
+       } catch (err) { showToast('خطأ في الحذف: ' + err.message, 'error'); } 
+       finally { setLoading(false); render(); }
+       return;
+    }
     if (action === 'close-toast') { state.toast = null; render(); return; }
   } catch (err) { showToast(err.message || 'حدث خطأ غير متوقع', 'error'); }
 });
@@ -1234,21 +1404,30 @@ document.addEventListener('change', event => {
     if (builderField === 'mode') state.builder.mode = event.target.value;
     if (builderField === 'totalQuestions') state.builder.totalQuestions = Number(event.target.value || 0);
     if (builderField === 'duration') state.builder.duration = Number(event.target.value || 0);
+    if (builderField === 'noTimer') state.builder.noTimer = event.target.checked;
     render(); return;
   }
   if (event.target.getAttribute('data-action') === 'set-builder-unit-count') { state.builder.explicitCounts[event.target.getAttribute('data-unit-key')] = Number(event.target.value || 0); render(); return; }
+  
+  if (event.target.id === 'admin-pdf-file') {
+     const file = event.target.files[0];
+     if (file) {
+        const reader = new FileReader();
+        reader.onload = e => { state.admin.form.pdfDataUrl = e.target.result; state.admin.form.pdfFileName = file.name; render(); };
+        reader.readAsDataURL(file);
+     }
+  }
 });
 
 document.addEventListener('input', event => {
   if (event.target.getAttribute('data-action') === 'set-open-answer') {
     if (!state.examSession) return;
     state.examSession.openAnswers[event.target.getAttribute('data-question-id')] = event.target.value;
-    updateProgressUI(); // Update progress bar silently
+    updateProgressUI(); 
     return;
   }
 });
 
-// Animation Keyframes helper
 const style = document.createElement('style');
 style.textContent = `
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
