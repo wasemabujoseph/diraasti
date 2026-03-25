@@ -81,7 +81,8 @@ const CURRICULUM = {
       },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['حالات المادة','المحاليل','الاتزان الكيميائي','الحموض والقواعد وتطبيقاتها'] },
-        { semester: 2, titleAr: 'الفصل الثاني', units: ['الكيمياء الحركيه','الكيمياء الكهربائيه','الكيمياء العضويه'] }
+        { semester: 2, titleAr: 'الفصل الثاني', units: ['الكيمياء الحركيه','الكيمياء الكهربائيه','الكيمياء العضويه'] },
+        { semester: 3, titleAr: 'امتحانات عامة', units: ['امتحانات شاملة','وزاري'] }
       ]
     },
     {
@@ -94,7 +95,8 @@ const CURRICULUM = {
       },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['كيمياء الحياة','دوره الخليه وتصنيع البروتينات','الوراثة','التكنولوجيا الحيوية'] },
-        { semester: 2, titleAr: 'الفصل الثاني', units: ['التنظيم والاتزان','الدعامه والحركه','الهضم والنقل وتبادل الغازات','الاخراج والتكاثر','المناعه والمضادات الحيويه'] }
+        { semester: 2, titleAr: 'الفصل الثاني', units: ['التنظيم والاتزان','الدعامه والحركه','الهضم والنقل وتبادل الغازات','الاخراج والتكاثر','المناعه والمضادات الحيويه'] },
+        { semester: 3, titleAr: 'امتحانات عامة', units: ['امتحانات شاملة','وزاري'] }
       ]
     },
     {
@@ -107,7 +109,8 @@ const CURRICULUM = {
       },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] },
-        { semester: 2, titleAr: 'الفصل الثاني', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] }
+        { semester: 2, titleAr: 'الفصل الثاني', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] },
+        { semester: 3, titleAr: 'امتحانات عامة', units: ['امتحانات شاملة','وزاري'] }
       ]
     },
     {
@@ -120,7 +123,8 @@ const CURRICULUM = {
       },
       semesters: [
         { semester: 1, titleAr: 'Semester 1', units: ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5'] },
-        { semester: 2, titleAr: 'Semester 2', units: ['Unit 6','Unit 7','Unit 8','Unit 9','Unit 10'] }
+        { semester: 2, titleAr: 'Semester 2', units: ['Unit 6','Unit 7','Unit 8','Unit 9','Unit 10'] },
+        { semester: 3, titleAr: 'General Exams', units: ['Comprehensive Exams','Ministerial Exams'] }
       ]
     }
   ]
@@ -206,7 +210,6 @@ function buildSubjectUnits(subjectCode) {
 
 function getExamsForSubject(subjectCode) { return (state.data.exams || []).filter(exam => exam.subjectCode === subjectCode); }
 
-// THE FIX: We use trim() and more resilient matching just in case, though the JSON override in admin fixes the root cause.
 function getExamsForUnit(subjectCode, unitKey) {
   const info = parseUnitKey(unitKey);
   return getExamsForSubject(subjectCode).filter(exam => { 
@@ -349,7 +352,7 @@ function renderLogin() {
 
 function renderTopBar() {
   return `
-    <div class="fixed top-0 inset-x-0 z-40 glass border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+    <div class="fixed top-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
       <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
         <button data-action="go-home" class="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
           <div class="h-11 w-11 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-black shadow-glow text-xl">د</div>
@@ -494,7 +497,7 @@ function renderSelectedUnitPanel(subjectCode) {
       <div class="absolute top-0 right-0 w-32 h-32 ${theme.bgOuter} rounded-bl-[100px] -z-0"></div>
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5 relative z-10">
         <div>
-          <div class="text-sm font-bold ${theme.textMain}">${escapeHtml(Number(unit.semester) === 0 ? 'الفصلان معًا' : 'الفصل ' + unit.semester)}</div>
+          <div class="text-sm font-bold ${theme.textMain}">${escapeHtml(Number(unit.semester) === 0 ? 'الفصلان معًا' : (Number(unit.semester) === 3 ? 'امتحانات عامة' : 'الفصل ' + unit.semester))}</div>
           <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${escapeHtml(unit.unitTitleAr)}</div>
         </div>
         ${Number(unit.semester) !== 0 ? `<button data-action="jump-builder-with-unit" data-unit-key="${escapeHtml(state.unitKey)}" class="px-5 py-3 rounded-2xl font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-glow transition-transform hover:-translate-y-1">تكوين امتحان من هذه الوحدة</button>` : ''}
@@ -590,7 +593,7 @@ function renderBuilder(subjectCode) {
                     <label class="flex items-start gap-3 cursor-pointer">
                       <input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(unit.key)}" ${isUnitSelected ? 'checked' : ''} class="mt-1 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
                       <div class="flex-1">
-                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(unit.semesterTitleAr)}</div>
+                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(Number(unit.semester) === 3 ? 'امتحانات عامة' : unit.semesterTitleAr)}</div>
                         <div class="mt-1 font-black text-slate-900 dark:text-white leading-snug">${escapeHtml(unit.unitTitleAr)}</div>
                         <div class="mt-2 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/40 inline-block px-2 py-1 rounded-md">البنك: ${getQuestionCountForUnit(unit.key)} • الوزن: ${subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 0}%</div>
                       </div>
@@ -619,7 +622,7 @@ function renderBuilder(subjectCode) {
             </div>
           </div>
           <div class="space-y-4">
-            <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-6 sticky top-24 shadow-sm">
+            <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-6 sticky top-28 shadow-sm">
               <div class="font-black text-lg text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-3">ملخص الامتحان</div>
               <div class="mt-4 space-y-3 max-h-[300px] overflow-y-auto scroll-thin pr-1">
                 ${preview.length ? preview.map(row => `
@@ -663,7 +666,7 @@ function renderSubjectOverview(subjectCode) {
             <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(Number(row.semester) === 1 ? 'الفصل الأول' : Number(row.semester) === 2 ? 'الفصل الثاني' : 'عام')}</div>
+                  <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(Number(row.semester) === 1 ? 'الفصل الأول' : Number(row.semester) === 2 ? 'الفصل الثاني' : (Number(row.semester) === 3 ? 'امتحانات عامة' : 'عام'))}</div>
                   <div class="mt-1 text-lg font-black text-slate-900 dark:text-white">${escapeHtml(row.unitTitleAr || 'بدون وحدة')}</div>
                 </div>
                 <div class="text-3xl font-black ${row.mastery >= 80 ? 'text-emerald-500' : row.mastery >= 50 ? 'text-amber-500' : 'text-red-500'}">${escapeHtml(row.mastery)}%</div>
@@ -722,7 +725,7 @@ function renderSubjectScreen(subjectCode) {
             <p class="mt-4 text-white/90 leading-relaxed max-w-2xl">اختر الوحدة لعرض امتحاناتها، أو استخدم البنك الشامل، أو ابنِ امتحانك المخصص حسب الأوزان.</p>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">أسئلة البنك</div><div class="mt-1 text-4xl font-black">${state.data.questionBankSummary.bySubject[subjectCode] || 0}</div></div>
+            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">إجمالي الأسئلة المتاحة</div><div class="mt-1 text-4xl font-black">${state.data.questionBankSummary.bySubject[subjectCode] || 0}</div></div>
             <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">الامتحانات الجاهزة</div><div class="mt-1 text-4xl font-black">${getExamsForSubject(subjectCode).length}</div></div>
           </div>
         </div>
@@ -738,10 +741,7 @@ function renderSubjectScreen(subjectCode) {
   `;
 }
 
-function getQuestionPdfSource(question, exam) {
-  return question.sourcePdfBase64 || (exam && exam.sourcePdf && exam.sourcePdf.base64) || '';
-}
-
+function getQuestionPdfSource(question, exam) { return question.sourcePdfBase64 || (exam && exam.sourcePdf && exam.sourcePdf.base64) || ''; }
 function stripBase64Exam(exam) {
   const clone = JSON.parse(JSON.stringify(exam));
   if (clone.sourcePdf && clone.sourcePdf.base64) delete clone.sourcePdf.base64;
@@ -1162,7 +1162,7 @@ function renderApp() {
 
   return `
     ${renderTopBar()}
-    <main class="max-w-7xl mx-auto p-4 md:p-6 pt-24 pb-20 space-y-8">${main}</main>
+    <main class="max-w-7xl mx-auto p-4 md:p-6 pt-28 pb-20 space-y-8">${main}</main>
     ${renderPrestartModal()}
     ${renderAdminModal()}
     ${renderToast()}
