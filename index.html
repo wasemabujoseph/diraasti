@@ -19,9 +19,14 @@
               50: '#eef2ff',
               100: '#e0e7ff',
               200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
               500: '#6366f1',
               600: '#4f46e5',
-              700: '#4338ca'
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              950: '#1e1b4b'
             }
           },
           boxShadow: {
@@ -121,7 +126,7 @@ const CURRICULUM = {
   ]
 };
 
-// Modern Color Themes for Units and Exams
+// الألوان الديناميكية للوحدات والامتحانات
 const THEMES = [
   { border: 'border-blue-500', bgOuter: 'bg-blue-50 dark:bg-blue-900/20', bgInner: 'bg-white dark:bg-blue-950', textMain: 'text-blue-700 dark:text-blue-400', hover: 'hover:border-blue-400', badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
   { border: 'border-purple-500', bgOuter: 'bg-purple-50 dark:bg-purple-900/20', bgInner: 'bg-white dark:bg-purple-950', textMain: 'text-purple-700 dark:text-purple-400', hover: 'hover:border-purple-400', badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
@@ -164,10 +169,7 @@ const state = {
 window.__PDF_SOURCES = {};
 window.__PDF_DOCS = {};
 
-function loadLocal(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (err) { return fallback; }
-}
-
+function loadLocal(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (err) { return fallback; } }
 function saveLocal(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 
 function setDarkMode(value) {
@@ -175,37 +177,18 @@ function setDarkMode(value) {
   document.documentElement.classList.toggle('dark', state.darkMode);
   saveLocal(CONFIG.STORAGE_KEYS.darkMode, state.darkMode);
 }
-
 setDarkMode(state.darkMode);
 
-function escapeHtml(value) {
-  return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
+function escapeHtml(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function initials(name) { return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'ط'; }
-
-function formatDate(value) {
-  if (!value) return '-';
-  try { return new Date(value).toLocaleString('ar-JO'); } catch (err) { return String(value); }
-}
-
+function formatDate(value) { if (!value) return '-'; try { return new Date(value).toLocaleString('ar-JO'); } catch (err) { return String(value); } }
 function minutesLabel(seconds) { return Math.max(1, Math.round(Number(seconds || 0) / 60)); }
-
-function percent(correct, total) {
-  if (!total) return 0;
-  return Math.round((Number(correct || 0) / Number(total || 1)) * 100);
-}
+function percent(correct, total) { if (!total) return 0; return Math.round((Number(correct || 0) / Number(total || 1)) * 100); }
 
 function getSubject(code) { return CURRICULUM.subjects.find(subject => subject.code === code) || null; }
-
 function getSubjectSummary(code) { return (state.data.questionBankSummary.subjects || []).find(subject => subject.subjectCode === code) || { totalQuestions: 0, totalExams: 0, units: [] }; }
-
 function makeUnitKey(subjectCode, semester, unitTitleAr) { return [subjectCode, Number(semester || 0), unitTitleAr || ''].join('||'); }
-
-function parseUnitKey(unitKey) {
-  const parts = String(unitKey || '').split('||');
-  return { subjectCode: parts[0] || '', semester: Number(parts[1] || 0), unitTitleAr: parts.slice(2).join('||') || '' };
-}
+function parseUnitKey(unitKey) { const parts = String(unitKey || '').split('||'); return { subjectCode: parts[0] || '', semester: Number(parts[1] || 0), unitTitleAr: parts.slice(2).join('||') || '' }; }
 
 function buildSubjectUnits(subjectCode) {
   const subject = getSubject(subjectCode);
@@ -223,17 +206,18 @@ function buildSubjectUnits(subjectCode) {
 
 function getExamsForSubject(subjectCode) { return (state.data.exams || []).filter(exam => exam.subjectCode === subjectCode); }
 
+// THE FIX: We use trim() and more resilient matching just in case, though the JSON override in admin fixes the root cause.
 function getExamsForUnit(subjectCode, unitKey) {
   const info = parseUnitKey(unitKey);
-  return getExamsForSubject(subjectCode).filter(exam => { return Number(exam.semester || 0) === Number(info.semester || 0) && String(exam.unitTitleAr || '') === String(info.unitTitleAr || ''); });
+  return getExamsForSubject(subjectCode).filter(exam => { 
+      return Number(exam.semester || 0) === Number(info.semester || 0) && 
+             String(exam.unitTitleAr || '').trim() === String(info.unitTitleAr || '').trim(); 
+  });
 }
 
 function getQuestionCountForUnit(unitKey) { return Number((state.data.questionBankSummary.byUnitKey || {})[unitKey] || 0); }
-
 function getAttemptsForSubject(subjectCode) { return (state.data.results || []).filter(result => result.subjectCode === subjectCode); }
-
 function getUnitAnalytics(subjectCode) { return (state.data.analytics.unitMastery || []).filter(item => item.subjectCode === subjectCode); }
-
 function getSubjectAnalytics(subjectCode) { return (state.data.analytics.subjectMastery || []).find(item => item.subjectCode === subjectCode) || null; }
 
 function hasApiBase() { return String(CONFIG.API_BASE || '').startsWith('https://script.google.com/macros/s/'); }
@@ -288,9 +272,7 @@ function resetBuilderForSubject(subjectCode) {
 }
 
 function openSubject(subjectCode) { state.subjectCode = subjectCode; state.subjectTab = 'units'; state.unitKey = null; resetBuilderForSubject(subjectCode); render(); }
-
 function backToHome() { state.subjectCode = null; state.subjectTab = 'units'; state.unitKey = null; state.reviewAttempt = null; state.examSession = null; clearExamTimer(); render(); }
-
 function openAdmin() { state.admin.open = true; render(); }
 function closeAdmin() { state.admin.open = false; render(); }
 
@@ -301,7 +283,6 @@ async function adminLogin(password) {
     setLoading(true);
     const res = await api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD });
     state.admin.allResults = res.results || [];
-    // Initialize admin form subject code if not set
     if (!state.admin.form.subjectCode && CURRICULUM.subjects.length > 0) {
        state.admin.form.subjectCode = CURRICULUM.subjects[0].code;
     }
@@ -336,7 +317,7 @@ function buildSubjectCards() {
 
 function renderLogin() {
   return `
-    <div class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+    <div class="min-h-screen p-4 md:p-8 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
       <div class="max-w-6xl w-full grid lg:grid-cols-2 gap-8 items-center">
         <div class="rounded-[32px] p-10 bg-gradient-to-br from-brand-900 via-brand-700 to-slate-900 text-white shadow-glow">
           <div class="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-bold backdrop-blur-sm">جاهز للمذاكرة والتدريب العلاجي</div>
@@ -356,7 +337,7 @@ function renderLogin() {
           <div class="mt-8 space-y-5">
             <label class="block">
               <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">الاسم الكامل</div>
-              <input id="login-name" class="w-full rounded-2xl border-2 border-slate-300 dark:border-slate-600 focus:border-brand-500 bg-white dark:bg-slate-800 px-5 py-4 transition-colors outline-none text-lg text-slate-900 dark:text-white placeholder-slate-400" placeholder="مثال: أحمد محمد" />
+              <input id="login-name" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 transition-colors outline-none text-lg text-slate-900 dark:text-white placeholder-slate-400" placeholder="مثال: أحمد محمد" />
             </label>
             <button data-action="login" class="w-full px-5 py-4 rounded-2xl font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-all transform hover:-translate-y-1 text-lg">الدخول إلى المنصة</button>
           </div>
@@ -368,7 +349,7 @@ function renderLogin() {
 
 function renderTopBar() {
   return `
-    <div class="sticky top-0 z-30 glass border-b border-slate-200 dark:border-slate-800 shadow-sm">
+    <div class="fixed top-0 inset-x-0 z-40 glass border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
       <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
         <button data-action="go-home" class="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
           <div class="h-11 w-11 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-black shadow-glow text-xl">د</div>
@@ -504,7 +485,6 @@ function renderSelectedUnitPanel(subjectCode) {
   const unit = parseUnitKey(state.unitKey);
   const exams = getExamsForUnit(subjectCode, state.unitKey);
   
-  // Find unit index to match color theme
   const units = buildSubjectUnits(subjectCode);
   const unitIndex = units.findIndex(u => u.key === state.unitKey);
   const theme = getTheme(unitIndex !== -1 ? unitIndex : 0);
@@ -873,7 +853,7 @@ function renderExamScreen() {
   
   return `
     <div class="space-y-6">
-      <div class="sticky top-[72px] z-20 rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-soft p-5 md:p-6 mb-8 transition-all">
+      <div class="sticky top-[88px] z-20 rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-soft p-5 md:p-6 mb-8 transition-all">
         <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
           <div>
             <div class="text-sm font-bold text-brand-600 dark:text-brand-400 tracking-wider">${escapeHtml(exam.subjectAr || '')}</div>
@@ -1182,7 +1162,7 @@ function renderApp() {
 
   return `
     ${renderTopBar()}
-    <main class="max-w-7xl mx-auto p-4 md:p-6 pb-20 space-y-8">${main}</main>
+    <main class="max-w-7xl mx-auto p-4 md:p-6 pt-24 pb-20 space-y-8">${main}</main>
     ${renderPrestartModal()}
     ${renderAdminModal()}
     ${renderToast()}
@@ -1200,7 +1180,6 @@ function hydrateAfterRender() {
   renderMath();
   renderPdfCanvases();
   
-  // Inject the loaded JSON if editing, directly into DOM to prevent re-render loss
   if (state.admin.open && state.admin.tab === 'upload' && state.admin.form.editingExamId && document.getElementById('admin-json-input')) {
      if (!document.getElementById('admin-json-input').value && window.__EDIT_JSON) {
         document.getElementById('admin-json-input').value = window.__EDIT_JSON;
@@ -1249,9 +1228,7 @@ async function renderPdfCanvases() {
   }
 }
 
-function clearExamTimer() {
-  if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
-}
+function clearExamTimer() { if (state.timerId) { clearInterval(state.timerId); state.timerId = null; } }
 
 function updateProgressUI() {
   if (!state.examSession) return;
@@ -1268,10 +1245,10 @@ function updateProgressUI() {
 
 function startExamTimer() {
   clearExamTimer();
-  if (!state.examSession || state.examSession.noTimer) return;
+  if (!state.examSession) return;
   
   state.timerId = setInterval(async () => {
-    if (!state.examSession || state.examSession.noTimer) { clearExamTimer(); return; }
+    if (!state.examSession) { clearExamTimer(); return; }
     state.examSession.timeLeft -= 1;
     
     if (state.examSession.timeLeft <= 0) {
@@ -1298,8 +1275,7 @@ function prepareExamForStart(exam) { state.prestartExam = { exam, duration: exam
 
 function beginExam(exam, durationSeconds) {
   state.prestartExam = null; state.reviewAttempt = null;
-  const noTimer = durationSeconds === 0;
-  state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single', timeLeft: durationSeconds, noTimer: noTimer };
+  state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single', timeLeft: Number(durationSeconds || exam.duration || 3600) };
   render(); startExamTimer();
 }
 
@@ -1361,8 +1337,7 @@ async function generateCustomExam() {
       if (!hasCounts) { showToast('يرجى تحديد عدد الأسئلة لوحدة واحدة على الأقل.', 'error'); return; }
     }
     setLoading(true);
-    const finalDuration = state.builder.noTimer ? 0 : Number(state.builder.duration || 120) * 60;
-    const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: finalDuration, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
+    const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: Number(state.builder.duration || 120) * 60, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
     const res = await api('buildCustomExam', payload);
     prepareExamForStart(res.exam);
   } catch (err) { showToast('تعذر تكوين الامتحان: ' + err.message, 'error'); } 
@@ -1381,7 +1356,7 @@ document.addEventListener('click', async event => {
       await refreshData(); return;
     }
     if (action === 'logout') { localStorage.removeItem(CONFIG.STORAGE_KEYS.user); state.user = null; state.examSession = null; state.reviewAttempt = null; state.subjectCode = null; clearExamTimer(); render(); return; }
-    if (action === 'toggle-dark') { setDarkMode(!state.darkMode); return; } 
+    if (action === 'toggle-dark') { setDarkMode(!state.darkMode); return; }
     if (action === 'go-home') { backToHome(); return; }
     if (action === 'open-subject') { openSubject(target.getAttribute('data-subject-code')); return; }
     if (action === 'subject-tab') { state.subjectTab = target.getAttribute('data-tab'); render(); return; }
@@ -1390,20 +1365,11 @@ document.addEventListener('click', async event => {
     if (action === 'prepare-exam') { setLoading(true); const exam = await loadExam(target.getAttribute('data-exam-id')); prepareExamForStart(exam); state.loading = false; render(); return; }
     if (action === 'close-prestart') { state.prestartExam = null; render(); return; }
     if (action === 'start-prepared-exam') {
-      const exam = state.prestartExam.exam; 
-      let duration = Number(state.prestartExam.duration || exam.duration || 3600);
+      const exam = state.prestartExam.exam; let duration = Number(state.prestartExam.duration || exam.duration || 3600);
       if (exam.allowStudentTimeOverride) {
-        const noTimerChk = document.getElementById('prestart-no-timer');
-        if (noTimerChk && noTimerChk.checked) {
-          duration = 0; 
-        } else {
-          const input = document.getElementById('prestart-duration'); 
-          const minutes = Number(input ? input.value : minutesLabel(exam.duration));
-          const minMinutes = minutesLabel(exam.minDuration || 300); const maxMinutes = minutesLabel(exam.maxDuration || Math.max(exam.duration || 3600, 3600));
-          duration = Math.max(minMinutes, Math.min(maxMinutes, minutes)) * 60;
-        }
-      } else if (!exam.duration) {
-         duration = 0;
+        const input = document.getElementById('prestart-duration'); const minutes = Number(input ? input.value : minutesLabel(exam.duration));
+        const minMinutes = minutesLabel(exam.minDuration || 300); const maxMinutes = minutesLabel(exam.maxDuration || Math.max(exam.duration || 3600, 3600));
+        duration = Math.max(minMinutes, Math.min(maxMinutes, minutes)) * 60;
       }
       beginExam(exam, duration); return;
     }
@@ -1466,7 +1432,6 @@ document.addEventListener('click', async event => {
     }
     
     if (action === 'build-custom-exam') { await generateCustomExam(); return; }
-    
     if (action === 'open-admin') { openAdmin(); return; }
     if (action === 'close-admin') { closeAdmin(); return; }
     if (action === 'admin-login-submit') {
@@ -1490,7 +1455,6 @@ document.addEventListener('click', async event => {
            state.admin.form.pdfDataUrl = null; 
            state.admin.form.pdfFileName = '';
            
-           // Clean JSON for text area
            const clone = JSON.parse(JSON.stringify(exam));
            delete clone.id;
            if(clone.sourcePdf && clone.sourcePdf.base64) delete clone.sourcePdf.base64;
@@ -1499,9 +1463,7 @@ document.addEventListener('click', async event => {
            render();
        } catch (e) {
            showToast('تعذر جلب بيانات الامتحان للتعديل', 'error');
-       } finally {
-           setLoading(false);
-       }
+       } finally { setLoading(false); }
        return;
     }
     
@@ -1529,7 +1491,6 @@ document.addEventListener('click', async event => {
            return;
        }
 
-       // Inject selected Subject and Unit into JSON overrides
        const subjInfo = CURRICULUM.subjects.find(s => s.code === state.admin.form.subjectCode);
        const unitParts = parseUnitKey(state.admin.form.unitKey);
        
@@ -1594,7 +1555,6 @@ document.addEventListener('change', event => {
     if (builderField === 'mode') state.builder.mode = event.target.value;
     if (builderField === 'totalQuestions') state.builder.totalQuestions = Number(event.target.value || 0);
     if (builderField === 'duration') state.builder.duration = Number(event.target.value || 0);
-    if (builderField === 'noTimer') state.builder.noTimer = event.target.checked;
     render(); return;
   }
   if (event.target.getAttribute('data-action') === 'set-builder-unit-count') { state.builder.explicitCounts[event.target.getAttribute('data-unit-key')] = Number(event.target.value || 0); render(); return; }
