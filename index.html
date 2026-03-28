@@ -15,30 +15,14 @@
             sans: ['Cairo', 'Tahoma', 'Arial', 'sans-serif'],
           },
           colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              200: '#c7d2fe',
-              300: '#a5b4fc',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              800: '#3730a3',
-              900: '#312e81',
-              950: '#1e1b4b'
-            }
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81', 950: '#1e1b4b' }
           },
-          boxShadow: {
-            soft: '0 20px 45px rgba(2, 6, 23, 0.10)',
-            glow: '0 18px 45px rgba(79, 70, 229, 0.22)'
-          }
+          boxShadow: { soft: '0 20px 45px rgba(2, 6, 23, 0.10)', glow: '0 18px 45px rgba(79, 70, 229, 0.22)' }
         }
       }
     };
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -58,12 +42,9 @@
 const CONFIG = {
   APP_NAME: 'دراستي',
   APP_SUBTITLE: 'محاكاة ذكية للتوجيهي مع بنك أسئلة وتحليل نقاط القوة والضعف',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbxbRTV0pYSXJDRQe2oTBzhVaNYkW9P-ILbB2FruLQp1Tgf7eJOM7OByJa6ioH7NK9Zalw/exec', // <-- تأكد من وضع رابط الـ Script الخاص بك هنا
+  API_BASE: 'https://script.google.com/macros/s/AKfycbxbRTV0pYSXJDRQe2oTBzhVaNYkW9P-ILbB2FruLQp1Tgf7eJOM7OByJa6ioH7NK9Zalw/exec',
   ADMIN_PASSWORD: 'admin',
-  STORAGE_KEYS: {
-    user: 'dirasti_user_v7',
-    darkMode: 'dirasti_dark_v7'
-  }
+  STORAGE_KEYS: { user: 'dirasti_user_v7', darkMode: 'dirasti_dark_v7' }
 };
 
 const CURRICULUM = {
@@ -72,52 +53,32 @@ const CURRICULUM = {
   comprehensiveLabel: 'بنك شامل لكل المادة',
   subjects: [
     {
-      code: 'chemistry',
-      nameAr: 'الكيمياء',
-      examMode: 'OMR_MCQ',
-      weights: {
-        '1|حالات المادة': 13.5, '1|المحاليل': 8, '1|الاتزان الكيميائي': 10.8, '1|الحموض والقواعد وتطبيقاتها': 18.9,
-        '2|الكيمياء الحركيه': 13.5, '2|الكيمياء الكهربائيه': 17.5, '2|الكيمياء العضويه': 17.5
-      },
+      code: 'chemistry', nameAr: 'الكيمياء', examMode: 'OMR_MCQ',
+      weights: { '1|حالات المادة': 13.5, '1|المحاليل': 8, '1|الاتزان الكيميائي': 10.8, '1|الحموض والقواعد وتطبيقاتها': 18.9, '2|الكيمياء الحركيه': 13.5, '2|الكيمياء الكهربائيه': 17.5, '2|الكيمياء العضويه': 17.5 },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['حالات المادة','المحاليل','الاتزان الكيميائي','الحموض والقواعد وتطبيقاتها'] },
         { semester: 2, titleAr: 'الفصل الثاني', units: ['الكيمياء الحركيه','الكيمياء الكهربائيه','الكيمياء العضويه'] }
       ]
     },
     {
-      code: 'life_sciences',
-      nameAr: 'الأحياء',
-      examMode: 'OMR_MCQ',
-      weights: {
-        '1|كيمياء الحياة': 16.9, '1|دوره الخليه وتصنيع البروتينات': 12.8, '1|الوراثة': 14.9, '1|التكنولوجيا الحيوية': 8.2,
-        '2|التنظيم والاتزان': 11.8, '2|الدعامه والحركه': 6.1, '2|الهضم والنقل وتبادل الغازات': 10.7, '2|الاخراج والتكاثر': 11.3, '2|المناعه والمضادات الحيويه': 6.9
-      },
+      code: 'life_sciences', nameAr: 'الأحياء', examMode: 'OMR_MCQ',
+      weights: { '1|كيمياء الحياة': 16.9, '1|دوره الخليه وتصنيع البروتينات': 12.8, '1|الوراثة': 14.9, '1|التكنولوجيا الحيوية': 8.2, '2|التنظيم والاتزان': 11.8, '2|الدعامه والحركه': 6.1, '2|الهضم والنقل وتبادل الغازات': 10.7, '2|الاخراج والتكاثر': 11.3, '2|المناعه والمضادات الحيويه': 6.9 },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['كيمياء الحياة','دوره الخليه وتصنيع البروتينات','الوراثة','التكنولوجيا الحيوية'] },
         { semester: 2, titleAr: 'الفصل الثاني', units: ['التنظيم والاتزان','الدعامه والحركه','الهضم والنقل وتبادل الغازات','الاخراج والتكاثر','المناعه والمضادات الحيويه'] }
       ]
     },
     {
-      code: 'islamic_education',
-      nameAr: 'التربيه الاسلاميه',
-      examMode: 'OMR_MCQ',
-      weights: {
-        '1|علاقه الانسان بربه': 16.66, '1|علاقه الانسان بنفسه': 16.66, '1|علاقه الانسان بمن حوله': 16.66,
-        '2|علاقه الانسان بربه': 16.66, '2|علاقه الانسان بنفسه': 16.66, '2|علاقه الانسان بمن حوله': 16.66
-      },
+      code: 'islamic_education', nameAr: 'التربيه الاسلاميه', examMode: 'OMR_MCQ',
+      weights: { '1|علاقه الانسان بربه': 16.66, '1|علاقه الانسان بنفسه': 16.66, '1|علاقه الانسان بمن حوله': 16.66, '2|علاقه الانسان بربه': 16.66, '2|علاقه الانسان بنفسه': 16.66, '2|علاقه الانسان بمن حوله': 16.66 },
       semesters: [
         { semester: 1, titleAr: 'الفصل الأول', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] },
         { semester: 2, titleAr: 'الفصل الثاني', units: ['علاقه الانسان بربه','علاقه الانسان بنفسه','علاقه الانسان بمن حوله'] }
       ]
     },
     {
-      code: 'english',
-      nameAr: 'Advance English',
-      examMode: 'HYBRID',
-      weights: {
-        '1|Unit 1': 10, '1|Unit 2': 10, '1|Unit 3': 10, '1|Unit 4': 10, '1|Unit 5': 10,
-        '2|Unit 6': 10, '2|Unit 7': 10, '2|Unit 8': 10, '2|Unit 9': 10, '2|Unit 10': 10
-      },
+      code: 'english', nameAr: 'Advance English', examMode: 'HYBRID',
+      weights: { '1|Unit 1': 10, '1|Unit 2': 10, '1|Unit 3': 10, '1|Unit 4': 10, '1|Unit 5': 10, '2|Unit 6': 10, '2|Unit 7': 10, '2|Unit 8': 10, '2|Unit 9': 10, '2|Unit 10': 10 },
       semesters: [
         { semester: 1, titleAr: 'Semester 1', units: ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5'] },
         { semester: 2, titleAr: 'Semester 2', units: ['Unit 6','Unit 7','Unit 8','Unit 9','Unit 10'] }
@@ -126,7 +87,6 @@ const CURRICULUM = {
   ]
 };
 
-// الألوان الديناميكية للوحدات والامتحانات
 const THEMES = [
   { border: 'border-blue-500', bgOuter: 'bg-blue-50 dark:bg-blue-900/20', bgInner: 'bg-white dark:bg-blue-950', textMain: 'text-blue-700 dark:text-blue-400', hover: 'hover:border-blue-400', badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
   { border: 'border-purple-500', bgOuter: 'bg-purple-50 dark:bg-purple-900/20', bgInner: 'bg-white dark:bg-purple-950', textMain: 'text-purple-700 dark:text-purple-400', hover: 'hover:border-purple-400', badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
@@ -141,29 +101,12 @@ function getTheme(index) { return THEMES[index % THEMES.length]; }
 const state = {
   user: loadLocal(CONFIG.STORAGE_KEYS.user, null),
   darkMode: loadLocal(CONFIG.STORAGE_KEYS.darkMode, false),
-  loading: false,
-  toast: null,
-  data: {
-    exams: [],
-    results: [],
-    analytics: { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] },
-    questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] }
-  },
-  subjectCode: null,
-  subjectTab: 'units',
-  unitKey: null,
-  prestartExam: null,
-  examSession: null,
-  reviewAttempt: null,
-  timerId: null,
-  admin: {
-    open: false,
-    authenticated: false,
-    tab: 'upload',
-    allResults: [],
-    form: { subjectCode: '', unitKey: '', editingExamId: null, pdfDataUrl: null, pdfFileName: '' }
-  },
-  builder: { totalQuestions: 100, duration: 120, selectedUnitKeys: [], explicitCounts: {}, selectedExamIds: [], mode: 'weighted', noTimer: false }
+  loading: false, toast: null,
+  data: { exams: [], results: [], analytics: { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] }, questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] } },
+  subjectCode: null, subjectTab: 'units', unitKey: null,
+  prestartExam: null, examSession: null, reviewAttempt: null, timerId: null,
+  admin: { open: false, authenticated: false, tab: 'upload', allResults: [], selectedUserId: null, selectedSubjectCode: null, form: { subjectCode: '', unitKey: '', editingExamId: null, pdfDataUrl: null, pdfFileName: '' } },
+  builder: { totalQuestions: 100, mode: 'weighted', selectedUnitKeys: [], explicitCounts: {}, selectedExamIds: [] }
 };
 
 window.__PDF_SOURCES = {};
@@ -172,17 +115,12 @@ window.__PDF_DOCS = {};
 function loadLocal(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (err) { return fallback; } }
 function saveLocal(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 
-function setDarkMode(value) {
-  state.darkMode = !!value;
-  document.documentElement.classList.toggle('dark', state.darkMode);
-  saveLocal(CONFIG.STORAGE_KEYS.darkMode, state.darkMode);
-}
+function setDarkMode(value) { state.darkMode = !!value; document.documentElement.classList.toggle('dark', state.darkMode); saveLocal(CONFIG.STORAGE_KEYS.darkMode, state.darkMode); }
 setDarkMode(state.darkMode);
 
 function escapeHtml(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function initials(name) { return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'ط'; }
 function formatDate(value) { if (!value) return '-'; try { return new Date(value).toLocaleString('ar-JO'); } catch (err) { return String(value); } }
-function minutesLabel(seconds) { return Math.max(1, Math.round(Number(seconds || 0) / 60)); }
 function percent(correct, total) { if (!total) return 0; return Math.round((Number(correct || 0) / Number(total || 1)) * 100); }
 
 function getSubject(code) { return CURRICULUM.subjects.find(subject => subject.code === code) || null; }
@@ -191,35 +129,18 @@ function makeUnitKey(subjectCode, semester, unitTitleAr) { return [subjectCode, 
 function parseUnitKey(unitKey) { const parts = String(unitKey || '').split('||'); return { subjectCode: parts[0] || '', semester: Number(parts[1] || 0), unitTitleAr: parts.slice(2).join('||') || '' }; }
 
 function buildSubjectUnits(subjectCode) {
-  const subject = getSubject(subjectCode);
-  if (!subject) return [];
-  const units = [];
-  subject.semesters.forEach(semester => {
-    semester.units.forEach(unitTitleAr => {
-      const key = makeUnitKey(subjectCode, semester.semester, unitTitleAr);
-      units.push({ key, subjectCode, semester: semester.semester, semesterTitleAr: semester.titleAr, unitTitleAr, weight: Number(subject.weights[`${semester.semester}|${unitTitleAr}`] || 0) });
-    });
-  });
+  const subject = getSubject(subjectCode); if (!subject) return []; const units = [];
+  subject.semesters.forEach(semester => { semester.units.forEach(unitTitleAr => { units.push({ key: makeUnitKey(subjectCode, semester.semester, unitTitleAr), subjectCode, semester: semester.semester, semesterTitleAr: semester.titleAr, unitTitleAr, weight: Number(subject.weights[`${semester.semester}|${unitTitleAr}`] || 0) }); }); });
   units.push({ key: makeUnitKey(subjectCode, 0, CURRICULUM.comprehensiveLabel), subjectCode, semester: 0, semesterTitleAr: 'الفصلان معًا', unitTitleAr: CURRICULUM.comprehensiveLabel, weight: 0, comprehensive: true });
   return units;
 }
 
 function getExamsForSubject(subjectCode) { return (state.data.exams || []).filter(exam => exam.subjectCode === subjectCode); }
-
-// THE FIX: We use trim() and more resilient matching just in case, though the JSON override in admin fixes the root cause.
-function getExamsForUnit(subjectCode, unitKey) {
-  const info = parseUnitKey(unitKey);
-  return getExamsForSubject(subjectCode).filter(exam => { 
-      return Number(exam.semester || 0) === Number(info.semester || 0) && 
-             String(exam.unitTitleAr || '').trim() === String(info.unitTitleAr || '').trim(); 
-  });
-}
-
+function getExamsForUnit(subjectCode, unitKey) { const info = parseUnitKey(unitKey); return getExamsForSubject(subjectCode).filter(exam => { return Number(exam.semester || 0) === Number(info.semester || 0) && String(exam.unitTitleAr || '').trim() === String(info.unitTitleAr || '').trim(); }); }
 function getQuestionCountForUnit(unitKey) { return Number((state.data.questionBankSummary.byUnitKey || {})[unitKey] || 0); }
 function getAttemptsForSubject(subjectCode) { return (state.data.results || []).filter(result => result.subjectCode === subjectCode); }
 function getUnitAnalytics(subjectCode) { return (state.data.analytics.unitMastery || []).filter(item => item.subjectCode === subjectCode); }
 function getSubjectAnalytics(subjectCode) { return (state.data.analytics.subjectMastery || []).find(item => item.subjectCode === subjectCode) || null; }
-
 function hasApiBase() { return String(CONFIG.API_BASE || '').startsWith('https://script.google.com/macros/s/'); }
 
 async function api(action, payload) {
@@ -260,15 +181,8 @@ function resetBuilderForSubject(subjectCode) {
   const units = buildSubjectUnits(subjectCode).filter(unit => !unit.comprehensive);
   state.builder.selectedUnitKeys = units.slice(0, Math.min(4, units.length)).map(unit => unit.key);
   state.builder.selectedExamIds = []; 
-  
-  state.builder.selectedUnitKeys.forEach(uk => {
-     getExamsForUnit(subjectCode, uk).forEach(e => {
-        if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id);
-     });
-  });
-
-  state.builder.explicitCounts = {};
-  state.builder.mode = 'weighted'; state.builder.totalQuestions = 100; state.builder.duration = 120; state.builder.noTimer = false;
+  state.builder.selectedUnitKeys.forEach(uk => { getExamsForUnit(subjectCode, uk).forEach(e => { if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id); }); });
+  state.builder.explicitCounts = {}; state.builder.mode = 'weighted'; state.builder.totalQuestions = 100;
 }
 
 function openSubject(subjectCode) { state.subjectCode = subjectCode; state.subjectTab = 'units'; state.unitKey = null; resetBuilderForSubject(subjectCode); render(); }
@@ -283,9 +197,7 @@ async function adminLogin(password) {
     setLoading(true);
     const res = await api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD });
     state.admin.allResults = res.results || [];
-    if (!state.admin.form.subjectCode && CURRICULUM.subjects.length > 0) {
-       state.admin.form.subjectCode = CURRICULUM.subjects[0].code;
-    }
+    if (!state.admin.form.subjectCode && CURRICULUM.subjects.length > 0) state.admin.form.subjectCode = CURRICULUM.subjects[0].code;
   } catch (err) { showToast('تعذر تحميل نتائج الإدارة: ' + err.message, 'error'); }
   finally { setLoading(false); render(); }
 }
@@ -323,21 +235,14 @@ function renderLogin() {
           <div class="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-bold backdrop-blur-sm">جاهز للمذاكرة والتدريب العلاجي</div>
           <h1 class="mt-8 text-5xl md:text-6xl font-black tracking-tight leading-tight">${escapeHtml(CONFIG.APP_NAME)}</h1>
           <p class="mt-6 text-white/90 text-lg leading-relaxed">${escapeHtml(CONFIG.APP_SUBTITLE)}</p>
-          <div class="mt-10 grid sm:grid-cols-2 gap-5">
-            <div class="rounded-3xl bg-white/10 p-5 border border-white/5 backdrop-blur-md"><div class="text-3xl font-black">4</div><div class="text-white/80 text-sm mt-1">مواد رئيسية</div></div>
-            <div class="rounded-3xl bg-white/10 p-5 border border-white/5 backdrop-blur-md"><div class="text-3xl font-black">PDF</div><div class="text-white/80 text-sm mt-1">ربط مباشر للرسوم</div></div>
-            <div class="rounded-3xl bg-white/10 p-5 border border-white/5 backdrop-blur-md"><div class="text-3xl font-black">مراجعة</div><div class="text-white/80 text-sm mt-1">حفظ دائم للأخطاء</div></div>
-            <div class="rounded-3xl bg-white/10 p-5 border border-white/5 backdrop-blur-md"><div class="text-3xl font-black">بنك ذكي</div><div class="text-white/80 text-sm mt-1">امتحانات مخصصة</div></div>
-          </div>
         </div>
         <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-10">
           <div class="text-sm font-bold text-brand-600 dark:text-brand-400 tracking-wider">دخول الطالب</div>
           <h2 class="mt-3 text-3xl font-black text-slate-900 dark:text-white">ابدأ من هنا</h2>
-          <p class="mt-3 text-slate-500 dark:text-slate-400">ستظهر المواد الأربع كصناديق كبيرة، ثم الوحدات، ثم الامتحانات داخل كل وحدة.</p>
           <div class="mt-8 space-y-5">
             <label class="block">
               <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">الاسم الكامل</div>
-              <input id="login-name" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 transition-colors outline-none text-lg text-slate-900 dark:text-white placeholder-slate-400" placeholder="مثال: أحمد محمد" />
+              <input id="login-name" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 transition-colors outline-none text-lg text-slate-900 dark:text-white" placeholder="مثال: أحمد محمد" />
             </label>
             <button data-action="login" class="w-full px-5 py-4 rounded-2xl font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-all transform hover:-translate-y-1 text-lg">الدخول إلى المنصة</button>
           </div>
@@ -355,20 +260,12 @@ function renderTopBar() {
           <div class="h-11 w-11 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-black shadow-glow text-xl">د</div>
           <div class="text-right min-w-0">
             <div class="font-black text-slate-900 dark:text-white truncate text-lg">${escapeHtml(CONFIG.APP_NAME)}</div>
-            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">${escapeHtml(CURRICULUM.gradeAr)} - ${escapeHtml(CURRICULUM.trackAr)}</div>
           </div>
         </button>
         <div class="flex items-center gap-2 md:gap-3">
-          <div class="hidden md:flex items-center gap-3 rounded-2xl bg-slate-100 dark:bg-slate-800 px-4 py-2">
-            <div class="h-9 w-9 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black">${escapeHtml(initials(state.user.name))}</div>
-            <div class="text-right">
-              <div class="text-sm font-bold text-slate-900 dark:text-white">${escapeHtml(state.user.name)}</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400">طالب</div>
-            </div>
-          </div>
           <button data-action="toggle-dark" class="px-4 py-3 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">${state.darkMode ? '☀️' : '🌙'}</button>
           <button data-action="open-admin" class="hidden sm:block px-4 py-3 rounded-2xl font-bold border border-slate-300 dark:border-slate-700 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 transition text-slate-900 dark:text-white">الإدارة</button>
-          <button data-action="logout" class="px-4 py-3 rounded-2xl font-bold bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition">خروج</button>
+          <button data-action="logout" class="px-4 py-3 rounded-2xl font-bold bg-red-50 text-red-600 hover:bg-red-100 transition">خروج</button>
         </div>
       </div>
     </div>
@@ -379,42 +276,23 @@ function renderHome() {
   const recentResults = (state.data.results || []).slice(0, 6);
   return `
     <div class="space-y-8">
-      <div class="rounded-[32px] p-8 bg-gradient-to-br from-slate-900 via-brand-800 to-slate-900 text-white shadow-glow">
-        <div class="grid lg:grid-cols-[1.5fr,1fr] gap-8 items-center">
-          <div>
-            <div class="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-bold backdrop-blur-sm">ابدأ من المادة ← الوحدة ← الامتحان</div>
-            <h1 class="mt-6 text-4xl md:text-5xl font-black">مرحبًا ${escapeHtml(state.user.name)}</h1>
-            <p class="mt-4 text-white/90 leading-8 text-lg">اختر مادة من الأسفل. ستجد الوحدات، الامتحانات، البنك الشامل، التقييم، وإعادة الأسئلة الخاطئة.</p>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">المواد</div><div class="text-3xl font-black mt-1">4</div></div>
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">الأسئلة بالبنك</div><div class="text-3xl font-black mt-1">${state.data.questionBankSummary.totalQuestions || 0}</div></div>
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">محاولاتك</div><div class="text-3xl font-black mt-1">${(state.data.results || []).length}</div></div>
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">إتقان عام</div><div class="text-3xl font-black mt-1">${state.data.analytics.overallMastery || 0}%</div></div>
-          </div>
-        </div>
-      </div>
       <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-5">${buildSubjectCards()}</div>
       <div class="grid xl:grid-cols-[1.4fr,1fr] gap-6">
         <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-6">
-          <div class="flex items-center justify-between gap-3 mb-6">
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">أحدث المحاولات</h3>
-            <span class="text-sm text-brand-600 dark:text-brand-400 font-bold bg-brand-50 dark:bg-brand-900/30 px-3 py-1 rounded-full">محفوظة دائمًا</span>
-          </div>
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-6">أحدث المحاولات</h3>
           <div class="space-y-4">
             ${recentResults.length ? recentResults.map(result => `
               <div class="rounded-3xl border border-slate-100 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-800/40 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-100 dark:hover:bg-slate-800">
                 <div>
-                  <div class="font-black text-slate-900 dark:text-white text-lg">${escapeHtml(result.examTitle || result.subjectAr || result.subject || '')}</div>
+                  <div class="font-black text-slate-900 dark:text-white text-lg">${escapeHtml(result.examTitle || result.subjectAr || '')}</div>
                   <div class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-400">${escapeHtml(result.subjectAr || '')} • ${escapeHtml(result.unitTitleAr || '')}</div>
-                  <div class="mt-2 text-xs text-slate-500 dark:text-slate-500">${escapeHtml(formatDate(result.createdAt))}</div>
                 </div>
                 <div class="flex items-center gap-4">
                   <div class="text-3xl font-black text-brand-600 dark:text-brand-400">${escapeHtml(result.score)}%</div>
                   <button data-action="review-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-5 py-3 rounded-2xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md hover:scale-105 transition-transform">مراجعة</button>
                 </div>
               </div>
-            `).join('') : `<div class="text-slate-500 dark:text-slate-400 p-4 text-center">لم تقم بأي محاولة بعد. ابدأ الآن!</div>`}
+            `).join('') : `<div class="text-slate-500 dark:text-slate-400 p-4 text-center">لم تقم بأي محاولة بعد.</div>`}
           </div>
         </div>
         <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-6">
@@ -430,9 +308,8 @@ function renderHome() {
                   <div class="text-xl font-black text-red-600 dark:text-red-400">${escapeHtml(row.mastery)}%</div>
                 </div>
                 <div class="mt-3 h-1.5 rounded-full bg-red-200 dark:bg-red-900/50 overflow-hidden"><div class="h-full bg-red-500" style="width:${Math.max(0, Math.min(100, row.mastery))}%"></div></div>
-                <div class="mt-2 text-xs font-semibold text-red-700/70 dark:text-red-300/70">أخطاء سابقة: ${escapeHtml(row.wrongs)}</div>
               </div>
-            `).join('') || '<div class="text-slate-500 dark:text-slate-400 p-4 text-center">ممتاز! لا توجد بيانات ضعف بعد.</div>'}
+            `).join('') || '<div class="text-slate-500 dark:text-slate-400 p-4 text-center">لا توجد بيانات ضعف بعد.</div>'}
           </div>
         </div>
       </div>
@@ -459,20 +336,14 @@ function renderUnitCards(subjectCode) {
       const active = state.unitKey === unit.key;
       const questionCount = unit.comprehensive ? 0 : getQuestionCountForUnit(unit.key);
       const theme = getTheme(index);
-      
       return `
         <button data-action="select-unit" data-unit-key="${escapeHtml(unit.key)}" class="rounded-[28px] border-2 transition-all duration-300 text-right ${active ? `${theme.border} ${theme.bgOuter} shadow-glow` : `border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 ${theme.hover}`} p-6 relative overflow-hidden group">
-          <div class="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-current to-transparent opacity-20 ${theme.textMain}"></div>
           <div class="flex items-start justify-between gap-3 relative z-10">
             <div>
               <div class="text-xs font-bold tracking-wide ${theme.textMain}">${escapeHtml(unit.semesterTitleAr)}</div>
               <div class="mt-2 text-xl font-black text-slate-900 dark:text-white leading-tight">${escapeHtml(unit.unitTitleAr)}</div>
             </div>
             <div class="rounded-xl px-3 py-1.5 text-xs font-bold ${theme.badge}">${unit.comprehensive ? 'شامل' : (unit.weight ? unit.weight + '%' : '—')}</div>
-          </div>
-          <div class="mt-6 grid grid-cols-2 gap-3 text-sm relative z-10">
-            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 ${theme.bgInner} p-3 text-center shadow-sm"><div class="text-slate-500 dark:text-slate-400 text-xs">امتحانات</div><div class="mt-1 font-black ${theme.textMain}">${exams.length}</div></div>
-            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 ${theme.bgInner} p-3 text-center shadow-sm"><div class="text-slate-500 dark:text-slate-400 text-xs">بنك الأسئلة</div><div class="mt-1 font-black ${theme.textMain}">${questionCount}</div></div>
           </div>
         </button>
       `;
@@ -484,23 +355,14 @@ function renderSelectedUnitPanel(subjectCode) {
   if (!state.unitKey) return '';
   const unit = parseUnitKey(state.unitKey);
   const exams = getExamsForUnit(subjectCode, state.unitKey);
-  
   const units = buildSubjectUnits(subjectCode);
   const unitIndex = units.findIndex(u => u.key === state.unitKey);
   const theme = getTheme(unitIndex !== -1 ? unitIndex : 0);
 
   return `
-    <div class="rounded-[32px] border-2 ${theme.border} bg-white dark:bg-slate-900 shadow-glow p-6 space-y-6 mt-6 animate-fade-in relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-32 h-32 ${theme.bgOuter} rounded-bl-[100px] -z-0"></div>
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5 relative z-10">
-        <div>
-          <div class="text-sm font-bold ${theme.textMain}">${escapeHtml(Number(unit.semester) === 0 ? 'الفصلان معًا' : 'الفصل ' + unit.semester)}</div>
-          <div class="text-3xl font-black text-slate-900 dark:text-white mt-1">${escapeHtml(unit.unitTitleAr)}</div>
-        </div>
-        ${Number(unit.semester) !== 0 ? `<button data-action="jump-builder-with-unit" data-unit-key="${escapeHtml(state.unitKey)}" class="px-5 py-3 rounded-2xl font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-glow transition-transform hover:-translate-y-1">تكوين امتحان من هذه الوحدة</button>` : ''}
-      </div>
+    <div class="rounded-[32px] border-2 ${theme.border} bg-white dark:bg-slate-900 shadow-glow p-6 mt-6 relative">
       <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 relative z-10">
-        ${exams.length ? exams.map((exam, idx) => renderExamCard(exam, idx)).join('') : '<div class="text-slate-500 dark:text-slate-400 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl col-span-full text-center">لا توجد امتحانات جاهزة داخل هذه الوحدة بعد. جرب تكوين امتحان مخصص!</div>'}
+        ${exams.length ? exams.map((exam, idx) => renderExamCard(exam, idx)).join('') : '<div class="text-slate-500 text-center py-6 w-full col-span-full">لا توجد امتحانات هنا.</div>'}
       </div>
     </div>
   `;
@@ -508,110 +370,101 @@ function renderSelectedUnitPanel(subjectCode) {
 
 function renderExamCard(exam, index) {
   const theme = getTheme(index);
+  // فحص إذا كان الطالب قد أجرى الامتحان مسبقاً لعرض النتيجة وزر الإعادة
+  const attempts = (state.data.results || []).filter(r => r.examId === exam.id).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const latestAttempt = attempts[0];
+
   return `
-    <div class="rounded-[28px] border-2 border-slate-200 dark:border-slate-800 p-6 ${theme.bgInner} shadow-sm hover:shadow-soft transition-all transform hover:-translate-y-1 relative overflow-hidden group">
-      <div class="absolute top-0 right-0 w-full h-1 ${theme.bgOuter}"></div>
-      <div class="flex items-start justify-between gap-3 relative z-10">
+    <div class="rounded-[28px] border-2 border-slate-200 dark:border-slate-800 p-6 ${theme.bgInner} shadow-sm hover:shadow-soft transition-all relative">
+      <div class="flex items-start justify-between gap-3">
         <div>
-          <div class="text-xl font-black text-slate-900 dark:text-white leading-tight group-hover:${theme.textMain} transition-colors">${escapeHtml(exam.title || exam.subjectAr || '')}</div>
+          <div class="text-xl font-black text-slate-900 dark:text-white leading-tight">${escapeHtml(exam.title || exam.subjectAr || '')}</div>
           <div class="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">${escapeHtml(exam.subjectAr || '')} • ${escapeHtml(exam.unitTitleAr || '')}</div>
         </div>
       </div>
-      <div class="mt-6 grid grid-cols-3 gap-2 text-center text-sm relative z-10">
-        <div class="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2"><div class="text-slate-500 dark:text-slate-400 text-[10px]">الدقائق</div><div class="font-black mt-1 ${theme.textMain}">${minutesLabel(exam.duration)}</div></div>
-        <div class="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2"><div class="text-slate-500 dark:text-slate-400 text-[10px]">MCQ</div><div class="font-black mt-1 ${theme.textMain}">${exam.questionCount || 0}</div></div>
-        <div class="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2"><div class="text-slate-500 dark:text-slate-400 text-[10px]">الوقت</div><div class="font-black mt-1 ${exam.allowStudentTimeOverride ? 'text-emerald-600' : 'text-slate-400'}">${exam.allowStudentTimeOverride ? 'مرن' : 'ثابت'}</div></div>
+      <div class="mt-6 grid grid-cols-2 gap-2 text-center text-sm">
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2"><div class="text-slate-500 text-[10px]">MCQ</div><div class="font-black mt-1 ${theme.textMain}">${exam.questionCount || 0}</div></div>
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2"><div class="text-slate-500 text-[10px]">الوقت</div><div class="font-black mt-1 ${theme.textMain}">مفتوح</div></div>
       </div>
-      <button data-action="prepare-exam" data-exam-id="${escapeHtml(exam.id)}" class="w-full mt-6 px-4 py-3.5 rounded-2xl font-bold bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 transition-colors shadow-md relative z-10">ابدأ الامتحان</button>
+      ${latestAttempt ? `
+        <div class="mt-4 p-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl border border-brand-100 dark:border-brand-800">
+          <div class="flex justify-between items-center text-sm font-bold mb-2">
+             <span class="text-slate-700 dark:text-slate-300">تم الإنجاز:</span>
+             <span class="${latestAttempt.score >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} text-lg">${latestAttempt.score}%</span>
+          </div>
+          <div class="flex gap-2">
+             <button data-action="review-attempt" data-attempt-id="${latestAttempt.id || latestAttempt.resultId}" class="flex-1 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700">مراجعة</button>
+             ${latestAttempt.score < 100 ? `<button data-action="redo-attempt" data-attempt-id="${latestAttempt.id || latestAttempt.resultId}" class="flex-1 py-2 bg-brand-600 text-white rounded-lg text-xs font-bold hover:bg-brand-700">إعادة الأخطاء</button>` : ''}
+          </div>
+        </div>
+      ` : ''}
+      <button data-action="prepare-exam" data-exam-id="${escapeHtml(exam.id)}" class="w-full mt-4 px-4 py-3.5 rounded-2xl font-bold bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 shadow-md">${latestAttempt ? 'إعادة الامتحان كاملاً' : 'ابدأ الامتحان'}</button>
     </div>
   `;
 }
 
 function computeBuilderPreview(subjectCode) {
-  const subject = getSubject(subjectCode);
   const selectedUnits = buildSubjectUnits(subjectCode).filter(unit => state.builder.selectedUnitKeys.includes(unit.key) && !unit.comprehensive);
   const preview = [];
   if (!selectedUnits.length) return preview;
   if (state.builder.mode === 'manual') {
-    selectedUnits.forEach(unit => { preview.push({ key: unit.key, semester: unit.semester, unitTitleAr: unit.unitTitleAr, available: getQuestionCountForUnit(unit.key), requested: Number(state.builder.explicitCounts[unit.key] || 0), normalizedWeight: null }); });
+    selectedUnits.forEach(unit => { preview.push({ key: unit.key, unitTitleAr: unit.unitTitleAr, available: getQuestionCountForUnit(unit.key), requested: Number(state.builder.explicitCounts[unit.key] || 0) }); });
     return preview;
   }
-  const weights = selectedUnits.map(unit => Number(subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 1));
+  const weights = selectedUnits.map(unit => Number(getSubject(subjectCode).weights[`${unit.semester}|${unit.unitTitleAr}`] || 1));
   const totalWeight = weights.reduce((sum, value) => sum + value, 0) || selectedUnits.length;
   selectedUnits.forEach((unit, index) => {
     const normalizedWeight = ((weights[index] / totalWeight) * 100);
-    preview.push({ key: unit.key, semester: unit.semester, unitTitleAr: unit.unitTitleAr, available: getQuestionCountForUnit(unit.key), requested: Math.round((normalizedWeight / 100) * Number(state.builder.totalQuestions || 0)), normalizedWeight: normalizedWeight });
+    preview.push({ key: unit.key, unitTitleAr: unit.unitTitleAr, available: getQuestionCountForUnit(unit.key), requested: Math.round((normalizedWeight / 100) * Number(state.builder.totalQuestions || 0)) });
   });
   return preview;
 }
 
 function renderBuilder(subjectCode) {
-  const subject = getSubject(subjectCode);
   const units = buildSubjectUnits(subjectCode).filter(unit => !unit.comprehensive);
   const selectedUnitKeys = state.builder.selectedUnitKeys;
   const preview = computeBuilderPreview(subjectCode);
   return `
     <div class="space-y-6">
-      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-6 md:p-8">
-        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-6">تكوين امتحان ذكي مخصص</h3>
+      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8">
+        <h3 class="text-2xl font-black mb-6">تكوين امتحان ذكي مخصص</h3>
         <div class="grid lg:grid-cols-[1fr,320px] gap-8">
           <div class="space-y-8">
-            <div class="grid md:grid-cols-3 gap-5">
+            <div class="grid md:grid-cols-2 gap-5">
               <label class="block">
-                <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">طريقة التوزيع</div>
-                <select data-builder-field="mode" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-semibold text-slate-900 dark:text-white">
-                  <option value="weighted" ${state.builder.mode === 'weighted' ? 'selected' : ''}>تلقائي حسب وزن الوحدة</option>
-                  <option value="manual" ${state.builder.mode === 'manual' ? 'selected' : ''}>يدوي (تحديد عدد الأسئلة لكل وحدة)</option>
+                <div class="mb-2 text-sm font-bold">طريقة التوزيع</div>
+                <select data-builder-field="mode" class="w-full rounded-2xl border-2 px-4 py-3 font-semibold bg-transparent dark:border-slate-700">
+                  <option value="weighted" ${state.builder.mode === 'weighted' ? 'selected' : ''} class="dark:bg-slate-900">تلقائي حسب وزن الوحدة</option>
+                  <option value="manual" ${state.builder.mode === 'manual' ? 'selected' : ''} class="dark:bg-slate-900">يدوي (تحديد عدد الأسئلة)</option>
                 </select>
               </label>
               <label class="block">
-                <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">عدد الأسئلة الكلي</div>
-                <input data-builder-field="totalQuestions" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black text-brand-600 dark:text-brand-400" value="${escapeHtml(state.builder.totalQuestions)}" ${state.builder.mode === 'manual' ? 'disabled opacity-50' : ''} />
+                <div class="mb-2 text-sm font-bold">عدد الأسئلة الكلي</div>
+                <input data-builder-field="totalQuestions" type="number" min="1" class="w-full rounded-2xl border-2 px-4 py-3 font-black bg-transparent dark:border-slate-700" value="${escapeHtml(state.builder.totalQuestions)}" ${state.builder.mode === 'manual' ? 'disabled opacity-50' : ''} />
               </label>
-              <div class="block">
-                <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
-                   <span>وقت الامتحان (دقائق)</span>
-                   <label class="flex items-center gap-1.5 cursor-pointer text-brand-600 dark:text-brand-400 hover:text-brand-700">
-                     <input type="checkbox" data-builder-field="noTimer" class="rounded text-brand-600" ${state.builder.noTimer ? 'checked' : ''}>
-                     <span class="text-xs">بدون مؤقت</span>
-                   </label>
-                </div>
-                <input data-builder-field="duration" type="number" min="1" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-4 py-3 outline-none font-black text-slate-900 dark:text-white ${state.builder.noTimer ? 'opacity-50 cursor-not-allowed' : ''}" value="${escapeHtml(state.builder.duration || 120)}" ${state.builder.noTimer ? 'disabled' : ''} />
-              </div>
             </div>
             <div>
-              <div class="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">اختر الوحدات والامتحانات المراد تضمينها:</div>
+              <div class="mb-4 text-sm font-bold">اختر الوحدات والامتحانات لتضمينها:</div>
               <div class="grid md:grid-cols-2 gap-4">
                 ${units.map(unit => {
-                  const isUnitSelected = selectedUnitKeys.includes(unit.key);
+                  const isSelected = selectedUnitKeys.includes(unit.key);
                   const unitExams = getExamsForUnit(subjectCode, unit.key);
                   return `
-                  <div class="rounded-3xl border-2 ${isUnitSelected ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950'} p-5 flex flex-col gap-3 transition-colors">
+                  <div class="rounded-3xl border-2 ${isSelected ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950'} p-5 flex flex-col gap-3">
                     <label class="flex items-start gap-3 cursor-pointer">
-                      <input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(unit.key)}" ${isUnitSelected ? 'checked' : ''} class="mt-1 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                      <div class="flex-1">
-                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(unit.semesterTitleAr)}</div>
-                        <div class="mt-1 font-black text-slate-900 dark:text-white leading-snug">${escapeHtml(unit.unitTitleAr)}</div>
-                        <div class="mt-2 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/40 inline-block px-2 py-1 rounded-md">البنك: ${getQuestionCountForUnit(unit.key)} • الوزن: ${subject.weights[`${unit.semester}|${unit.unitTitleAr}`] || 0}%</div>
-                      </div>
+                      <input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(unit.key)}" ${isSelected ? 'checked' : ''} class="mt-1 h-5 w-5 rounded text-brand-600">
+                      <div class="flex-1 font-black leading-snug">${escapeHtml(unit.unitTitleAr)}</div>
                     </label>
-                    
-                    ${isUnitSelected ? `
+                    ${isSelected ? `
                       <div class="mt-2 pl-8 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
-                        <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">تحديد مصادر الأسئلة:</div>
                         ${unitExams.map(ex => `
-                           <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
-                              <input type="checkbox" data-action="toggle-builder-exam" data-exam-id="${escapeHtml(ex.id)}" ${state.builder.selectedExamIds.includes(ex.id) ? 'checked' : ''} class="rounded text-brand-600 focus:ring-brand-500">
-                              <span class="text-slate-700 dark:text-slate-300 font-semibold truncate">${escapeHtml(ex.title)}</span>
+                           <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5 rounded-lg">
+                              <input type="checkbox" data-action="toggle-builder-exam" data-exam-id="${escapeHtml(ex.id)}" ${state.builder.selectedExamIds.includes(ex.id) ? 'checked' : ''} class="rounded text-brand-600">
+                              <span class="font-semibold truncate">${escapeHtml(ex.title)}</span>
                            </label>
                         `).join('')}
-                        ${unitExams.length === 0 ? '<div class="text-xs text-slate-400">لا توجد امتحانات جاهزة، سيتم سحب الأسئلة المضافة للبنك مباشرة.</div>' : ''}
                       </div>
-                      ${state.builder.mode === 'manual' ? `
-                        <div class="mt-2 pl-8 pt-2">
-                          <input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-center font-bold text-slate-900 dark:text-white" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة المطلوب من هنا">
-                        </div>
-                      ` : ''}
+                      ${state.builder.mode === 'manual' ? `<div class="mt-2 pl-8 pt-2"><input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(unit.key)}" class="w-full rounded-xl border p-2 text-sm text-center font-bold dark:bg-slate-900 dark:border-slate-700" value="${escapeHtml(state.builder.explicitCounts[unit.key] || '')}" placeholder="عدد الأسئلة هنا"></div>` : ''}
                     ` : ''}
                   </div>
                 `}).join('')}
@@ -619,24 +472,17 @@ function renderBuilder(subjectCode) {
             </div>
           </div>
           <div class="space-y-4">
-            <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-6 sticky top-24 shadow-sm">
-              <div class="font-black text-lg text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-3">ملخص الامتحان</div>
-              <div class="mt-4 space-y-3 max-h-[300px] overflow-y-auto scroll-thin pr-1">
-                ${preview.length ? preview.map(row => `
-                  <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3 shadow-sm">
-                    <div class="font-bold text-sm text-slate-900 dark:text-white truncate">${escapeHtml(row.unitTitleAr)}</div>
-                    <div class="mt-2 flex justify-between items-center text-xs">
-                       <span class="text-slate-500">مطلوب: <span class="font-black text-brand-600 dark:text-brand-400">${row.requested}</span></span>
-                       <span class="text-slate-400">متاح: ${row.available}</span>
-                    </div>
+            <div class="rounded-[28px] border border-slate-200 dark:border-slate-800 p-6 sticky top-24">
+              <div class="font-black text-lg border-b pb-3 dark:border-slate-800">ملخص الامتحان</div>
+              <div class="mt-4 space-y-3">
+                ${preview.map(row => `
+                  <div class="rounded-2xl border p-3 dark:border-slate-800">
+                    <div class="font-bold text-sm truncate">${escapeHtml(row.unitTitleAr)}</div>
+                    <div class="mt-2 text-xs flex justify-between"><span class="text-brand-600 dark:text-brand-400 font-black">مطلوب: ${row.requested}</span><span class="text-slate-500">متاح: ${row.available}</span></div>
                   </div>
-                `).join('') : '<div class="text-slate-500 dark:text-slate-400 text-sm text-center py-4">اختر وحدة واحدة على الأقل لترى الملخص.</div>'}
+                `).join('')}
               </div>
-              <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center font-black">
-                <span class="text-slate-900 dark:text-white">الإجمالي:</span>
-                <span class="text-brand-600 dark:text-brand-400 text-xl">${preview.reduce((sum, row) => sum + row.requested, 0)} سؤال</span>
-              </div>
-              <button data-action="build-custom-exam" class="w-full mt-6 px-4 py-4 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-all transform hover:-translate-y-1 text-lg">بناء وبدء الامتحان</button>
+              <button data-action="build-custom-exam" class="w-full mt-6 px-4 py-4 rounded-2xl font-black bg-brand-600 text-white hover:-translate-y-1 transition-transform">بناء وبدء الامتحان</button>
             </div>
           </div>
         </div>
@@ -646,31 +492,26 @@ function renderBuilder(subjectCode) {
 }
 
 function renderSubjectOverview(subjectCode) {
-  const subject = getSubject(subjectCode);
   const analytics = getSubjectAnalytics(subjectCode);
   const units = getUnitAnalytics(subjectCode);
   return `
     <div class="grid xl:grid-cols-[1fr,1.2fr] gap-6">
-      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-8 flex flex-col justify-center text-center">
-        <div class="text-sm font-bold text-brand-600 dark:text-brand-400 tracking-wider">${escapeHtml(subject.nameAr)}</div>
-        <div class="mt-4 text-7xl font-black text-slate-900 dark:text-white drop-shadow-sm">${analytics ? analytics.mastery : 0}%</div>
-        <div class="mt-2 text-lg font-bold text-slate-500 dark:text-slate-400">نسبة الإتقان العامة للمادة</div>
+      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center flex flex-col justify-center">
+        <div class="text-sm font-bold text-brand-600 dark:text-brand-400">إتقان المادة</div>
+        <div class="mt-4 text-7xl font-black">${analytics ? analytics.mastery : 0}%</div>
       </div>
-      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-6 md:p-8">
-        <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-6">إتقان الوحدات بالتفصيل</h3>
-        <div class="space-y-4 max-h-[400px] overflow-y-auto scroll-thin pr-2">
-          ${units.length ? units.map(row => `
+      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8">
+        <h3 class="text-2xl font-black mb-6">إتقان الوحدات</h3>
+        <div class="space-y-4 max-h-[400px] overflow-y-auto scroll-thin">
+          ${units.map(row => `
             <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="text-xs font-bold text-slate-500 dark:text-slate-400">${escapeHtml(Number(row.semester) === 1 ? 'الفصل الأول' : Number(row.semester) === 2 ? 'الفصل الثاني' : 'عام')}</div>
-                  <div class="mt-1 text-lg font-black text-slate-900 dark:text-white">${escapeHtml(row.unitTitleAr || 'بدون وحدة')}</div>
-                </div>
-                <div class="text-3xl font-black ${row.mastery >= 80 ? 'text-emerald-500' : row.mastery >= 50 ? 'text-amber-500' : 'text-red-500'}">${escapeHtml(row.mastery)}%</div>
+              <div class="flex justify-between items-start">
+                <div class="font-black text-lg">${escapeHtml(row.unitTitleAr)}</div>
+                <div class="text-2xl font-black ${row.mastery >= 80 ? 'text-emerald-500' : row.mastery >= 50 ? 'text-amber-500' : 'text-red-500'}">${escapeHtml(row.mastery)}%</div>
               </div>
               <div class="mt-4 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div class="h-full ${row.mastery >= 80 ? 'bg-emerald-500' : row.mastery >= 50 ? 'bg-amber-500' : 'bg-red-500'}" style="width:${Math.max(0, Math.min(100, row.mastery))}%"></div></div>
             </div>
-          `).join('') : '<div class="text-slate-500 dark:text-slate-400 text-center py-6 bg-slate-50 dark:bg-slate-800 rounded-2xl">لا توجد بيانات لهذه المادة بعد. اختبر نفسك أولاً.</div>'}
+          `).join('')}
         </div>
       </div>
     </div>
@@ -681,28 +522,25 @@ function renderSubjectAttempts(subjectCode) {
   const attempts = getAttemptsForSubject(subjectCode);
   return `
     <div class="space-y-6">
-      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-soft p-6 md:p-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5 mb-8">
-          <div>
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white">تاريخ المراجعات والأخطاء</h3>
-            <div class="mt-2 text-sm text-slate-500 dark:text-slate-400 font-semibold">يمكنك فتح أي امتحان لاحقًا، أو تجميع كل الأسئلة الخاطئة في امتحان واحد لتقويتها.</div>
-          </div>
-          <button data-action="redo-by-subject" data-subject-code="${escapeHtml(subjectCode)}" class="px-5 py-4 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1">امتحان تجميع الأخطاء الشامل</button>
+      <div class="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8">
+        <div class="flex justify-between items-center mb-8">
+          <h3 class="text-2xl font-black">المراجعات والأخطاء</h3>
+          <button data-action="redo-by-subject" data-subject-code="${escapeHtml(subjectCode)}" class="px-5 py-4 rounded-2xl font-black bg-brand-600 text-white hover:-translate-y-1 transition-transform">امتحان تجميع الأخطاء</button>
         </div>
         <div class="space-y-4">
-          ${attempts.length ? attempts.map(result => `
-            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 transition hover:bg-slate-100 dark:hover:bg-slate-800">
+          ${attempts.map(result => `
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 flex flex-col lg:flex-row justify-between lg:items-center gap-5">
               <div>
-                <div class="font-black text-slate-900 dark:text-white text-lg">${escapeHtml(result.examTitle || '')}</div>
-                <div class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">${escapeHtml(result.unitTitleAr || '')} • ${escapeHtml(formatDate(result.createdAt))}</div>
+                <div class="font-black text-lg">${escapeHtml(result.examTitle || '')}</div>
+                <div class="text-sm font-semibold text-slate-500 dark:text-slate-400">${escapeHtml(result.unitTitleAr || '')} • ${escapeHtml(formatDate(result.createdAt))}</div>
               </div>
-              <div class="flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-3">
                 <div class="text-3xl font-black text-brand-600 dark:text-brand-400 ml-4">${escapeHtml(result.score)}%</div>
-                <button data-action="review-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-5 py-3 rounded-xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm hover:scale-105 transition-transform">مراجعة الحل</button>
-                <button data-action="redo-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-5 py-3 rounded-xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">إعادة الأخطاء</button>
+                <button data-action="review-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-5 py-3 rounded-xl font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900">مراجعة الحل</button>
+                <button data-action="redo-attempt" data-attempt-id="${escapeHtml(result.id || result.resultId)}" class="px-5 py-3 rounded-xl font-bold border-2 bg-white dark:bg-slate-900 dark:border-slate-700">إعادة الأخطاء</button>
               </div>
             </div>
-          `).join('') : '<div class="text-slate-500 dark:text-slate-400 text-center py-6 bg-slate-50 dark:bg-slate-800 rounded-2xl">لا توجد محاولات محفوظة لهذه المادة بعد.</div>'}
+          `).join('')}
         </div>
       </div>
     </div>
@@ -711,21 +549,10 @@ function renderSubjectAttempts(subjectCode) {
 
 function renderSubjectScreen(subjectCode) {
   const subject = getSubject(subjectCode);
-  const summary = getSubjectSummary(subjectCode);
   return `
     <div class="space-y-6">
       <div class="rounded-[32px] p-8 bg-gradient-to-br from-slate-900 via-brand-800 to-slate-900 text-white shadow-glow mb-8">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
-            <div class="inline-flex rounded-full bg-white/20 px-3 py-1 text-sm font-bold backdrop-blur-sm">${escapeHtml(subject.examMode)}</div>
-            <h1 class="mt-4 text-4xl md:text-5xl font-black tracking-tight">${escapeHtml(subject.nameAr)}</h1>
-            <p class="mt-4 text-white/90 leading-relaxed max-w-2xl">اختر الوحدة لعرض امتحاناتها، أو استخدم البنك الشامل، أو ابنِ امتحانك المخصص حسب الأوزان.</p>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">أسئلة البنك</div><div class="mt-1 text-4xl font-black">${state.data.questionBankSummary.bySubject[subjectCode] || 0}</div></div>
-            <div class="rounded-3xl bg-white/10 border border-white/5 p-5 backdrop-blur-sm"><div class="text-sm text-white/70">الامتحانات الجاهزة</div><div class="mt-1 text-4xl font-black">${getExamsForSubject(subjectCode).length}</div></div>
-          </div>
-        </div>
+        <h1 class="text-4xl md:text-5xl font-black tracking-tight">${escapeHtml(subject.nameAr)}</h1>
       </div>
       ${renderSubjectTabs(subjectCode)}
       <div class="mt-6">
@@ -738,13 +565,16 @@ function renderSubjectScreen(subjectCode) {
   `;
 }
 
-function getQuestionPdfSource(question, exam) {
-  return question.sourcePdfBase64 || (exam && exam.sourcePdf && exam.sourcePdf.base64) || '';
+function getQuestionPdfSource(question, exam) { 
+  return question.sourcePdfBase64 || 
+         (exam && exam.sourcePdfsMap && question.sourceExamId && exam.sourcePdfsMap[question.sourceExamId]) || 
+         (exam && exam.sourcePdf && exam.sourcePdf.base64) || ''; 
 }
 
 function stripBase64Exam(exam) {
   const clone = JSON.parse(JSON.stringify(exam));
   if (clone.sourcePdf && clone.sourcePdf.base64) delete clone.sourcePdf.base64;
+  if (clone.sourcePdfsMap) delete clone.sourcePdfsMap;
   ['questions', 'openQuestions'].forEach(field => { (clone[field] || []).forEach(item => { if (item && item.sourcePdfBase64) delete item.sourcePdfBase64; }); });
   return clone;
 }
@@ -752,17 +582,13 @@ function stripBase64Exam(exam) {
 function renderPdfPreview(question, exam, suffix) {
   if (!question || !question.pdfPageRef || !question.pdfPageRef.page) return '';
   const pdfBase64 = getQuestionPdfSource(question, exam);
-  if (!pdfBase64) return '<div class="text-sm text-slate-500 dark:text-slate-400 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl">لا يتوفر PDF لهذا السؤال أو جاري التحميل.</div>';
+  if (!pdfBase64) return '<div class="text-sm text-slate-500 p-4 bg-slate-100 dark:bg-slate-800 rounded-xl">لا يتوفر PDF لهذا السؤال.</div>';
   const pdfKey = `${question.questionKey || question.id || 'q'}_${suffix || 'exam'}`;
   window.__PDF_SOURCES[pdfKey] = pdfBase64;
   return `
-    <div class="rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 space-y-4 shadow-sm">
-      <div class="flex items-center gap-2">
-        <div class="bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1 rounded-lg text-xs font-black">مرجع PDF</div>
-        <div class="text-sm font-black text-slate-700 dark:text-slate-200">صفحة ${escapeHtml(question.pdfPageRef.page)}</div>
-      </div>
-      ${question.pdfPageRef.description ? `<div class="text-sm font-semibold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">${escapeHtml(question.pdfPageRef.description)}</div>` : ''}
-      <div class="overflow-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 shadow-inner">
+    <div class="rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 space-y-4">
+      <div class="font-black text-slate-700 dark:text-slate-200">مرجع PDF - صفحة ${escapeHtml(question.pdfPageRef.page)}</div>
+      <div class="overflow-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950">
         <canvas class="block max-w-full h-auto mx-auto pdf-canvas" data-pdf-key="${escapeHtml(pdfKey)}" data-page="${escapeHtml(question.pdfPageRef.page)}"></canvas>
       </div>
     </div>
@@ -770,202 +596,128 @@ function renderPdfPreview(question, exam, suffix) {
 }
 
 function renderQuestionCard(question, index, exam, mode) {
-  const session = state.examSession;
-  const review = state.reviewAttempt;
-  const selected = session ? session.answers[question.id] : undefined;
-  const reviewMap = review ? review.answers || {} : {};
-  const userAnswer = mode === 'review' ? reviewMap[question.id] : selected;
+  const session = state.examSession; const review = state.reviewAttempt;
+  const userAnswer = mode === 'review' ? (review ? review.answers[question.id] : undefined) : (session ? session.answers[question.id] : undefined);
   const readOnly = mode === 'review';
   return `
-    <div class="rounded-[32px] border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm ${mode === 'review' ? 'shadow-none bg-slate-50 dark:bg-slate-900/40' : ''} mb-6">
-      <div class="inline-block text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-3 py-1.5 rounded-lg mb-4">${escapeHtml(question.unitTitleAr || exam.unitTitleAr || '')}${question.subunitTitleAr ? ' • ' + escapeHtml(question.subunitTitleAr) : ''}</div>
-      <div class="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-relaxed" data-math>${escapeHtml(index + 1)}. ${escapeHtml(question.text || '')}</div>
-      <div class="mt-6 ${question.pdfPageRef ? 'grid xl:grid-cols-[minmax(0,1fr),360px] gap-6 items-start' : ''}">
-        <div class="${question.pdfPageRef ? 'order-2 xl:order-1' : ''}">
-          <div class="grid gap-3 lg:grid-cols-2 question-options-container">
-            ${(question.options || []).map((option, optionIndex) => {
-              const isSelected = Number(userAnswer) === Number(optionIndex);
-              const isCorrect = Number(question.correctIndex) === Number(optionIndex);
-              const reviewClasses = mode === 'review'
-                ? isCorrect ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm' : isSelected ? 'border-red-500 bg-red-50 dark:bg-red-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-800'
-                : isSelected ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700';
-              return `
-                <button ${readOnly ? 'disabled' : ''} data-action="select-answer" data-question-id="${escapeHtml(question.id)}" data-index="${escapeHtml(optionIndex)}" class="rounded-2xl border-2 p-4 text-right transition-all duration-200 ${reviewClasses}">
-                  <div class="flex items-center gap-4">
-                    <div class="h-8 w-8 rounded-full border-2 flex shrink-0 items-center justify-center text-sm font-black ${isSelected && mode !== 'review' ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400'}">${String.fromCharCode(65 + optionIndex)}</div>
-                    <div class="flex-1 font-semibold text-base text-slate-900 dark:text-white" data-math>${escapeHtml(option)}</div>
-                  </div>
-                </button>
-              `;
-            }).join('')}
-          </div>
-          ${mode === 'review' ? `
-            <div class="mt-6 space-y-3 text-base">
-              <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl flex items-center justify-between font-bold">
-                <span class="text-slate-600 dark:text-slate-300">إجابتك:</span>
-                <span class="${userAnswer == null ? 'text-slate-500' : Number(userAnswer) === Number(question.correctIndex) ? 'text-emerald-600' : 'text-red-600'}">${userAnswer == null ? 'لم تجب' : escapeHtml(question.options[userAnswer] || '')}</span>
-              </div>
-              ${question.correctIndex == null ? '<div class="p-4 rounded-2xl bg-amber-50 text-amber-700 font-bold border border-amber-200">لا يوجد مفتاح إجابة صريح محفوظ لهذا السؤال.</div>' : `<div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800">الإجابة الصحيحة: ${escapeHtml(question.options[question.correctIndex] || '')}</div>`}
-              ${question.explanation ? `<div class="rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 p-4"><div class="text-xs font-black text-brand-600 dark:text-brand-400 mb-1">تفسير الحل:</div><div class="text-slate-800 dark:text-slate-200 font-semibold leading-relaxed">${escapeHtml(question.explanation)}</div></div>` : ''}
-            </div>
-          ` : ''}
+    <div class="rounded-[32px] border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm ${mode === 'review' ? 'bg-slate-50 dark:bg-slate-900/40' : ''} mb-6">
+      <div class="text-xl md:text-2xl font-black leading-relaxed" data-math>${escapeHtml(index + 1)}. ${escapeHtml(question.text || '')}</div>
+      <div class="mt-6 ${question.pdfPageRef ? 'grid xl:grid-cols-[minmax(0,1fr),360px] gap-6' : ''}">
+        <div class="grid gap-3 lg:grid-cols-2 question-options-container">
+          ${(question.options || []).map((option, optionIndex) => {
+            const isSelected = Number(userAnswer) === Number(optionIndex);
+            const isCorrect = Number(question.correctIndex) === Number(optionIndex);
+            const reviewClasses = mode === 'review' ? (isCorrect ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : isSelected ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-800') : (isSelected ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70');
+            return `
+              <button ${readOnly ? 'disabled' : ''} data-action="select-answer" data-question-id="${escapeHtml(question.id)}" data-index="${escapeHtml(optionIndex)}" class="rounded-2xl border-2 p-4 text-right transition-all ${reviewClasses}">
+                <div class="flex items-center gap-4">
+                  <div class="h-8 w-8 rounded-full border-2 flex items-center justify-center font-black ${isSelected && mode !== 'review' ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300 dark:border-slate-600'}">${String.fromCharCode(65 + optionIndex)}</div>
+                  <div class="flex-1 font-semibold text-base" data-math>${escapeHtml(option)}</div>
+                </div>
+              </button>
+            `;
+          }).join('')}
         </div>
-        ${question.pdfPageRef ? `<div class="${question.pdfPageRef ? 'order-1 xl:order-2' : ''}">${renderPdfPreview(question, exam, mode)}</div>` : ''}
+        ${question.pdfPageRef ? renderPdfPreview(question, exam, mode) : ''}
       </div>
-    </div>
-  `;
-}
-
-function renderEssayCard(question, index, exam, mode) {
-  const session = state.examSession;
-  const review = state.reviewAttempt;
-  const value = mode === 'review' ? ((review.openAnswers || {})[question.id] || '') : ((session.openAnswers || {})[question.id] || '');
-  return `
-    <div class="rounded-[32px] border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 md:p-8 shadow-sm ${mode === 'review' ? 'shadow-none bg-slate-50 dark:bg-slate-900/40' : ''} mb-6">
-      <div class="inline-block text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-3 py-1.5 rounded-lg mb-4">${escapeHtml(question.sectionTitle || question.questionType || 'مقالي')}</div>
-      <div class="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-relaxed" data-math>${escapeHtml(index + 1)}. ${escapeHtml(question.prompt || question.text || '')}</div>
-      ${question.pdfPageRef ? `<div class="mt-6">${renderPdfPreview(question, exam, mode)}</div>` : ''}
-      ${mode === 'review'
-        ? `<div class="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-5 whitespace-pre-wrap font-semibold leading-relaxed">${escapeHtml(value || 'لم تتم الإجابة')}</div>`
-        : `<textarea data-action="set-open-answer" data-question-id="${escapeHtml(question.id)}" rows="6" class="w-full mt-6 rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-slate-50 dark:bg-slate-950 px-5 py-4 font-semibold outline-none transition-colors text-slate-900 dark:text-white" placeholder="اكتب إجابتك هنا بوضوح...">${escapeHtml(value)}</textarea>`}
-      ${question.idealAnswer ? `<div class="mt-6 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5"><div class="text-xs font-black text-emerald-600 dark:text-emerald-400 mb-2">الإجابة النموذجية (للمقارنة):</div><div class="text-emerald-900 dark:text-emerald-200 whitespace-pre-wrap font-semibold leading-relaxed">${escapeHtml(question.idealAnswer)}</div></div>` : ''}
+      ${mode === 'review' && question.correctIndex != null ? `<div class="mt-4 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800">الإجابة الصحيحة: ${escapeHtml(question.options[question.correctIndex] || '')}</div>` : ''}
     </div>
   `;
 }
 
 function renderExamScreen() {
-  const session = state.examSession;
-  const exam = session.exam;
+  const session = state.examSession; const exam = session.exam;
   const items = [];
   (exam.questions || []).forEach(question => items.push({ kind: 'mcq', question }));
-  (exam.openQuestions || []).forEach(question => items.push({ kind: 'open', question }));
   const currentItem = items[session.currentIndex] || null;
-  const answeredCount = Object.keys(session.answers).length + Object.values(session.openAnswers).filter(Boolean).length;
-  const totalItems = items.length || 1;
-  const progress = percent(answeredCount, totalItems);
+  const progress = percent(Object.keys(session.answers).length, items.length || 1);
   
-  let timerDisplay = 'مفتوح ∞';
-  if (!session.noTimer) {
-     const minutes = String(Math.floor(session.timeLeft / 60)).padStart(2, '0');
-     const seconds = String(session.timeLeft % 60).padStart(2, '0');
+  let timerDisplay = '00:00';
+  if (session.timeSpent !== undefined) {
+     const minutes = String(Math.floor(session.timeSpent / 60)).padStart(2, '0');
+     const seconds = String(session.timeSpent % 60).padStart(2, '0');
      timerDisplay = `${minutes}:${seconds}`;
   }
   
   return `
     <div class="space-y-6">
-      <div class="sticky top-[88px] z-20 rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-soft p-5 md:p-6 mb-8 transition-all">
+      <div class="sticky top-[88px] z-20 rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 shadow-soft mb-8">
         <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
           <div>
-            <div class="text-sm font-bold text-brand-600 dark:text-brand-400 tracking-wider">${escapeHtml(exam.subjectAr || '')}</div>
-            <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mt-1">${escapeHtml(exam.title || '')}</h1>
-            <div class="mt-4 flex flex-wrap items-center gap-3 text-sm font-bold">
-              <span class="rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5">${escapeHtml(exam.unitTitleAr || '')}</span>
-              <span class="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 px-3 py-1.5 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span id="exam-timer-display" class="font-black text-base tracking-wider">${timerDisplay}</span>
+            <h1 class="text-2xl md:text-3xl font-black">${escapeHtml(exam.title || '')}</h1>
+            <div class="mt-4 flex flex-wrap items-center gap-3 font-bold text-sm">
+              <span class="rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-1.5">${escapeHtml(exam.unitTitleAr || '')}</span>
+              <span class="rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-3 py-1.5 flex items-center gap-2">
+                ⏱ <span id="exam-timer-display" class="font-black text-base tracking-wider">${timerDisplay}</span>
               </span>
               <span id="exam-progress-text" class="rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1.5">التقدم: ${progress}%</span>
             </div>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex gap-3">
             ${exam.settings && exam.settings.allowSwitchView !== false ? `
-              <div class="flex items-center gap-1 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1.5 shadow-inner">
-                <button data-action="set-view-mode" data-view-mode="single" class="px-4 py-2 rounded-xl text-sm font-black transition-colors ${session.viewMode === 'single' ? 'bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">سؤال بسؤال</button>
-                <button data-action="set-view-mode" data-view-mode="all" class="px-4 py-2 rounded-xl text-sm font-black transition-colors ${session.viewMode === 'all' ? 'bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">عرض كامل</button>
+              <div class="flex items-center gap-1 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1.5">
+                <button data-action="set-view-mode" data-view-mode="single" class="px-4 py-2 rounded-xl text-sm font-black ${session.viewMode === 'single' ? 'bg-white dark:bg-slate-900 text-brand-600 shadow-sm' : 'text-slate-500'}">سؤال بسؤال</button>
+                <button data-action="set-view-mode" data-view-mode="all" class="px-4 py-2 rounded-xl text-sm font-black ${session.viewMode === 'all' ? 'bg-white dark:bg-slate-900 text-brand-600 shadow-sm' : 'text-slate-500'}">عرض كامل</button>
               </div>
             ` : ''}
-            <button data-action="cancel-exam" class="px-5 py-3 rounded-2xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 transition-colors text-slate-900 dark:text-white">إلغاء</button>
-            <button data-action="submit-exam" class="px-6 py-3 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1">تسليم الآن</button>
+            <button data-action="submit-exam" class="px-6 py-3 rounded-2xl font-black bg-brand-600 text-white shadow-glow hover:-translate-y-1 transition-transform">تسليم الآن</button>
           </div>
         </div>
-        <div class="mt-5 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-inner"><div id="exam-progress-bar" class="h-full bg-brand-600 rounded-full transition-all duration-300 ease-out" style="width:${progress}%"></div></div>
+        <div class="mt-5 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div id="exam-progress-bar" class="h-full bg-brand-600 rounded-full transition-all" style="width:${progress}%"></div></div>
       </div>
       
       ${session.viewMode === 'single'
         ? `<div class="space-y-6">
-            <div class="flex justify-between items-center px-4">
-               <div class="text-xl font-black text-slate-700 dark:text-slate-300">السؤال <span class="text-brand-600 dark:text-brand-400 text-2xl">${session.currentIndex + 1}</span> من ${totalItems}</div>
-            </div>
-            ${currentItem ? (currentItem.kind === 'mcq' ? renderQuestionCard(currentItem.question, session.currentIndex, exam, 'exam') : renderEssayCard(currentItem.question, session.currentIndex, exam, 'exam')) : ''}
+            <div class="text-xl font-black px-4">السؤال <span class="text-brand-600 text-2xl">${session.currentIndex + 1}</span> من ${items.length}</div>
+            ${currentItem ? renderQuestionCard(currentItem.question, session.currentIndex, exam, 'exam') : ''}
             <div class="flex flex-wrap justify-between gap-4 pt-4">
-              <button data-action="exam-prev" class="px-6 py-4 rounded-2xl font-black border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white transition-all ${session.currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-x-1'}" ${session.currentIndex === 0 ? 'disabled' : ''}>← السابق</button>
-              <button data-action="exam-next" class="px-8 py-4 rounded-2xl font-black bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md transition-all ${session.currentIndex >= totalItems - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:translate-x-1'}" ${session.currentIndex >= totalItems - 1 ? 'disabled' : ''}>التالي →</button>
+              <button data-action="exam-prev" class="px-6 py-4 rounded-2xl font-black border-2 bg-white dark:bg-slate-900 dark:border-slate-700 ${session.currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${session.currentIndex === 0 ? 'disabled' : ''}>← السابق</button>
+              <button data-action="exam-next" class="px-8 py-4 rounded-2xl font-black bg-slate-900 text-white dark:bg-white dark:text-slate-900 ${session.currentIndex >= items.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}" ${session.currentIndex >= items.length - 1 ? 'disabled' : ''}>التالي →</button>
             </div>
           </div>`
-        : `
-          ${(exam.questions || []).length ? `<div class="space-y-6"><div class="text-2xl font-black text-slate-900 dark:text-white px-4 border-r-4 border-brand-500 pr-3">الاختيار من متعدد</div>${(exam.questions || []).map((question, index) => renderQuestionCard(question, index, exam, 'exam')).join('')}</div>` : ''}
-          ${(exam.openQuestions || []).length ? `<div class="space-y-6 mt-12"><div class="text-2xl font-black text-slate-900 dark:text-white px-4 border-r-4 border-brand-500 pr-3">Reading / Writing / Essay</div>${(exam.openQuestions || []).map((question, index) => renderEssayCard(question, index, exam, 'exam')).join('')}</div>` : ''}
-        `}
+        : `<div class="space-y-6">${(exam.questions || []).map((question, index) => renderQuestionCard(question, index, exam, 'exam')).join('')}</div>`
+      }
     </div>
   `;
 }
 
 function renderReviewScreen() {
-  const attempt = state.reviewAttempt;
-  const exam = attempt.examSnapshot || { questions: [], openQuestions: [] };
+  const attempt = state.reviewAttempt; const exam = attempt.examSnapshot;
   return `
     <div class="space-y-8 animate-fade-in">
-      <div class="rounded-[32px] p-8 bg-gradient-to-br from-slate-900 via-brand-800 to-slate-900 text-white shadow-glow">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <div class="inline-flex rounded-full bg-white/20 px-3 py-1 text-sm font-bold backdrop-blur-sm mb-3">مراجعة الحلول</div>
-            <h2 class="text-3xl md:text-4xl font-black leading-tight">${escapeHtml(attempt.examTitle || exam.title || '')}</h2>
-            <div class="mt-4 text-sm font-semibold text-white/80 flex items-center gap-2">
-              <span class="bg-black/20 px-3 py-1 rounded-lg">${escapeHtml(attempt.subjectAr || '')}</span>
-              <span class="bg-black/20 px-3 py-1 rounded-lg">${escapeHtml(formatDate(attempt.createdAt))}</span>
-            </div>
-          </div>
-          <div class="rounded-[28px] bg-white/10 border border-white/10 px-10 py-6 text-center backdrop-blur-md">
-            <div class="text-sm font-bold text-white/80 tracking-wider">النتيجة النهائية</div>
-            <div class="text-6xl font-black mt-2 drop-shadow-md">${escapeHtml(attempt.score)}%</div>
-          </div>
+      <div class="rounded-[32px] p-8 bg-gradient-to-br from-slate-900 via-brand-800 to-slate-900 text-white shadow-glow flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div>
+          <h2 class="text-3xl md:text-4xl font-black leading-tight">${escapeHtml(attempt.examTitle || exam.title || '')}</h2>
+          <div class="mt-4 text-sm font-semibold bg-black/20 px-3 py-1 rounded-lg inline-block">${escapeHtml(formatDate(attempt.createdAt))}</div>
+        </div>
+        <div class="rounded-[28px] bg-white/10 border border-white/10 px-10 py-6 text-center">
+          <div class="text-sm font-bold text-white/80">النتيجة النهائية</div>
+          <div class="text-6xl font-black mt-2 drop-shadow-md">${escapeHtml(attempt.score)}%</div>
         </div>
       </div>
       <div class="flex flex-wrap gap-4 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <button data-action="close-review" class="px-6 py-3.5 rounded-2xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 transition-colors text-slate-900 dark:text-white">العودة للوحة السابقة</button>
-        <button data-action="redo-attempt" data-attempt-id="${escapeHtml(attempt.id || attempt.resultId)}" class="px-6 py-3.5 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1">امتحن نفسك في الأسئلة الخاطئة فقط</button>
+        <button data-action="close-review" class="px-6 py-3.5 rounded-2xl font-bold border-2 dark:border-slate-700 bg-slate-50 dark:bg-slate-950">العودة للوحة السابقة</button>
+        ${attempt.score < 100 ? `<button data-action="redo-attempt" data-attempt-id="${escapeHtml(attempt.id || attempt.resultId)}" class="px-6 py-3.5 rounded-2xl font-black bg-brand-600 text-white hover:-translate-y-1 transition-transform">إعادة الأسئلة الخاطئة فقط</button>` : ''}
       </div>
-      ${(exam.questions || []).length ? `<div class="space-y-6"><div class="text-2xl font-black text-slate-900 dark:text-white px-4 border-r-4 border-brand-500 pr-3">تصحيح الاختيار من متعدد</div>${(exam.questions || []).map((question, index) => renderQuestionCard(question, index, exam, 'review')).join('')}</div>` : ''}
-      ${(exam.openQuestions || []).length ? `<div class="space-y-6 mt-12"><div class="text-2xl font-black text-slate-900 dark:text-white px-4 border-r-4 border-brand-500 pr-3">الأسئلة المقالية</div>${(exam.openQuestions || []).map((question, index) => renderEssayCard(question, index, exam, 'review')).join('')}</div>` : ''}
+      <div class="space-y-6">${(exam.questions || []).map((question, index) => renderQuestionCard(question, index, exam, 'review')).join('')}</div>
     </div>
   `;
 }
 
 function renderPrestartModal() {
-  if (!state.prestartExam) return '';
-  const exam = state.prestartExam.exam;
-  const minMinutes = minutesLabel(exam.minDuration || 300);
-  const maxMinutes = minutesLabel(exam.maxDuration || Math.max(exam.duration || 3600, 3600));
+  if (!state.prestartExam) return ''; const exam = state.prestartExam.exam;
   return `
-    <div class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md p-4 overflow-auto flex items-center justify-center animate-fade-in">
-      <div class="max-w-xl w-full mx-auto rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow p-8 transform transition-all scale-100">
-        <div class="flex items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
-          <div>
-            <div class="inline-block text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-3 py-1 rounded-lg">تهيئة الامتحان</div>
-            <h3 class="mt-4 text-3xl font-black text-slate-900 dark:text-white leading-tight">${escapeHtml(exam.title || '')}</h3>
-          </div>
-          <button data-action="close-prestart" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">✕</button>
+    <div class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md p-4 flex items-center justify-center animate-fade-in">
+      <div class="max-w-xl w-full rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow p-8">
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-5">
+          <h3 class="text-3xl font-black">${escapeHtml(exam.title || '')}</h3>
+          <button data-action="close-prestart" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
         </div>
         <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
-          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 dark:text-slate-400 font-bold">عدد الأسئلة</div><div class="mt-2 text-2xl font-black text-brand-700 dark:text-brand-400">${(exam.questions || []).length + (exam.openQuestions || []).length}</div></div>
-          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 dark:text-slate-400 font-bold">الوقت الافتراضي</div><div class="mt-2 text-2xl font-black text-brand-700 dark:text-brand-400">${exam.duration ? minutesLabel(exam.duration) + ' دقيقة' : 'مفتوح ∞'}</div></div>
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 font-bold">عدد الأسئلة</div><div class="mt-2 text-2xl font-black text-brand-700 dark:text-brand-400">${(exam.questions || []).length}</div></div>
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 text-center"><div class="text-slate-500 font-bold">المؤقت</div><div class="mt-2 text-2xl font-black text-blue-600 dark:text-blue-400">مفتوح (تصاعدي)</div></div>
         </div>
-        ${exam.allowStudentTimeOverride ? `
-          <label class="block mt-8">
-            <div class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200 flex justify-between">
-               <span>كم دقيقة تحتاج؟ (تعديل الوقت)</span>
-            </div>
-            <input id="prestart-duration" type="number" min="${minMinutes}" max="${maxMinutes}" value="${escapeHtml(minutesLabel(state.prestartExam.duration || exam.duration))}" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-950 px-5 py-4 text-xl font-black outline-none text-center transition-colors text-slate-900 dark:text-white">
-            <div class="mt-3 flex items-center justify-between text-xs font-semibold text-slate-500">
-               <span>المسموح: من ${minMinutes} إلى ${maxMinutes} دقيقة</span>
-               <label class="flex items-center gap-2 cursor-pointer text-brand-600 dark:text-brand-400 text-sm">
-                  <input type="checkbox" id="prestart-no-timer" class="rounded text-brand-600 focus:ring-brand-500" ${!exam.duration ? 'checked' : ''}>
-                  بدون مؤقت (وقت مفتوح)
-               </label>
-            </div>
-          </label>
-        ` : (exam.duration ? `<div class="mt-8 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 p-5 text-sm font-bold text-blue-700 dark:text-blue-300 text-center">الوقت ثابت من قِبل الإدارة ولا يمكن تغييره.</div>` : '')}
-        <button data-action="start-prepared-exam" class="w-full mt-8 px-6 py-4 rounded-2xl font-black text-lg bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1">ابدأ الامتحان الآن</button>
+        <button data-action="start-prepared-exam" class="w-full mt-8 px-6 py-4 rounded-2xl font-black text-lg bg-brand-600 hover:bg-brand-700 text-white shadow-glow hover:-translate-y-1 transition-transform">ابدأ الامتحان الآن</button>
       </div>
     </div>
   `;
@@ -978,11 +730,10 @@ function renderAdminModal() {
       <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 flex items-center justify-center animate-fade-in">
         <div class="max-w-md w-full rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow p-8 text-center">
            <h2 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">لوحة الإدارة</h2>
-           <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">أدخل كلمة مرور الإدارة للمتابعة</p>
-           <input type="password" id="admin-password-input" class="w-full rounded-2xl border-2 border-slate-300 dark:border-slate-600 focus:border-brand-500 bg-white dark:bg-slate-800 px-4 py-3 mb-6 outline-none text-center font-black text-slate-900 dark:text-white" placeholder="••••••••">
+           <input type="password" id="admin-password-input" class="w-full rounded-2xl border-2 dark:border-slate-600 focus:border-brand-500 bg-white dark:bg-slate-800 px-4 py-3 mb-6 outline-none text-center font-black" placeholder="••••••••">
            <div class="flex gap-3">
-             <button data-action="close-admin" class="flex-1 py-3.5 rounded-2xl font-bold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-900 dark:text-white">إلغاء</button>
-             <button data-action="admin-login-submit" class="flex-[2] py-3.5 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-colors">تسجيل الدخول</button>
+             <button data-action="close-admin" class="flex-1 py-3.5 rounded-2xl font-bold border-2 dark:border-slate-700 bg-white dark:bg-slate-800">إلغاء</button>
+             <button data-action="admin-login-submit" class="flex-[2] py-3.5 rounded-2xl font-black bg-brand-600 text-white shadow-glow">تسجيل الدخول</button>
            </div>
         </div>
       </div>
@@ -993,134 +744,124 @@ function renderAdminModal() {
   const currentSubjectCode = state.admin.form.subjectCode || subjects[0]?.code;
   const units = buildSubjectUnits(currentSubjectCode).filter(u => !u.comprehensive);
   
+  let adminContent = '';
+  if (state.admin.tab === 'upload') {
+     adminContent = `
+         <div class="max-w-3xl mx-auto space-y-6">
+           <div class="flex justify-between items-center">
+             <h3 class="text-xl font-black">${state.admin.form.editingExamId ? 'تعديل الامتحان' : 'رفع امتحان جديد'}</h3>
+             ${state.admin.form.editingExamId ? `<button data-action="cancel-admin-edit" class="bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded-xl font-bold text-sm">إلغاء التعديل</button>` : ''}
+           </div>
+           <div class="grid md:grid-cols-2 gap-4">
+             <select id="admin-subject-select" class="w-full rounded-2xl border-2 p-3 font-bold dark:bg-slate-900 dark:border-slate-700">${subjects.map(s => `<option value="${s.code}" ${s.code === currentSubjectCode ? 'selected' : ''}>${escapeHtml(s.nameAr)}</option>`).join('')}</select>
+             <select id="admin-unit-select" class="w-full rounded-2xl border-2 p-3 font-bold dark:bg-slate-900 dark:border-slate-700"><option value="">-- اختر الوحدة --</option>${units.map(u => `<option value="${u.key}" ${u.key === state.admin.form.unitKey ? 'selected' : ''}>${escapeHtml(u.semesterTitleAr + ' - ' + u.unitTitleAr)}</option>`).join('')}</select>
+           </div>
+           <input type="file" id="admin-json-file" accept=".json" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 dark:border-slate-700">
+           <textarea id="admin-json-input" rows="8" class="w-full rounded-2xl border-2 dark:border-slate-700 p-5 font-mono text-sm outline-none dark:bg-slate-900" dir="ltr" placeholder='{ "title": "...", "questions": [...] }'></textarea>
+           <div class="grid md:grid-cols-2 gap-4 items-center">
+             <input type="file" id="admin-pdf-file" accept="application/pdf" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 dark:border-slate-700">
+             <div class="text-sm font-bold text-center">${state.admin.form.pdfFileName ? `تم إرفاق: ${escapeHtml(state.admin.form.pdfFileName)}` : 'لم يتم إرفاق ملف PDF جديد.'}</div>
+           </div>
+           <button data-action="admin-upload-submit" class="w-full mt-4 py-4 rounded-2xl font-black bg-brand-600 text-white text-lg">${state.admin.form.editingExamId ? 'تحديث وتعديل' : 'رفع وحفظ'}</button>
+         </div>
+     `;
+  } else if (state.admin.tab === 'manage') {
+     adminContent = `
+         <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+           ${state.data.exams.map((ex, idx) => `
+              <div class="p-5 rounded-3xl border-2 bg-white dark:bg-slate-950 dark:border-slate-800 flex flex-col h-full">
+                <div class="font-black text-lg mb-1 line-clamp-2">${escapeHtml(ex.title)}</div>
+                <div class="text-xs font-bold text-slate-500 mb-4">${escapeHtml(ex.subjectAr)} • ${escapeHtml(ex.unitTitleAr)}</div>
+                <div class="mt-auto grid grid-cols-2 gap-2">
+                  <button data-action="admin-edit-exam" data-exam-id="${ex.id}" class="py-2.5 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400 rounded-xl font-bold text-sm">تعديل</button>
+                  <button data-action="admin-delete-exam" data-exam-id="${ex.id}" class="py-2.5 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-xl font-bold text-sm">حذف</button>
+                </div>
+              </div>
+           `).join('') || '<div class="col-span-full text-center py-10 text-slate-500">لا يوجد امتحانات.</div>'}
+         </div>
+     `;
+  } else if (state.admin.tab === 'results') {
+     if (!state.admin.selectedUserId) {
+         const usersMap = {};
+         state.admin.allResults.forEach(r => { if(!usersMap[r.userId]) usersMap[r.userId] = { name: r.userName, count: 0 }; usersMap[r.userId].count++; });
+         adminContent = `
+            <h3 class="text-xl font-black mb-6">الطلاب المسجلون</h3>
+            <div class="grid md:grid-cols-3 gap-4">
+              ${Object.keys(usersMap).map(uid => `
+                 <button data-action="admin-select-user" data-uid="${uid}" class="p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-right hover:border-brand-500 transition-colors">
+                    <div class="font-black text-lg text-brand-600 dark:text-brand-400">${escapeHtml(usersMap[uid].name)}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-2">إجمالي المحاولات: ${usersMap[uid].count}</div>
+                 </button>
+              `).join('')}
+            </div>
+         `;
+     } else if (!state.admin.selectedSubjectCode) {
+         const userResults = state.admin.allResults.filter(r => r.userId === state.admin.selectedUserId);
+         const subMap = {};
+         userResults.forEach(r => { if(!subMap[r.subjectCode]) subMap[r.subjectCode] = { name: r.subjectAr, count: 0 }; subMap[r.subjectCode].count++; });
+         adminContent = `
+            <div class="flex items-center gap-4 mb-6">
+              <button data-action="admin-select-user" data-uid="" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold">← عودة</button>
+              <h3 class="text-xl font-black">مواد الطالب: <span class="text-brand-600">${escapeHtml(userResults[0]?.userName || 'طالب')}</span></h3>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              ${Object.keys(subMap).map(sc => `
+                 <button data-action="admin-select-subject" data-sc="${sc}" class="p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-right hover:border-brand-500 transition-colors">
+                    <div class="font-black text-xl">${escapeHtml(subMap[sc].name)}</div>
+                    <div class="text-sm text-slate-500 mt-2">الامتحانات المنجزة: ${subMap[sc].count}</div>
+                 </button>
+              `).join('')}
+            </div>
+         `;
+     } else {
+         const userResults = state.admin.allResults.filter(r => r.userId === state.admin.selectedUserId && r.subjectCode === state.admin.selectedSubjectCode);
+         const unitMap = {};
+         userResults.forEach(r => { if(!unitMap[r.unitTitleAr]) unitMap[r.unitTitleAr] = []; unitMap[r.unitTitleAr].push(r); });
+         adminContent = `
+            <div class="flex items-center gap-4 mb-6">
+              <button data-action="admin-select-subject" data-sc="" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold">← عودة</button>
+              <h3 class="text-xl font-black">امتحانات الطالب المنجزة للمادة</h3>
+            </div>
+            <div class="space-y-6">
+              ${Object.keys(unitMap).map(unit => `
+                 <div class="p-5 rounded-3xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+                    <h4 class="font-black text-lg mb-4 text-brand-600 dark:text-brand-400">${escapeHtml(unit)}</h4>
+                    <div class="space-y-3">
+                      ${unitMap[unit].map(r => `
+                         <div class="flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm gap-4">
+                            <div>
+                              <div class="font-bold text-slate-900 dark:text-white">${escapeHtml(r.examTitle)}</div>
+                              <div class="text-xs text-slate-500 mt-1">${escapeHtml(formatDate(r.createdAt))}</div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                              <span class="font-black text-xl ${r.score >= 50 ? 'text-emerald-600' : 'text-red-600'}">${escapeHtml(r.score)}%</span>
+                              <button data-action="admin-view-attempt" data-attempt-id="${escapeHtml(r.resultId)}" class="px-4 py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl text-xs font-bold shadow-md hover:-translate-y-0.5 transition-transform">عرض إجاباته</button>
+                            </div>
+                         </div>
+                      `).join('')}
+                    </div>
+                 </div>
+              `).join('')}
+            </div>
+         `;
+     }
+  }
+
   return `
     <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 overflow-auto animate-fade-in">
-      <div class="max-w-6xl mx-auto mt-6 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow overflow-hidden flex flex-col min-h-[80vh]">
-        <div class="glass flex flex-wrap items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 gap-4">
+      <div class="max-w-6xl mx-auto mt-6 rounded-[32px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-glow flex flex-col min-h-[80vh]">
+        <div class="glass flex flex-wrap items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 gap-4 rounded-t-[32px]">
            <div class="flex flex-wrap items-center gap-4">
-             <h2 class="text-2xl font-black text-slate-900 dark:text-white border-l-2 border-slate-200 dark:border-slate-700 pl-4">إدارة المنصة</h2>
+             <h2 class="text-2xl font-black border-l-2 pl-4 dark:border-slate-700">إدارة المنصة</h2>
              <div class="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl overflow-x-auto scroll-thin">
-               <button data-action="admin-tab" data-tab="upload" class="whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='upload'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">${state.admin.form.editingExamId ? 'تعديل الامتحان' : 'رفع امتحان'}</button>
-               <button data-action="admin-tab" data-tab="manage" class="whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='manage'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">الامتحانات المرفوعة</button>
-               <button data-action="admin-tab" data-tab="results" class="whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='results'?'bg-white dark:bg-slate-900 shadow-sm text-brand-600 dark:text-brand-400':'text-slate-500 hover:text-slate-700'}">نتائج الطلاب</button>
+               <button data-action="admin-tab" data-tab="upload" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='upload'?'bg-white dark:bg-slate-900 text-brand-600 shadow-sm':'text-slate-500'}">${state.admin.form.editingExamId ? 'تعديل الامتحان' : 'رفع امتحان'}</button>
+               <button data-action="admin-tab" data-tab="manage" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='manage'?'bg-white dark:bg-slate-900 text-brand-600 shadow-sm':'text-slate-500'}">الامتحانات المرفوعة</button>
+               <button data-action="admin-tab" data-tab="results" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${state.admin.tab==='results'?'bg-white dark:bg-slate-900 text-brand-600 shadow-sm':'text-slate-500'}">نتائج الطلاب</button>
              </div>
            </div>
-           <button data-action="close-admin" class="font-black text-red-500 bg-red-50 dark:bg-red-900/30 px-5 py-2.5 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">إغلاق وتخزين</button>
+           <button data-action="close-admin" class="font-black text-red-500 bg-red-50 dark:bg-red-900/30 px-5 py-2.5 rounded-xl">إغلاق وتخزين</button>
         </div>
-        <div class="p-6 md:p-8 flex-1 bg-slate-50 dark:bg-slate-950/50 overflow-y-auto">
-           ${state.admin.tab === 'upload' ? `
-             <div class="max-w-3xl mx-auto space-y-6">
-               <div class="flex justify-between items-center">
-                 <div>
-                   <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">${state.admin.form.editingExamId ? 'تعديل الامتحان المحدد' : 'رفع امتحان جديد'}</h3>
-                   <p class="text-sm text-slate-500 dark:text-slate-400">حدد المادة والوحدة، ثم اختر ملف الـ JSON أو الصق الكود، وأرفق ملف الـ PDF المرتبط به إن وجد.</p>
-                 </div>
-                 ${state.admin.form.editingExamId ? `<button data-action="cancel-admin-edit" class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-4 py-2 rounded-xl font-bold text-sm">إلغاء التعديل</button>` : ''}
-               </div>
-               
-               <div class="grid md:grid-cols-2 gap-4">
-                 <label class="block">
-                    <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">1. اختر المادة</span>
-                    <select id="admin-subject-select" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-900 px-5 py-3 font-bold text-slate-900 dark:text-white outline-none">
-                      ${subjects.map(s => `<option value="${s.code}" ${s.code === currentSubjectCode ? 'selected' : ''}>${escapeHtml(s.nameAr)}</option>`).join('')}
-                    </select>
-                 </label>
-                 <label class="block">
-                    <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">2. اختر الوحدة لتخزين الأسئلة بها</span>
-                    <select id="admin-unit-select" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-900 px-5 py-3 font-bold text-slate-900 dark:text-white outline-none">
-                      <option value="">-- اختر الوحدة --</option>
-                      ${units.map(u => `<option value="${u.key}" ${u.key === state.admin.form.unitKey ? 'selected' : ''}>${escapeHtml(u.semesterTitleAr + ' - ' + u.unitTitleAr)}</option>`).join('')}
-                    </select>
-                 </label>
-               </div>
-
-               <div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                 <div class="flex flex-col md:flex-row gap-4 items-end">
-                   <label class="block flex-1 w-full">
-                      <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">3. رفع ملف الـ JSON (أو الصق بالأسفل)</span>
-                      <input type="file" id="admin-json-file" accept=".json" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 text-slate-900 dark:text-white cursor-pointer">
-                   </label>
-                 </div>
-                 
-                 <label class="block">
-                    <textarea id="admin-json-input" rows="10" class="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-brand-500 bg-white dark:bg-slate-900 px-5 py-4 font-mono text-sm outline-none text-left text-slate-900 dark:text-white" dir="ltr" placeholder='{ "title": "امتحان تجريبي...", "questions": [...] }'>${state.admin.form.editingExamId ? '' : ''}</textarea>
-                 </label>
-                 
-                 <div class="grid md:grid-cols-2 gap-4">
-                   <label class="block">
-                      <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">4. ملف الـ PDF المرجعي (اختياري)</span>
-                      <input type="file" id="admin-pdf-file" accept="application/pdf" class="w-full bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 text-slate-900 dark:text-white cursor-pointer">
-                   </label>
-                   <div class="flex items-end pb-1">
-                      ${state.admin.form.pdfFileName ? `<div class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold text-sm p-3 rounded-xl border border-emerald-200 w-full text-center">تم إرفاق: ${escapeHtml(state.admin.form.pdfFileName)}</div>` : '<div class="text-slate-400 text-sm font-semibold p-3 w-full text-center">لم يتم إرفاق ملف PDF جديد.</div>'}
-                   </div>
-                 </div>
-               </div>
-               <button data-action="admin-upload-submit" class="w-full mt-4 px-8 py-4 rounded-2xl font-black bg-brand-600 hover:bg-brand-700 text-white shadow-glow transition-transform transform hover:-translate-y-1 text-lg">${state.admin.form.editingExamId ? 'تحديث وتعديل الامتحان' : 'رفع وحفظ الامتحان في البنك'}</button>
-             </div>
-           ` : state.admin.tab === 'manage' ? `
-             <div class="space-y-6">
-               <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2">إدارة الامتحانات المرفوعة مسبقاً (${state.data.exams.length})</h3>
-               <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                 ${state.data.exams.map((ex, index) => {
-                    const theme = getTheme(index);
-                    return `
-                    <div class="p-5 rounded-3xl border-2 ${theme.border} ${theme.bgInner} shadow-sm flex flex-col h-full relative overflow-hidden group">
-                      <div class="absolute top-0 right-0 w-full h-1 ${theme.bgOuter}"></div>
-                      <div class="font-black text-lg text-slate-900 dark:text-white mb-1 leading-tight line-clamp-2">${escapeHtml(ex.title)}</div>
-                      <div class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4">${escapeHtml(ex.subjectAr)} • ${escapeHtml(ex.unitTitleAr)}</div>
-                      <div class="mt-auto space-y-3">
-                        <div class="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                           <span>الأسئلة: ${ex.questionCount || 0}</span>
-                           <span>الوقت: ${ex.duration ? (ex.duration/60)+' د' : 'مفتوح'}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                          <button data-action="admin-edit-exam" data-exam-id="${ex.id}" class="w-full py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-600 dark:bg-brand-900/20 dark:hover:bg-brand-900/40 dark:text-brand-400 rounded-xl font-bold transition-colors text-sm">تعديل</button>
-                          <button data-action="admin-delete-exam" data-exam-id="${ex.id}" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 rounded-xl font-bold transition-colors text-sm">حذف</button>
-                        </div>
-                      </div>
-                    </div>
-                 `}).join('') || '<div class="col-span-full text-center py-10 text-slate-500">لا توجد امتحانات مرفوعة حالياً.</div>'}
-               </div>
-             </div>
-           ` : `
-             <div class="space-y-6">
-               <div class="flex justify-between items-center mb-4">
-                 <h3 class="text-xl font-black text-slate-900 dark:text-white">نتائج وإحصائيات الطلاب</h3>
-                 <div class="text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">إجمالي المحاولات: ${state.admin.allResults.length}</div>
-               </div>
-               <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                 <table class="w-full text-right text-sm">
-                   <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
-                     <tr>
-                       <th class="p-4 whitespace-nowrap">الطالب</th>
-                       <th class="p-4 whitespace-nowrap">المادة / الوحدة</th>
-                       <th class="p-4 min-w-[200px]">الامتحان</th>
-                       <th class="p-4 whitespace-nowrap">النتيجة</th>
-                       <th class="p-4 whitespace-nowrap">التاريخ</th>
-                     </tr>
-                   </thead>
-                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                     ${state.admin.allResults.map(r => `
-                       <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                         <td class="p-4 font-black text-slate-900 dark:text-white whitespace-nowrap">${escapeHtml(r.userName || r.userId)}</td>
-                         <td class="p-4 text-slate-600 dark:text-slate-300">
-                           <div class="font-bold">${escapeHtml(r.subjectAr)}</div>
-                           <div class="text-xs text-slate-400 mt-1 truncate max-w-[200px]">${escapeHtml(r.unitTitleAr)}</div>
-                         </td>
-                         <td class="p-4 font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(r.examTitle)}</td>
-                         <td class="p-4">
-                            <span class="inline-flex items-center justify-center px-3 py-1 rounded-lg font-black ${r.score >= 80 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : r.score >= 50 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}">${escapeHtml(r.score)}%</span>
-                         </td>
-                         <td class="p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">${escapeHtml(formatDate(r.createdAt))}</td>
-                       </tr>
-                     `).join('') || '<tr><td colspan="5" class="p-8 text-center text-slate-500 dark:text-slate-400">لا توجد نتائج مسجلة حتى الآن.</td></tr>'}
-                   </tbody>
-                 </table>
-               </div>
-             </div>
-           `}
-        </div>
+        <div class="p-6 md:p-8 flex-1 bg-slate-50 dark:bg-slate-950/50 rounded-b-[32px]">${adminContent}</div>
       </div>
     </div>
   `;
@@ -1131,10 +872,7 @@ function renderToast() {
   return `
     <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 md:translate-x-0 md:left-auto md:right-8 z-[80] animate-fade-in">
       <div class="rounded-2xl border-2 px-6 py-4 shadow-glow font-bold text-sm ${state.toast.type === 'error' ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/40 dark:border-red-800 dark:text-red-200' : 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-200'}">
-        <div class="flex items-center justify-between gap-4">
-          <div>${escapeHtml(state.toast.message)}</div>
-          <button data-action="close-toast" class="opacity-70 hover:opacity-100 text-lg">✕</button>
-        </div>
+        <div class="flex items-center justify-between gap-4"><div>${escapeHtml(state.toast.message)}</div><button data-action="close-toast" class="opacity-70 hover:opacity-100 text-lg">✕</button></div>
       </div>
     </div>
   `;
@@ -1144,10 +882,7 @@ function renderLoading() {
   if (!state.loading) return '';
   return `
     <div class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
-      <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-8 py-5 shadow-glow flex items-center gap-4 font-black text-brand-600 dark:text-brand-400 text-lg">
-        <svg class="animate-spin h-6 w-6 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        جارٍ التحميل...
-      </div>
+      <div class="rounded-3xl bg-white dark:bg-slate-900 px-8 py-5 shadow-glow flex items-center gap-4 font-black text-brand-600 text-lg animate-pulse">جارٍ المعالجة...</div>
     </div>
   `;
 }
@@ -1177,27 +912,20 @@ function render() {
 
 function hydrateAfterRender() {
   setDarkMode(state.darkMode);
-  renderMath();
-  renderPdfCanvases();
-  
-  if (state.admin.open && state.admin.tab === 'upload' && state.admin.form.editingExamId && document.getElementById('admin-json-input')) {
-     if (!document.getElementById('admin-json-input').value && window.__EDIT_JSON) {
-        document.getElementById('admin-json-input').value = window.__EDIT_JSON;
-     }
+  if (window.renderMathInElement) {
+    document.querySelectorAll('[data-math]').forEach(node => {
+      try { window.renderMathInElement(node, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false }); } catch (err) {}
+    });
   }
-}
-
-function renderMath() {
-  if (!window.renderMathInElement) return;
-  document.querySelectorAll('[data-math]').forEach(node => {
-    try { window.renderMathInElement(node, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false }); } catch (err) {}
-  });
+  renderPdfCanvases();
+  if (state.admin.open && state.admin.tab === 'upload' && state.admin.form.editingExamId && document.getElementById('admin-json-input')) {
+     if (!document.getElementById('admin-json-input').value && window.__EDIT_JSON) document.getElementById('admin-json-input').value = window.__EDIT_JSON;
+  }
 }
 
 async function renderPdfCanvases() {
   if (!window.pdfjsLib) return;
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  
   const canvases = Array.from(document.querySelectorAll('.pdf-canvas:not([data-rendered="true"])'));
   for (const canvas of canvases) {
     canvas.setAttribute('data-rendered', 'true');
@@ -1205,26 +933,17 @@ async function renderPdfCanvases() {
     const pageNumber = Number(canvas.getAttribute('data-page') || 1);
     const base64 = window.__PDF_SOURCES[pdfKey];
     if (!base64) continue;
-    
     try {
       if (!window.__PDF_DOCS[pdfKey]) {
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
+        const binary = atob(base64); const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         window.__PDF_DOCS[pdfKey] = await window.pdfjsLib.getDocument({ data: bytes }).promise;
       }
-      
-      const pdf = window.__PDF_DOCS[pdfKey];
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 1.2 });
-      const ctx = canvas.getContext('2d');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      const pdf = window.__PDF_DOCS[pdfKey]; const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1.2 }); const ctx = canvas.getContext('2d');
+      canvas.width = viewport.width; canvas.height = viewport.height;
       await page.render({ canvasContext: ctx, viewport }).promise;
-    } catch (err) {
-      const parent = canvas.parentElement;
-      if (parent) parent.innerHTML = '<div class="p-4 text-sm font-bold text-red-600 bg-red-50 rounded-xl text-center border border-red-200">تعذر عرض صفحة الـ PDF. تأكد من الملف الأصلي.</div>';
-    }
+    } catch (err) {}
   }
 }
 
@@ -1232,58 +951,46 @@ function clearExamTimer() { if (state.timerId) { clearInterval(state.timerId); s
 
 function updateProgressUI() {
   if (!state.examSession) return;
-  const answeredCount = Object.keys(state.examSession.answers).length + Object.values(state.examSession.openAnswers).filter(Boolean).length;
-  const totalItems = (state.examSession.exam.questions || []).length + (state.examSession.exam.openQuestions || []).length;
+  const answeredCount = Object.keys(state.examSession.answers).length;
+  const totalItems = (state.examSession.exam.questions || []).length;
   const pct = percent(answeredCount, totalItems || 1);
-  
-  const pText = document.getElementById('exam-progress-text');
-  if (pText) pText.innerText = `التقدم: ${pct}%`;
-  
-  const pBar = document.getElementById('exam-progress-bar');
-  if (pBar) pBar.style.width = `${pct}%`;
+  const pText = document.getElementById('exam-progress-text'); if (pText) pText.innerText = `التقدم: ${pct}%`;
+  const pBar = document.getElementById('exam-progress-bar'); if (pBar) pBar.style.width = `${pct}%`;
 }
 
+// مؤقت تصاعدي مفتوح لا يُغلق الامتحان أبدًا
 function startExamTimer() {
   clearExamTimer();
   if (!state.examSession) return;
+  state.examSession.timeSpent = 0;
   
-  state.timerId = setInterval(async () => {
+  state.timerId = setInterval(() => {
     if (!state.examSession) { clearExamTimer(); return; }
-    state.examSession.timeLeft -= 1;
-    
-    if (state.examSession.timeLeft <= 0) {
-      state.examSession.timeLeft = 0;
-      clearExamTimer();
-      render();
-      await submitExam();
-      return;
-    }
+    state.examSession.timeSpent += 1;
     
     const clockEl = document.getElementById('exam-timer-display');
     if (clockEl) {
-      const minutes = String(Math.floor(state.examSession.timeLeft / 60)).padStart(2, '0');
-      const seconds = String(state.examSession.timeLeft % 60).padStart(2, '0');
+      const minutes = String(Math.floor(state.examSession.timeSpent / 60)).padStart(2, '0');
+      const seconds = String(state.examSession.timeSpent % 60).padStart(2, '0');
       clockEl.innerText = `${minutes}:${seconds}`;
-      if (state.examSession.timeLeft < 300) clockEl.classList.add('animate-pulse', 'text-red-600');
     }
   }, 1000);
 }
 
 async function loadExam(examId) { const res = await api('getExamBundle', { examId }); return res.exam; }
 
-function prepareExamForStart(exam) { state.prestartExam = { exam, duration: exam.duration }; render(); }
+function prepareExamForStart(exam) { state.prestartExam = { exam }; render(); }
 
-function beginExam(exam, durationSeconds) {
+function beginExam(exam) {
   state.prestartExam = null; state.reviewAttempt = null;
-  state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single', timeLeft: Number(durationSeconds || exam.duration || 3600) };
+  state.examSession = { exam, answers: {}, openAnswers: {}, currentIndex: 0, viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single', timeSpent: 0 };
   render(); startExamTimer();
 }
 
 async function submitExam() {
   if (!state.examSession) return;
   const session = state.examSession; const exam = session.exam;
-  const questionOutcomes = []; const wrongItems = [];
-  let correctCount = 0; let totalQuestions = 0;
+  const wrongItems = []; let correctCount = 0; let totalQuestions = 0;
   
   (exam.questions || []).forEach(question => {
     if (!Number.isInteger(question.correctIndex)) return;
@@ -1291,15 +998,13 @@ async function submitExam() {
     const userAnswer = session.answers[question.id];
     const isCorrect = Number(userAnswer) === Number(question.correctIndex);
     if (isCorrect) correctCount += 1;
-    
     if (!isCorrect) {
       const snapshot = JSON.parse(JSON.stringify(question));
       if (snapshot.sourcePdfBase64) delete snapshot.sourcePdfBase64;
       wrongItems.push({
         questionKey: question.questionKey || `${exam.id}::${question.id}`, questionId: question.id, sourceExamId: question.sourceExamId || exam.id,
         subjectCode: question.subjectCode || exam.subjectCode || '', subjectAr: question.subjectAr || exam.subjectAr || '',
-        semester: question.semester != null ? question.semester : exam.semester, unitTitleAr: question.unitTitleAr || exam.unitTitleAr || '',
-        subunitTitleAr: question.subunitTitleAr || exam.subunitTitleAr || '', questionSnapshot: snapshot
+        semester: question.semester != null ? question.semester : exam.semester, unitTitleAr: question.unitTitleAr || exam.unitTitleAr || '', subunitTitleAr: question.subunitTitleAr || exam.subunitTitleAr || '', questionSnapshot: snapshot
       });
     }
   });
@@ -1337,7 +1042,7 @@ async function generateCustomExam() {
       if (!hasCounts) { showToast('يرجى تحديد عدد الأسئلة لوحدة واحدة على الأقل.', 'error'); return; }
     }
     setLoading(true);
-    const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: Number(state.builder.duration || 120) * 60, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
+    const payload = { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), duration: 0, mode: state.builder.mode, selectedUnits: selectedUnits, selectedExamIds: state.builder.selectedExamIds.slice(), explicitUnitCounts: state.builder.explicitCounts, title: 'امتحان مخصص - ' + (getSubject(state.subjectCode) ? getSubject(state.subjectCode).nameAr : '') };
     const res = await api('buildCustomExam', payload);
     prepareExamForStart(res.exam);
   } catch (err) { showToast('تعذر تكوين الامتحان: ' + err.message, 'error'); } 
@@ -1345,8 +1050,7 @@ async function generateCustomExam() {
 }
 
 document.addEventListener('click', async event => {
-  const target = event.target.closest('[data-action]');
-  if (!target) return;
+  const target = event.target.closest('[data-action]'); if (!target) return;
   const action = target.getAttribute('data-action');
   try {
     if (action === 'login') {
@@ -1361,66 +1065,45 @@ document.addEventListener('click', async event => {
     if (action === 'open-subject') { openSubject(target.getAttribute('data-subject-code')); return; }
     if (action === 'subject-tab') { state.subjectTab = target.getAttribute('data-tab'); render(); return; }
     if (action === 'select-unit') { state.unitKey = target.getAttribute('data-unit-key'); render(); return; }
-    if (action === 'jump-builder-with-unit') { const unitKey = target.getAttribute('data-unit-key'); state.subjectTab = 'builder'; if (!state.builder.selectedUnitKeys.includes(unitKey)) { state.builder.selectedUnitKeys.push(unitKey); getExamsForUnit(state.subjectCode, unitKey).forEach(e => { if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id); }); } render(); return; }
     if (action === 'prepare-exam') { setLoading(true); const exam = await loadExam(target.getAttribute('data-exam-id')); prepareExamForStart(exam); state.loading = false; render(); return; }
     if (action === 'close-prestart') { state.prestartExam = null; render(); return; }
-    if (action === 'start-prepared-exam') {
-      const exam = state.prestartExam.exam; let duration = Number(state.prestartExam.duration || exam.duration || 3600);
-      if (exam.allowStudentTimeOverride) {
-        const input = document.getElementById('prestart-duration'); const minutes = Number(input ? input.value : minutesLabel(exam.duration));
-        const minMinutes = minutesLabel(exam.minDuration || 300); const maxMinutes = minutesLabel(exam.maxDuration || Math.max(exam.duration || 3600, 3600));
-        duration = Math.max(minMinutes, Math.min(maxMinutes, minutes)) * 60;
-      }
-      beginExam(exam, duration); return;
-    }
+    if (action === 'start-prepared-exam') { beginExam(state.prestartExam.exam); return; }
     if (action === 'set-view-mode') { if (state.examSession) { state.examSession.viewMode = target.getAttribute('data-view-mode'); render(); } return; }
     if (action === 'exam-prev') { state.examSession.currentIndex = Math.max(0, state.examSession.currentIndex - 1); render(); return; }
-    if (action === 'exam-next') { const exam = state.examSession.exam; const total = (exam.questions || []).length + (exam.openQuestions || []).length; state.examSession.currentIndex = Math.min(total - 1, state.examSession.currentIndex + 1); render(); return; }
-    
+    if (action === 'exam-next') { const exam = state.examSession.exam; const total = (exam.questions || []).length; state.examSession.currentIndex = Math.min(total - 1, state.examSession.currentIndex + 1); render(); return; }
     if (action === 'select-answer') {
       if (!state.examSession) return;
-      const qid = target.getAttribute('data-question-id');
-      const index = Number(target.getAttribute('data-index'));
+      const qid = target.getAttribute('data-question-id'); const index = Number(target.getAttribute('data-index'));
       state.examSession.answers[qid] = index;
-      
       const container = target.closest('.question-options-container');
       if (container) {
          const buttons = container.querySelectorAll('button[data-action="select-answer"]');
          buttons.forEach((btn, btnIdx) => {
             const isSelected = btnIdx === index;
-            btn.className = `rounded-2xl border-2 p-4 text-right transition-all duration-200 ${isSelected ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700'}`;
+            btn.className = `rounded-2xl border-2 p-4 text-right transition-all ${isSelected ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70'}`;
             const letterEl = btn.querySelector('.rounded-full.border-2');
-            if (letterEl) {
-                letterEl.className = `h-8 w-8 rounded-full border-2 flex shrink-0 items-center justify-center text-sm font-black ${isSelected ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400'}`;
-            }
+            if (letterEl) letterEl.className = `h-8 w-8 rounded-full border-2 flex items-center justify-center font-black ${isSelected ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300 dark:border-slate-600'}`;
          });
       }
-      updateProgressUI();
-      return;
+      updateProgressUI(); return;
     }
-    
     if (action === 'submit-exam') { await submitExam(); return; }
-    if (action === 'cancel-exam') { if (confirm('هل أنت متأكد من إنهاء الامتحان؟ لن يتم حفظ إجاباتك الحالية.')) { state.examSession = null; clearExamTimer(); render(); } return; }
     if (action === 'review-attempt') { await openAttemptReview(target.getAttribute('data-attempt-id')); return; }
     if (action === 'close-review') { state.reviewAttempt = null; render(); return; }
     if (action === 'redo-attempt') { await generateRedo({ attemptId: target.getAttribute('data-attempt-id') }); return; }
     if (action === 'redo-by-subject') { await generateRedo({ subjectCode: target.getAttribute('data-subject-code') }); return; }
-    
     if (action === 'toggle-builder-exam') {
       const eid = target.getAttribute('data-exam-id');
       if (target.checked && !state.builder.selectedExamIds.includes(eid)) state.builder.selectedExamIds.push(eid);
       else if (!target.checked) state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => id !== eid);
       render(); return;
     }
-    
     if (action === 'toggle-builder-unit') {
       const unitKey = target.getAttribute('data-unit-key');
       if (target.checked) { 
          if (!state.builder.selectedUnitKeys.includes(unitKey)) {
              state.builder.selectedUnitKeys.push(unitKey); 
-             getExamsForUnit(state.subjectCode, unitKey).forEach(e => {
-                if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id);
-             });
+             getExamsForUnit(state.subjectCode, unitKey).forEach(e => { if(!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id); });
          }
       } else { 
          state.builder.selectedUnitKeys = state.builder.selectedUnitKeys.filter(k => k !== unitKey); 
@@ -1430,123 +1113,56 @@ document.addEventListener('click', async event => {
       }
       render(); return;
     }
-    
     if (action === 'build-custom-exam') { await generateCustomExam(); return; }
     if (action === 'open-admin') { openAdmin(); return; }
     if (action === 'close-admin') { closeAdmin(); return; }
-    if (action === 'admin-login-submit') {
-       const pass = document.getElementById('admin-password-input').value;
-       await adminLogin(pass);
-       return;
-    }
-    if (action === 'admin-tab') { state.admin.tab = target.getAttribute('data-tab'); render(); return; }
+    if (action === 'admin-login-submit') { await adminLogin(document.getElementById('admin-password-input').value); return; }
     
+    // Admin Drill-down Panel actions
+    if (action === 'admin-tab') { state.admin.tab = target.getAttribute('data-tab'); state.admin.selectedUserId = null; state.admin.selectedSubjectCode = null; render(); return; }
+    if (action === 'admin-select-user') { state.admin.selectedUserId = target.getAttribute('data-uid'); state.admin.selectedSubjectCode = null; render(); return; }
+    if (action === 'admin-select-subject') { state.admin.selectedSubjectCode = target.getAttribute('data-sc'); render(); return; }
+    if (action === 'admin-view-attempt') { state.admin.open = false; await openAttemptReview(target.getAttribute('data-attempt-id')); return; }
+
     if (action === 'admin-edit-exam') {
        const examId = target.getAttribute('data-exam-id');
        try {
-           setLoading(true);
-           const exam = await loadExam(examId);
+           setLoading(true); const exam = await loadExam(examId);
            const unitKey = makeUnitKey(exam.subjectCode, exam.semester, exam.unitTitleAr);
-           
-           state.admin.tab = 'upload';
-           state.admin.form.editingExamId = examId;
-           state.admin.form.subjectCode = exam.subjectCode;
-           state.admin.form.unitKey = unitKey;
-           state.admin.form.pdfDataUrl = null; 
-           state.admin.form.pdfFileName = '';
-           
-           const clone = JSON.parse(JSON.stringify(exam));
-           delete clone.id;
-           if(clone.sourcePdf && clone.sourcePdf.base64) delete clone.sourcePdf.base64;
-           window.__EDIT_JSON = JSON.stringify(clone, null, 2);
-           
+           state.admin.tab = 'upload'; state.admin.form.editingExamId = examId; state.admin.form.subjectCode = exam.subjectCode; state.admin.form.unitKey = unitKey; state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = '';
+           const clone = JSON.parse(JSON.stringify(exam)); delete clone.id; if(clone.sourcePdf && clone.sourcePdf.base64) delete clone.sourcePdf.base64; window.__EDIT_JSON = JSON.stringify(clone, null, 2);
            render();
-       } catch (e) {
-           showToast('تعذر جلب بيانات الامتحان للتعديل', 'error');
-       } finally { setLoading(false); }
+       } catch (e) { showToast('تعذر جلب بيانات الامتحان', 'error'); } finally { setLoading(false); }
        return;
     }
-    
-    if (action === 'cancel-admin-edit') {
-       state.admin.form.editingExamId = null;
-       state.admin.form.pdfDataUrl = null;
-       state.admin.form.pdfFileName = '';
-       window.__EDIT_JSON = '';
-       render();
-       return;
-    }
-    
+    if (action === 'cancel-admin-edit') { state.admin.form.editingExamId = null; state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = ''; window.__EDIT_JSON = ''; render(); return; }
     if (action === 'admin-upload-submit') {
-       if(!state.admin.form.subjectCode) { showToast('يجب اختيار المادة أولاً', 'error'); return; }
-       if(!state.admin.form.unitKey) { showToast('يجب اختيار الوحدة المراد حفظ الامتحان بها', 'error'); return; }
-       
+       if(!state.admin.form.subjectCode) { showToast('يجب اختيار المادة', 'error'); return; }
+       if(!state.admin.form.unitKey) { showToast('يجب اختيار الوحدة', 'error'); return; }
        const jsonText = document.getElementById('admin-json-input').value;
-       if(!jsonText) { showToast('يجب وضع كود الـ JSON أو رفع ملف JSON', 'error'); return; }
-       
-       let parsedJson;
-       try {
-           parsedJson = JSON.parse(jsonText);
-       } catch (e) {
-           showToast('كود الـ JSON غير صالح. يرجى التأكد من صحة التنسيق والأقواس.', 'error');
-           return;
-       }
-
+       if(!jsonText) { showToast('يجب وضع كود JSON', 'error'); return; }
+       let parsedJson; try { parsedJson = JSON.parse(jsonText); } catch (e) { showToast('كود JSON غير صالح.', 'error'); return; }
        const subjInfo = CURRICULUM.subjects.find(s => s.code === state.admin.form.subjectCode);
        const unitParts = parseUnitKey(state.admin.form.unitKey);
-       
-       parsedJson.subjectCode = subjInfo.code;
-       parsedJson.subjectAr = subjInfo.nameAr;
-       parsedJson.semester = unitParts.semester;
-       parsedJson.unitTitleAr = unitParts.unitTitleAr;
-
-       (parsedJson.questions || []).forEach(q => {
-           q.subjectCode = subjInfo.code; q.subjectAr = subjInfo.nameAr;
-           q.semester = unitParts.semester; q.unitTitleAr = unitParts.unitTitleAr;
-       });
-       (parsedJson.openQuestions || []).forEach(q => {
-           q.subjectCode = subjInfo.code; q.subjectAr = subjInfo.nameAr;
-           q.semester = unitParts.semester; q.unitTitleAr = unitParts.unitTitleAr;
-       });
-
+       parsedJson.subjectCode = subjInfo.code; parsedJson.subjectAr = subjInfo.nameAr; parsedJson.semester = unitParts.semester; parsedJson.unitTitleAr = unitParts.unitTitleAr;
+       (parsedJson.questions || []).forEach(q => { q.subjectCode = subjInfo.code; q.subjectAr = subjInfo.nameAr; q.semester = unitParts.semester; q.unitTitleAr = unitParts.unitTitleAr; });
        try {
          setLoading(true);
-         const pdfFile = state.admin.form.pdfDataUrl;
-         const pdfName = state.admin.form.pdfFileName;
-         const finalJsonStr = JSON.stringify(parsedJson);
-         
-         await api('uploadExam', { 
-            adminPassword: CONFIG.ADMIN_PASSWORD, 
-            examJson: finalJsonStr, 
-            pdfDataUrl: pdfFile, 
-            pdfFileName: pdfName,
-            examId: state.admin.form.editingExamId 
-         });
-         
-         showToast(state.admin.form.editingExamId ? 'تم تحديث الامتحان بنجاح' : 'تم رفع وحفظ الامتحان في البنك بنجاح');
-         state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = '';
-         state.admin.form.editingExamId = null;
-         window.__EDIT_JSON = '';
+         await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examJson: JSON.stringify(parsedJson), pdfDataUrl: state.admin.form.pdfDataUrl, pdfFileName: state.admin.form.pdfFileName, examId: state.admin.form.editingExamId });
+         showToast(state.admin.form.editingExamId ? 'تم تحديث الامتحان' : 'تم الحفظ في البنك');
+         state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = ''; state.admin.form.editingExamId = null; window.__EDIT_JSON = '';
          if(document.getElementById('admin-json-input')) document.getElementById('admin-json-input').value = '';
-         
          await refreshData();
-       } catch (err) { showToast('خطأ في العملية: ' + err.message, 'error'); } 
-       finally { setLoading(false); render(); }
+       } catch (err) { showToast('خطأ: ' + err.message, 'error'); } finally { setLoading(false); render(); }
        return;
     }
-    
     if (action === 'admin-delete-exam') {
-       if (!confirm('هل أنت متأكد من حذف هذا الامتحان بالكامل من المنصة؟ (سوف تُحذف أسئلته أيضاً من البنك)')) return;
-       try {
-         setLoading(true);
-         await api('deleteExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examId: target.getAttribute('data-exam-id') });
-         showToast('تم حذف الامتحان وأسئلته بنجاح');
-         await refreshData();
-       } catch (err) { showToast('خطأ في الحذف: ' + err.message, 'error'); } 
-       finally { setLoading(false); render(); }
+       if (!confirm('هل أنت متأكد من الحذف بالكامل من البنك؟')) return;
+       try { setLoading(true); await api('deleteExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examId: target.getAttribute('data-exam-id') }); showToast('تم الحذف'); await refreshData(); } catch (err) { showToast('خطأ الحذف: ' + err.message, 'error'); } finally { setLoading(false); render(); }
        return;
     }
     if (action === 'close-toast') { state.toast = null; render(); return; }
-  } catch (err) { showToast(err.message || 'حدث خطأ غير متوقع', 'error'); }
+  } catch (err) { showToast(err.message || 'حدث خطأ', 'error'); }
 });
 
 document.addEventListener('change', event => {
@@ -1554,56 +1170,17 @@ document.addEventListener('change', event => {
   if (builderField) {
     if (builderField === 'mode') state.builder.mode = event.target.value;
     if (builderField === 'totalQuestions') state.builder.totalQuestions = Number(event.target.value || 0);
-    if (builderField === 'duration') state.builder.duration = Number(event.target.value || 0);
     render(); return;
   }
   if (event.target.getAttribute('data-action') === 'set-builder-unit-count') { state.builder.explicitCounts[event.target.getAttribute('data-unit-key')] = Number(event.target.value || 0); render(); return; }
-  
-  if (event.target.id === 'admin-subject-select') {
-     state.admin.form.subjectCode = event.target.value;
-     state.admin.form.unitKey = ''; 
-     render(); return;
-  }
-  if (event.target.id === 'admin-unit-select') {
-     state.admin.form.unitKey = event.target.value;
-     render(); return;
-  }
-  
-  if (event.target.id === 'admin-json-file') {
-     const file = event.target.files[0];
-     if (file) {
-        const reader = new FileReader();
-        reader.onload = e => { 
-           document.getElementById('admin-json-input').value = e.target.result; 
-        };
-        reader.readAsText(file);
-     }
-  }
-  
-  if (event.target.id === 'admin-pdf-file') {
-     const file = event.target.files[0];
-     if (file) {
-        const reader = new FileReader();
-        reader.onload = e => { state.admin.form.pdfDataUrl = e.target.result; state.admin.form.pdfFileName = file.name; render(); };
-        reader.readAsDataURL(file);
-     }
-  }
-});
-
-document.addEventListener('input', event => {
-  if (event.target.getAttribute('data-action') === 'set-open-answer') {
-    if (!state.examSession) return;
-    state.examSession.openAnswers[event.target.getAttribute('data-question-id')] = event.target.value;
-    updateProgressUI(); 
-    return;
-  }
+  if (event.target.id === 'admin-subject-select') { state.admin.form.subjectCode = event.target.value; state.admin.form.unitKey = ''; render(); return; }
+  if (event.target.id === 'admin-unit-select') { state.admin.form.unitKey = event.target.value; render(); return; }
+  if (event.target.id === 'admin-json-file') { const f = event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { document.getElementById('admin-json-input').value = e.target.result; }; r.readAsText(f); } }
+  if (event.target.id === 'admin-pdf-file') { const f = event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { state.admin.form.pdfDataUrl = e.target.result; state.admin.form.pdfFileName = f.name; render(); }; r.readAsDataURL(f); } }
 });
 
 const style = document.createElement('style');
-style.textContent = `
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-`;
+style.textContent = `@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }`;
 document.head.appendChild(style);
 
 render();
