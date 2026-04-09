@@ -554,13 +554,17 @@ function getQuestionPdfSource(q, exam) { return q.sourcePdfBase64 || (exam && ex
 function stripBase64Exam(ex) { const c = JSON.parse(JSON.stringify(ex)); if(c.sourcePdf&&c.sourcePdf.base64) delete c.sourcePdf.base64; if(c.sourcePdfsMap) delete c.sourcePdfsMap; ['questions','openQuestions'].forEach(f=>{ (c[f]||[]).forEach(i=>{ if(i&&i.sourcePdfBase64) delete i.sourcePdfBase64; }); }); return c; }
 
 function renderPdfPreview(q, ex, sfx) {
-  if (!q || !q.pdfPageRef || !q.pdfPageRef.page) return '';
-  const b64 = getQuestionPdfSource(q, ex); if (!b64) return '<div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-bold text-slate-500 text-center">لا يتوفر PDF أو جاري التحميل...</div>';
-  const k = `${q.questionKey || q.id || 'q'}_${sfx || 'exam'}`; window.__PDF_SOURCES[k] = b64;
+  const pageNum = (q.pdfPageRef && q.pdfPageRef.page) || q.pageId || q.picId;
+  if (!pageNum) return '';
+  const b64 = getQuestionPdfSource(q, ex); 
+  if (!b64) return '<div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-bold text-slate-500 text-center mt-4">لا يتوفر ملف للرؤية، أو جاري التحميل...</div>';
+  
+  const k = `${q.sourceExamId || 'ex'}_${q.id || 'q'}_${sfx || 'exam'}`; 
+  window.__PDF_SOURCES[k] = b64;
   return `
     <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800/60 mt-4 md:mt-0">
-      <div class="flex items-center gap-2 mb-2"><span class="bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 px-2 py-0.5 rounded text-[9px] font-black uppercase">مرجع PDF</span><span class="text-[10px] font-bold">صفحة ${escapeHtml(q.pdfPageRef.page)}</span></div>
-      <div class="overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-inner"><canvas class="block max-w-full h-auto mx-auto pdf-canvas" data-pdf-key="${k}" data-page="${escapeHtml(q.pdfPageRef.page)}"></canvas></div>
+      <div class="flex items-center gap-2 mb-2"><span class="bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 px-2 py-0.5 rounded text-[9px] font-black uppercase">مرفق السؤال</span><span class="text-[10px] font-bold">صفحة ${escapeHtml(pageNum)}</span></div>
+      <div class="overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-inner"><canvas class="block max-w-full h-auto mx-auto pdf-canvas" data-pdf-key="${k}" data-page="${escapeHtml(pageNum)}"></canvas></div>
     </div>
   `;
 }
@@ -569,10 +573,12 @@ function renderQuestionCard(q, i, ex, mode) {
   const sess = state.examSession; const rev = state.reviewAttempt;
   const ans = mode === 'review' ? (rev ? rev.answers[q.id] : null) : (sess ? sess.answers[q.id] : null);
   const ro = mode === 'review';
+  const hasPage = (q.pdfPageRef && q.pdfPageRef.page) || q.pageId || q.picId;
+  
   return `
     <div class="bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-5 ${ro ? 'bg-slate-50 dark:bg-slate-900/40' : ''}">
       <div class="text-base md:text-lg font-black leading-relaxed mb-4" data-math><span class="text-brand-600 mr-1">${i+1}.</span> ${escapeHtml(q.text)}</div>
-      <div class="grid grid-cols-1 ${q.pdfPageRef ? 'lg:grid-cols-[1fr,250px]' : ''} gap-4 items-start">
+      <div class="grid grid-cols-1 ${hasPage ? 'lg:grid-cols-[1fr,250px]' : ''} gap-4 items-start">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 question-options-container">
           ${(q.options||[]).map((opt, oIdx) => {
             const isSel = Number(ans) === oIdx; const isCor = Number(q.correctIndex) === oIdx;
@@ -586,7 +592,7 @@ function renderQuestionCard(q, i, ex, mode) {
             `;
           }).join('')}
         </div>
-        ${q.pdfPageRef ? renderPdfPreview(q, ex, mode) : ''}
+        ${hasPage ? renderPdfPreview(q, ex, mode) : ''}
       </div>
       ${ro && q.correctIndex != null ? `<div class="mt-4 p-3 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-bold border border-brand-200 dark:border-brand-800 text-xs">الإجابة الصحيحة: ${escapeHtml(q.options[q.correctIndex])}</div>` : ''}
     </div>
@@ -665,7 +671,6 @@ function renderAdminModal() {
     `;
   }
   
-  // UI for Admin results drill-down
   let adminContent = '';
   if (state.admin.tab === 'upload') {
      adminContent = `
@@ -877,7 +882,11 @@ async function submitExam() {
     if (q.correctIndex == null) return;
     tq++; const isCor = Number(s.answers[q.id]) === Number(q.correctIndex);
     if (isCor) cc++;
-    else { const snp = JSON.parse(JSON.stringify(q)); delete snp.sourcePdfBase64; w.push({ questionId: q.id, sourceExamId: q.sourceExamId || ex.id, subjectCode: q.subjectCode||ex.subjectCode||'', subjectAr: q.subjectAr||ex.subjectAr||'', semester: q.semester!=null?q.semester:ex.semester, unitTitleAr: q.unitTitleAr||ex.unitTitleAr||'', questionSnapshot: snp }); }
+    else { 
+      const snp = JSON.parse(JSON.stringify(q)); delete snp.sourcePdfBase64; 
+      // حفظ بيانات المصدر الأصلية مع السؤال لمنع الخطأ في الإعادة
+      w.push({ questionId: q.id, sourceExamId: q.sourceExamId || ex.id, subjectCode: q.subjectCode||ex.subjectCode||'', subjectAr: q.subjectAr||ex.subjectAr||'', semester: q.semester!=null?q.semester:ex.semester, unitTitleAr: q.unitTitleAr||ex.unitTitleAr||'', questionSnapshot: snp }); 
+    }
   });
   const sc = percent(cc, tq||1);
   try {
