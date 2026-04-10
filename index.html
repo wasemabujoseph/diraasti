@@ -53,7 +53,8 @@
       .question-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc !important; margin-bottom: 20px; box-shadow: none !important; }
       body { background: white !important; color: black !important; }
     }
-    /* إصلاح الموبايل للآدمن */
+    
+    /* إصلاح الموبايل لكي لا تخرج الشاشات المنبثقة عن الإطار */
     .modal-container { width: 95% !important; max-width: 100% !important; overflow-x: hidden; }
   </style>
 </head>
@@ -64,7 +65,7 @@
 const CONFIG = {
   APP_NAME: 'امتحاني',
   APP_SUBTITLE: 'منصة التدريب والتقييم الذكية، تدرب وحلل أدائك باحترافية',
-  API_BASE: 'https://script.google.com/macros/s/AKfycbxbRTV0pYSXJDRQe2oTBzhVaNYkW9P-ILbB2FruLQp1Tgf7eJOM7OByJa6ioH7NK9Zalw/exec', // تأكد من أن هذا الرابط صحيح
+  API_BASE: 'https://script.google.com/macros/s/AKfycbxbRTV0pYSXJDRQe2oTBzhVaNYkW9P-ILbB2FruLQp1Tgf7eJOM7OByJa6ioH7NK9Zalw/exec', 
   ADMIN_PASSWORD: 'admin',
   STORAGE_KEYS: { user: 'dirasti_user_v8', darkMode: 'dirasti_dark_v8' }
 };
@@ -128,7 +129,7 @@ const state = {
   loading: false, toast: null,
   data: { exams: [], results: [], leaderboard: [], analytics: { overallMastery: 0, subjectMastery: [], unitMastery: [], weaknessRows: [] }, questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] } },
   subjectCode: null, subjectTab: 'units', unitKey: null,
-  prestartExam: null, examSession: loadLocal('dirasti_saved_session', null), // استرجاع التقدم
+  prestartExam: null, examSession: loadLocal('dirasti_saved_session', null), // استرجاع التقدم عند انقطاع الامتحان
   reviewAttempt: null, timerId: null,
   gamification: { streak: 0, badges: [] },
   admin: { open: false, authenticated: false, tab: 'upload', allResults: [], selectedUserId: null, selectedSubjectCode: null, form: { subjectCode: '', unitKey: '', editingExamId: null, pdfDataUrl: null, pdfFileName: '' } },
@@ -211,6 +212,8 @@ async function refreshData() {
     state.data.questionBankSummary = bank.summary || { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] };
     
     calculateGamification();
+    
+    // جلب لوحة الأوائل بصمت
     api('getLeaderboard').then(res => { state.data.leaderboard = res.leaderboard; render(); }).catch(()=>{});
 
     render();
@@ -656,11 +659,11 @@ function renderQuestionCard(q, i, ex, mode) {
         ${hasPage ? renderPdfPreview(q, ex, mode) : ''}
       </div>
       ${ro ? `
-        <div class="mt-4 flex flex-col sm:flex-row justify-between gap-3 p-3 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800 text-xs">
+        <div class="no-print mt-4 flex flex-col sm:flex-row justify-between gap-3 p-3 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800 text-xs">
           <div class="font-bold">الإجابة الصحيحة: ${q.correctIndex!=null ? escapeHtml(q.options[q.correctIndex]) : 'غير محدد'}</div>
           <div class="flex gap-3 items-center">
             ${rev.examSnapshot.timePerQuestion && rev.examSnapshot.timePerQuestion[q.id] ? `<span class="font-semibold text-slate-600">⏱️ استغرقت: ${rev.examSnapshot.timePerQuestion[q.id]} ثانية</span>` : ''}
-            <button data-action="prompt-edit-answer" data-exam-id="${q.sourceExamId || ex.id}" data-question-id="${q.id}" class="no-print bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-3 py-1 rounded text-[10px] font-bold">تعديل الإجابة المعتمدة</button>
+            <button data-action="prompt-edit-answer" data-question-id="${q.id}" data-question-text="${escapeHtml(q.text)}" class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-3 py-1 rounded text-[10px] font-bold">تعديل الإجابة المعتمدة</button>
           </div>
         </div>
       ` : ''}
@@ -950,7 +953,7 @@ function startExamTimer() {
     if(state.examSession.activeQuestionId) {
        state.examSession.timePerQuestion[state.examSession.activeQuestionId] = (state.examSession.timePerQuestion[state.examSession.activeQuestionId] || 0) + 1;
     }
-    saveLocal('dirasti_saved_session', state.examSession); // حفظ التقدم
+    saveLocal('dirasti_saved_session', state.examSession); 
     
     const c = document.getElementById('exam-timer-display');
     if (c) c.innerText = `${String(Math.floor(state.examSession.timeSpent/60)).padStart(2,'0')}:${String(state.examSession.timeSpent%60).padStart(2,'0')}`;
@@ -965,7 +968,6 @@ async function submitExam() {
   if (!state.examSession) return;
   const s = state.examSession; const ex = s.exam; const w = []; let cc = 0; let tq = 0;
   
-  // دمج الوقت المستغرق مع معلومات الامتحان للحفظ
   ex.timePerQuestion = s.timePerQuestion; 
   
   (ex.questions||[]).forEach(q => {
@@ -1016,7 +1018,15 @@ document.addEventListener('click', async e => {
       const c=t.closest('.question-options-container'); if(c){ c.querySelectorAll('button[data-action="select-answer"]').forEach((b,bi)=>{ const s=bi===idx; b.className=`text-right p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${s?'border-slate-900 bg-slate-900 text-white dark:border-brand-500 dark:bg-brand-900/20 dark:text-brand-300':'border-slate-200 dark:border-slate-700 hover:border-slate-400'}`; const l=b.querySelector('div.w-6'); if(l) l.className=`w-6 h-6 rounded-full shrink-0 flex items-center justify-center font-black text-[10px] transition-colors ${s?'bg-white text-slate-900 dark:bg-brand-500 dark:text-white':'border-2 border-slate-200 dark:border-slate-600 text-slate-500'}`; }); }
       updateProgressUI(); return;
     }
-    if(a==='submit-exam'){ if(confirm('متأكد من تسليم الامتحان؟')) await submitExam(); return; }
+    if(a==='submit-exam'){ 
+      if(confirm('متأكد من تسليم الامتحان؟')) {
+         if(state.examSession && state.examSession.exam) {
+             state.examSession.exam.timePerQuestion = state.examSession.timePerQuestion; 
+         }
+         await submitExam(); 
+      }
+      return; 
+    }
     
     if(a==='smart-review') {
       const today = new Date();
@@ -1028,7 +1038,7 @@ document.addEventListener('click', async e => {
             smartWrongs = smartWrongs.concat(wrongs);
          }
       });
-      if(!smartWrongs.length) return showToast('لا يوجد أسئلة مجدولة للمراجعة اليوم، ممتاز!', 'success');
+      if(!smartWrongs.length) return showToast('لا توجد أسئلة مجدولة للمراجعة اليوم، ممتاز!', 'success');
       try {
         setLoading(true);
         const r = await api('generateRedoExam', { userId: state.user.id, specificWrongs: smartWrongs });
@@ -1046,8 +1056,13 @@ document.addEventListener('click', async e => {
       
       try {
         setLoading(true);
-        await api('updateQuestionAnswer', { password: pass, examId: t.getAttribute('data-exam-id'), questionId: t.getAttribute('data-question-id'), newCorrectIndex: newIdx });
-        showToast('تم التعديل وإعادة التصحيح للجميع بنجاح!');
+        const res = await api('updateQuestionAnswer', { 
+           password: pass, 
+           questionId: t.getAttribute('data-question-id'),
+           questionText: t.getAttribute('data-question-text'),
+           newCorrectIndex: newIdx 
+        });
+        showToast(`تم التعديل! تم تصحيح وإعادة تقييم ${res.updatedAttempts} محاولة للطلاب.`);
         await refreshData();
         if(state.reviewAttempt) await openAttemptReview(state.reviewAttempt.id);
       } catch(e) { showToast(e.message, 'error'); } finally { setLoading(false); render(); }
