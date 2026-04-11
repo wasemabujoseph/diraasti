@@ -700,62 +700,80 @@ function renderHome() {
 
 function renderProfilePage() {
   const profile = state.data.analytics.profile || { badges: [], currentStreak: 0, totalPerfectExams: 0 };
-  const recent = (state.data.results || []).slice(0, 8);
+  const results = state.data.results || [];
+  const recent = results.slice(0, 8);
   const bestSubject = ((state.data.analytics.subjectMastery || []).slice().sort((a,b)=>Number(b.mastery||0)-Number(a.mastery||0))[0]) || null;
   const weakLesson = ((state.data.analytics.weaknessRows || []).slice().sort((a,b)=>Number(b.weaknessScore||0)-Number(a.weaknessScore||0))[0]) || null;
-  const customAttempts = recent.filter(r => String(r.examId || '').startsWith('custom-')).length;
+  const customAttempts = results.filter(r => String(r.examId || '').startsWith('custom-')).length;
+  const avgScore = results.length ? Math.round(results.reduce((a,b)=>a + Number(b.score || 0), 0) / results.length) : 0;
+  const totalCorrect = results.reduce((a,b)=>a + Number(b.correctCount || 0), 0);
+  const totalQuestions = results.reduce((a,b)=>a + Number(b.totalMcq || b.totalQuestions || 0), 0);
+  const subjectRows = (state.data.analytics.subjectMastery || []).slice().sort((a,b)=>Number(b.mastery||0)-Number(a.mastery||0));
   return `
     <div class="animate-enter">
       ${renderBackButton('العودة للرئيسية')}
-      <div class="grid xl:grid-cols-[1.1fr,0.9fr] gap-5">
-        <div class="space-y-5">
-          <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-brand-700 text-white rounded-[2rem] p-6 sm:p-8 shadow-soft overflow-hidden relative">
-            <div class="absolute -left-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-            <div class="relative z-10 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-              <div class="flex items-center gap-4 min-w-0">
-                <div class="w-16 h-16 rounded-[1.25rem] bg-white/10 flex items-center justify-center text-2xl font-black shrink-0">${escapeHtml(initials(state.user.name))}</div>
-                <div class="min-w-0">
-                  <div class="text-xs font-black text-brand-100 mb-1">الملف الشخصي للطالب</div>
-                  <h1 class="text-2xl sm:text-3xl font-black truncate">${escapeHtml(state.user.name)}</h1>
-                  <div class="text-sm text-white/80 mt-2">${escapeHtml(CURRICULUM.gradeAr)} • ${escapeHtml(CURRICULUM.trackAr)}</div>
-                </div>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <span class="px-3 py-2 rounded-xl bg-white/10 text-xs font-black">🔥 ${profile.currentStreak || 0} يوم</span>
-                <span class="px-3 py-2 rounded-xl bg-white/10 text-xs font-black">⭐ ${profile.totalPerfectExams || 0} كاملة</span>
+      <div class="space-y-5">
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-brand-700 text-white rounded-[2rem] p-6 sm:p-8 shadow-soft overflow-hidden relative">
+          <div class="absolute -left-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+          <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-brand-400/20 rounded-full blur-3xl"></div>
+          <div class="relative z-10 flex flex-col lg:flex-row gap-5 justify-between">
+            <div class="flex items-center gap-4 min-w-0">
+              <div class="w-18 h-18 rounded-[1.5rem] bg-white/10 flex items-center justify-center text-3xl font-black shrink-0">${escapeHtml(initials(state.user.name))}</div>
+              <div class="min-w-0">
+                <div class="text-xs font-black text-brand-100 mb-1">الملف الشخصي الاحترافي للطالب</div>
+                <h1 class="text-2xl sm:text-3xl font-black truncate">${escapeHtml(state.user.name)}</h1>
+                <div class="text-sm text-white/80 mt-2">${escapeHtml(CURRICULUM.gradeAr)} • ${escapeHtml(CURRICULUM.trackAr)}</div>
+                <div class="text-xs text-white/70 mt-2">رقم الطالب: ${escapeHtml(state.user.id || '')}</div>
               </div>
             </div>
-          </div>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">عدد المحاولات</div><div class="text-3xl font-black">${(state.data.results||[]).length}</div></div>
-            <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">الإتقان العام</div><div class="text-3xl font-black text-brand-600 dark:text-brand-400">${state.data.analytics.overallMastery || 0}%</div></div>
-            <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">مراجعة اليوم</div><div class="text-3xl font-black text-amber-500">${state.data.analytics.dueReviewCount || 0}</div></div>
-            <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">اختبارات مخصصة</div><div class="text-3xl font-black text-indigo-500">${customAttempts}</div></div>
-          </div>
-          <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
-            <h3 class="text-lg font-black mb-4">الأوسمة والانجازات</h3>
-            ${(profile.badges||[]).length ? `<div class="flex flex-wrap gap-2">${(profile.badges||[]).map(b => `<span class="px-3 py-2 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 text-xs font-black">${escapeHtml(b.label)}</span>`).join('')}</div>` : '<div class="text-sm text-slate-400 font-black">ستظهر الأوسمة هنا مع تقدمك</div>'}
-          </div>
-          <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
-            <h3 class="text-lg font-black mb-4">آخر المحاولات</h3>
-            <div class="space-y-3">${recent.length ? recent.map(r => `<div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/60"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><div class="font-black text-sm truncate">${escapeHtml(r.examTitle || r.subjectAr || 'امتحان')}</div><div class="text-[11px] text-slate-500 mt-1 truncate">${escapeHtml(r.unitTitleAr || '')}${r.subunitTitleAr ? ' • ' + escapeHtml(r.subunitTitleAr) : ''}</div></div><div class="flex items-center gap-2"><span class="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black ${Number(r.score || 0) >= 50 ? 'text-brand-600' : 'text-rose-500'}">${escapeHtml(r.score)}%</span><button data-action="review-attempt" data-attempt-id="${escapeHtml(r.resultId || r.id)}" class="px-3 py-2 rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-xs font-black">مراجعة</button></div></div></div>`).join('') : '<div class="text-sm text-slate-400 font-black">لا توجد محاولات بعد</div>'}</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="px-4 py-3 rounded-2xl bg-white/10"><div class="text-[11px] font-black text-white/70 mb-1">الستريك</div><div class="text-2xl font-black">🔥 ${profile.currentStreak || 0}</div></div>
+              <div class="px-4 py-3 rounded-2xl bg-white/10"><div class="text-[11px] font-black text-white/70 mb-1">امتحانات كاملة</div><div class="text-2xl font-black">⭐ ${profile.totalPerfectExams || 0}</div></div>
+              <div class="px-4 py-3 rounded-2xl bg-white/10"><div class="text-[11px] font-black text-white/70 mb-1">المتوسط</div><div class="text-2xl font-black">${avgScore}%</div></div>
+              <div class="px-4 py-3 rounded-2xl bg-white/10"><div class="text-[11px] font-black text-white/70 mb-1">الأوسمة</div><div class="text-2xl font-black">${(profile.badges||[]).length}</div></div>
+            </div>
           </div>
         </div>
-        <div class="space-y-5">
-          <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
-            <h3 class="text-lg font-black mb-4">ملخص التقدم</h3>
-            <div class="space-y-3">
-              <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">أفضل مادة</div><div class="font-black text-sm text-brand-600 dark:text-brand-400">${bestSubject ? escapeHtml(bestSubject.subjectAr) + ' • ' + bestSubject.mastery + '%' : 'لا توجد بيانات بعد'}</div></div>
-              <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">أضعف درس / وحدة</div><div class="font-black text-sm text-rose-500">${weakLesson ? escapeHtml(weakLesson.unitTitleAr || weakLesson.subunitTitleAr || 'غير مصنف') + ' • ' + weakLesson.mastery + '%' : 'لا توجد بيانات بعد'}</div></div>
-              <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">هوية الطالب</div><div class="font-black text-sm">${escapeHtml(state.user.id || '')}</div></div>
+        <div class="grid md:grid-cols-2 xl:grid-cols-6 gap-4">
+          <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">عدد المحاولات</div><div class="text-3xl font-black">${results.length}</div></div>
+          <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">الإتقان العام</div><div class="text-3xl font-black text-brand-600 dark:text-brand-400">${state.data.analytics.overallMastery || 0}%</div></div>
+          <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">مراجعة اليوم</div><div class="text-3xl font-black text-amber-500">${state.data.analytics.dueReviewCount || 0}</div></div>
+          <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">اختبارات مخصصة</div><div class="text-3xl font-black text-indigo-500">${customAttempts}</div></div>
+          <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">إجمالي الصحيح</div><div class="text-3xl font-black text-emerald-500">${totalCorrect}</div></div>
+          <div class="bg-white dark:bg-slate-900 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="text-[11px] text-slate-500 font-black mb-1">إجمالي الأسئلة</div><div class="text-3xl font-black">${totalQuestions}</div></div>
+        </div>
+        <div class="grid xl:grid-cols-[1.15fr,0.85fr] gap-5">
+          <div class="space-y-5">
+            <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
+              <h3 class="text-lg font-black mb-4">الأوسمة والانجازات</h3>
+              ${(profile.badges||[]).length ? `<div class="flex flex-wrap gap-2">${(profile.badges||[]).map(b => `<span class="px-3 py-2 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 text-xs font-black">${escapeHtml(b.label)}</span>`).join('')}</div>` : '<div class="text-sm text-slate-400 font-black">ستظهر الأوسمة هنا مع تقدمك</div>'}
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
+              <h3 class="text-lg font-black mb-4">أداء المواد</h3>
+              <div class="space-y-3">${subjectRows.length ? subjectRows.map(r => `<div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="flex items-center justify-between gap-3 mb-2"><div class="font-black text-sm truncate">${escapeHtml(r.subjectAr || r.subjectCode)}</div><div class="font-black text-sm ${Number(r.mastery||0)>=50?'text-brand-600':'text-rose-500'}">${Number(r.mastery||0)}%</div></div><div class="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full ${Number(r.mastery||0)>=50?'bg-brand-500':'bg-rose-500'} rounded-full" style="width:${Math.max(0, Math.min(100, Number(r.mastery||0)))}%"></div></div></div>`).join('') : '<div class="text-sm text-slate-400 font-black">لا توجد بيانات أداء بعد</div>'}</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
+              <h3 class="text-lg font-black mb-4">آخر المحاولات</h3>
+              <div class="space-y-3">${recent.length ? recent.map(r => `<div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/60"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><div class="font-black text-sm truncate">${escapeHtml(r.examTitle || r.subjectAr || 'امتحان')}</div><div class="text-[11px] text-slate-500 mt-1 truncate">${escapeHtml(r.unitTitleAr || '')}${r.subunitTitleAr ? ' • ' + escapeHtml(r.subunitTitleAr) : ''}</div></div><div class="flex items-center gap-2"><span class="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black ${Number(r.score || 0) >= 50 ? 'text-brand-600' : 'text-rose-500'}">${escapeHtml(r.score)}%</span><button data-action="review-attempt" data-attempt-id="${escapeHtml(r.resultId || r.id)}" class="px-3 py-2 rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-xs font-black">مراجعة</button></div></div></div>`).join('') : '<div class="text-sm text-slate-400 font-black">لا توجد محاولات بعد</div>'}</div>
             </div>
           </div>
-          <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
-            <h3 class="text-lg font-black mb-4">خطة ذكية مقترحة</h3>
-            <div class="space-y-3">
-              <div class="p-4 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30"><div class="font-black text-sm text-brand-700 dark:text-brand-300">ابدأ بمراجعة اليوم</div><div class="text-xs text-slate-600 dark:text-slate-300 mt-1">لديك ${(state.data.analytics.dueReviewCount || 0)} سؤال/اختبار مستحق للمراجعة اليوم</div></div>
-              <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30"><div class="font-black text-sm text-amber-700 dark:text-amber-300">ركّز على أضعف نقطة</div><div class="text-xs text-slate-600 dark:text-slate-300 mt-1">${weakLesson ? 'راجع ' + escapeHtml(weakLesson.unitTitleAr || weakLesson.subunitTitleAr || '') + ' ثم أعد اختبار الأخطاء' : 'أكمل المزيد من الاختبارات للحصول على توصية أدق'}</div></div>
-              <button data-action="review-today" class="w-full px-4 py-3 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-black">ابدأ مراجعة اليوم</button>
+          <div class="space-y-5">
+            <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
+              <h3 class="text-lg font-black mb-4">ملخص الطالب</h3>
+              <div class="space-y-3">
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">أفضل مادة</div><div class="font-black text-sm text-brand-600 dark:text-brand-400">${bestSubject ? escapeHtml(bestSubject.subjectAr) + ' • ' + bestSubject.mastery + '%' : 'لا توجد بيانات بعد'}</div></div>
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">أضعف درس / وحدة</div><div class="font-black text-sm text-rose-500">${weakLesson ? escapeHtml(weakLesson.unitTitleAr || weakLesson.subunitTitleAr || 'غير مصنف') + ' • ' + weakLesson.mastery + '%' : 'لا توجد بيانات بعد'}</div></div>
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">الطالب أنجز</div><div class="font-black text-sm">${results.length} امتحانًا حتى الآن ومتوسطه ${avgScore}%</div></div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
+              <h3 class="text-lg font-black mb-4">خطة ذكية مقترحة</h3>
+              <div class="space-y-3">
+                <div class="p-4 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30"><div class="font-black text-sm text-brand-700 dark:text-brand-300">ابدأ بمراجعة اليوم</div><div class="text-xs text-slate-600 dark:text-slate-300 mt-1">لديك ${(state.data.analytics.dueReviewCount || 0)} سؤال/اختبار مستحق للمراجعة اليوم</div></div>
+                <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30"><div class="font-black text-sm text-amber-700 dark:text-amber-300">ركّز على أضعف نقطة</div><div class="text-xs text-slate-600 dark:text-slate-300 mt-1">${weakLesson ? 'راجع ' + escapeHtml(weakLesson.unitTitleAr || weakLesson.subunitTitleAr || '') + ' ثم أعد اختبار الأخطاء' : 'أكمل المزيد من الاختبارات للحصول على توصية أدق'}</div></div>
+                <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30"><div class="font-black text-sm text-indigo-700 dark:text-indigo-300">انجز اختبارًا مخصصًا</div><div class="text-xs text-slate-600 dark:text-slate-300 mt-1">اختباراتك المخصصة المنجزة حتى الآن: ${customAttempts}</div></div>
+                <button data-action="review-today" class="w-full px-4 py-3 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-black">ابدأ مراجعة اليوم</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1161,28 +1179,52 @@ document.addEventListener('change', e => {
     const sc = e.target.value;
     const unitSel = document.getElementById('op-target-unit');
     const lessonSel = document.getElementById('op-target-lesson');
+    const targetPath = document.getElementById('op-target-path');
     if (unitSel) {
       const units = buildSubjectUnits(sc).filter(u => !u.comprehensive);
       unitSel.innerHTML = '<option value="">-- اختر الوحدة الهدف --</option>' + units.map(u => `<option value="${u.unitTitleAr}" data-semester="${u.semester}">${u.semesterTitleAr} • ${u.unitTitleAr}</option>`).join('');
     }
     if (lessonSel) lessonSel.innerHTML = '<option value="">-- اختر الدرس الهدف --</option>';
+    if (targetPath) targetPath.textContent = 'اختر الوحدة والدرس الهدفين';
   }
   if (e.target && e.target.id === 'op-target-unit') {
     const subjectSel = document.getElementById('op-subject-code');
     const lessonSel = document.getElementById('op-target-lesson');
+    const targetPath = document.getElementById('op-target-path');
     if (subjectSel && lessonSel) {
       const semester = Number((e.target.selectedOptions[0] || {}).getAttribute('data-semester') || 0);
       const lessons = getLessonsForUnit(subjectSel.value, [subjectSel.value, semester, e.target.value].join('||'));
       lessonSel.innerHTML = '<option value="">-- اختر الدرس الهدف --</option>' + lessons.map(l => `<option value="${l.lessonTitleAr}">${l.lessonTitleAr}</option>`).join('');
+      if (targetPath) targetPath.textContent = `الوحدة الهدف: ${e.target.value || '-'}${lessons.length ? ' • اختر الدرس الآن' : ''}`;
     }
+  }
+  if (e.target && e.target.id === 'op-target-lesson') {
+    const targetPath = document.getElementById('op-target-path');
+    const unitSel = document.getElementById('op-target-unit');
+    if (targetPath) targetPath.textContent = `سيتم النقل إلى: ${unitSel && unitSel.value ? unitSel.value : '-'} / ${e.target.value || '-'}`;
   }
   if (e.target && e.target.id === 'op-exam-id') {
     const opt = e.target.selectedOptions[0];
     const sc = opt ? opt.getAttribute('data-subject') : '';
     const subjectSel = document.getElementById('op-subject-code');
+    const currentPath = document.getElementById('op-current-path');
+    if (currentPath) currentPath.textContent = opt ? `الموقع الحالي: ${opt.getAttribute('data-unit') || '-'} / ${opt.getAttribute('data-lesson') || 'بدون درس'}` : 'سيظهر هنا مكان الامتحان الحالي';
     if (subjectSel && sc) {
       subjectSel.value = sc;
       subjectSel.dispatchEvent(new Event('change'));
+      const semester = Number(opt ? (opt.getAttribute('data-semester') || 0) : 0);
+      setTimeout(() => {
+        const unitSel = document.getElementById('op-target-unit');
+        const lessonSel = document.getElementById('op-target-lesson');
+        if (unitSel && opt && opt.getAttribute('data-unit')) {
+          unitSel.value = opt.getAttribute('data-unit') || '';
+          unitSel.dispatchEvent(new Event('change'));
+          setTimeout(() => {
+            if (lessonSel) lessonSel.value = opt.getAttribute('data-lesson') || '';
+            if (lessonSel) lessonSel.dispatchEvent(new Event('change'));
+          }, 0);
+        }
+      }, 0);
     }
   }
 });
@@ -1274,19 +1316,26 @@ function renderAdminOperationsTab() {
     <div class="grid xl:grid-cols-[1.1fr,0.9fr] gap-4">
       <div class="space-y-4">
         <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <h3 class="text-lg font-black mb-4">Move / Copy / Reclassify</h3>
-          <div class="grid md:grid-cols-2 gap-3 mb-3">
-            <select id="op-exam-id" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
-              <option value="">اختر امتحاناً</option>
-              ${exams.map(ex => `<option value="${escapeHtml(ex.id)}">${escapeHtml(ex.title)} — ${escapeHtml(ex.unitTitleAr || '')}${ex.subunitTitleAr ? ' / ' + escapeHtml(ex.subunitTitleAr) : ''}</option>`).join('')}
-            </select>
-            <input id="op-title" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="عنوان جديد اختياري">
-            <select id="op-subject-code" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
-              ${CURRICULUM.subjects.map(s => `<option value="${s.code}">${escapeHtml(s.nameAr)}</option>`).join('')}
-            </select>
-            <input id="op-semester" type="number" min="0" max="3" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الفصل">
-            <input id="op-unit" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الوحدة">
-            <input id="op-lesson" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الدرس">
+          <h3 class="text-lg font-black mb-4">نقل / نسخ / إعادة تصنيف الامتحان</h3>
+          <div class="grid lg:grid-cols-2 gap-4 mb-4">
+            <div class="space-y-3">
+              <div class="text-xs font-black text-slate-500">اختر الامتحان والموقع الحالي</div>
+              <select id="op-exam-id" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+                <option value="">اختر امتحاناً</option>
+                ${exams.map(ex => `<option value="${escapeHtml(ex.id)}" data-subject="${escapeHtml(ex.subjectCode || '')}" data-semester="${escapeHtml(ex.semester || '')}" data-unit="${escapeHtml(ex.unitTitleAr || '')}" data-lesson="${escapeHtml(ex.subunitTitleAr || ex.lessonTitleAr || '')}">${escapeHtml(ex.title)} — ${escapeHtml(ex.unitTitleAr || '')}${ex.subunitTitleAr ? ' / ' + escapeHtml(ex.subunitTitleAr) : ''}</option>`).join('')}
+              </select>
+              <div id="op-current-path" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-200 dark:border-slate-800 text-xs font-black text-slate-500">سيظهر هنا مكان الامتحان الحالي</div>
+              <input id="op-title" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="عنوان جديد اختياري">
+            </div>
+            <div class="space-y-3">
+              <div class="text-xs font-black text-slate-500">اختر الموقع الجديد</div>
+              <select id="op-subject-code" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+                ${CURRICULUM.subjects.map(s => `<option value="${s.code}">${escapeHtml(s.nameAr)}</option>`).join('')}
+              </select>
+              <select id="op-target-unit" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black"><option value="">-- اختر الوحدة الهدف --</option></select>
+              <select id="op-target-lesson" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black"><option value="">-- اختر الدرس الهدف --</option></select>
+              <div id="op-target-path" class="p-3 rounded-xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 text-xs font-black text-brand-700 dark:text-brand-300">اختر الوحدة والدرس الهدفين</div>
+            </div>
           </div>
           <div class="flex flex-wrap gap-2">
             <button data-action="admin-run-move" class="px-4 py-3 rounded-xl bg-brand-600 text-white text-xs font-black">نقل الامتحان</button>
@@ -1468,9 +1517,9 @@ document.addEventListener('click', async e => {
         title: document.getElementById('op-title').value.trim(),
         subjectCode: document.getElementById('op-subject-code').value,
         subjectAr: (CURRICULUM.subjects.find(s => s.code === document.getElementById('op-subject-code').value) || {}).nameAr || '',
-        semester: Number(document.getElementById('op-semester').value || 0),
-        unitTitleAr: document.getElementById('op-unit').value.trim(),
-        subunitTitleAr: document.getElementById('op-lesson').value.trim(),
+        semester: Number(((document.getElementById('op-target-unit').selectedOptions[0] || {}).getAttribute('data-semester')) || 0),
+        unitTitleAr: document.getElementById('op-target-unit').value.trim(),
+        subunitTitleAr: document.getElementById('op-target-lesson').value.trim(),
         alsoResults: true
       };
       setLoading(true);
