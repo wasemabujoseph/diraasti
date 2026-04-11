@@ -1083,5 +1083,384 @@ window.addEventListener('beforeunload', () => { if (state.examSession) persistAc
 render();
 if (state.user) refreshData();
 </script>
+
+<script>
+/***** FINAL FRONTEND EXTENSIONS: recommendations, admin operations, bank manager, backup, roles, activity, results fix *****/
+state.data.recommendations = state.data.recommendations || [];
+state.admin.extra = state.admin.extra || { roles: [], activity: [], questionBank: [], duplicates: [], backupJson: '' };
+
+const __oldRefreshData = refreshData;
+refreshData = async function() {
+  await __oldRefreshData();
+  try {
+    if (!state.user) return;
+    const rec = await api('getStudentRecommendations', { userId: state.user.id, subjectCode: state.subjectCode || '' });
+    state.data.recommendations = rec.recommendations || [];
+    render();
+  } catch (e) {}
+};
+
+refreshAdminData = async function() {
+  if (!state.admin.authenticated) return;
+  const boot = await api('getAdminBootstrap', { adminPassword: CONFIG.ADMIN_PASSWORD, subjectCode: state.admin.selectedSubjectCode || '' });
+  state.admin.allResults = boot.results || [];
+  state.admin.insights = { difficulty: boot.difficulty || [], leaderboard: boot.leaderboard || [], edits: boot.edits || [] };
+  state.admin.extra.roles = boot.roles || [];
+  state.admin.extra.activity = boot.activity || [];
+};
+
+const __oldRenderHome = renderHome;
+renderHome = function() {
+  const base = __oldRenderHome();
+  const recs = state.data.recommendations || [];
+  const panel = `
+    <div class="mt-6 bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-soft">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <h3 class="text-lg font-black">توصيات ذكية لك</h3>
+        <button data-action="review-today" class="text-xs font-black text-brand-600 dark:text-brand-400">افتح مراجعة اليوم</button>
+      </div>
+      <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+        ${recs.length ? recs.map(r => `
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+            <div class="text-sm font-black mb-2">${escapeHtml(r.title || 'توصية')}</div>
+            <div class="text-xs leading-7 text-slate-600 dark:text-slate-300">${escapeHtml(r.body || '')}</div>
+          </div>
+        `).join('') : `<div class="md:col-span-2 xl:col-span-3 py-8 text-center text-sm text-slate-400 font-black">لا توجد توصيات إضافية حالياً</div>`}
+      </div>
+    </div>`;
+  return base.replace(/<\/div>\s*$/, panel + '\n</div>');
+};
+
+function renderAdminResultsTab() {
+  const all = state.admin.allResults || [];
+  if (!state.admin.selectedUserId) {
+    const usersMap = {};
+    all.forEach(r => {
+      const uid = r.userId || 'unknown';
+      if (!usersMap[uid]) usersMap[uid] = { userId: uid, userName: r.userName || uid, count: 0, avg: 0, total: 0 };
+      usersMap[uid].count += 1;
+      usersMap[uid].total += Number(r.score || 0);
+      usersMap[uid].avg = Math.round(usersMap[uid].total / usersMap[uid].count);
+    });
+    const users = Object.values(usersMap).sort((a,b) => b.count - a.count || b.avg - a.avg);
+    return `<div class="space-y-4"><div class="flex items-center justify-between gap-3"><h3 class="text-lg font-black">نتائج الطلاب</h3><div class="text-xs font-black text-slate-500">${users.length} طالب</div></div><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">${users.map(u => `<button data-action="admin-select-user" data-uid="${escapeHtml(u.userId)}" class="text-right p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-brand-400 transition-colors"><div class="font-black text-sm truncate">${escapeHtml(u.userName)}</div><div class="text-[11px] text-slate-500 mt-1">محاولات ${u.count} • متوسط ${u.avg}%</div></button>`).join('') || '<div class="col-span-full py-10 text-center text-sm text-slate-400 font-black">لا توجد نتائج</div>'}</div></div>`;
+  }
+  const userResults = all.filter(r => String(r.userId) === String(state.admin.selectedUserId)).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  if (!state.admin.selectedSubjectCode) {
+    const subjectMap = {};
+    userResults.forEach(r => {
+      const sc = r.subjectCode || 'unknown';
+      if (!subjectMap[sc]) subjectMap[sc] = { subjectCode: sc, subjectAr: r.subjectAr || sc, count: 0, total: 0 };
+      subjectMap[sc].count += 1;
+      subjectMap[sc].total += Number(r.score || 0);
+    });
+    const rows = Object.values(subjectMap).map(x => ({ subjectCode: x.subjectCode, subjectAr: x.subjectAr, count: x.count, avg: Math.round(x.total / x.count) }));
+    return `<div class="space-y-4"><div class="flex items-center gap-2"><button data-action="admin-select-user" data-uid="" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black">عودة</button><h3 class="text-lg font-black truncate">${escapeHtml(userResults[0] ? userResults[0].userName : '')}</h3></div><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">${rows.map(r => `<button data-action="admin-select-subject" data-sc="${escapeHtml(r.subjectCode)}" class="text-right p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-brand-400 transition-colors"><div class="font-black text-sm truncate">${escapeHtml(r.subjectAr)}</div><div class="text-[11px] text-slate-500 mt-1">محاولات ${r.count} • متوسط ${r.avg}%</div></button>`).join('')}</div></div>`;
+  }
+  const subjectResults = userResults.filter(r => String(r.subjectCode) === String(state.admin.selectedSubjectCode));
+  return `<div class="space-y-4"><div class="flex items-center gap-2"><button data-action="admin-select-subject" data-sc="" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black">عودة</button><h3 class="text-lg font-black truncate">محاولات ${escapeHtml(subjectResults[0] ? subjectResults[0].subjectAr : '')}</h3></div><div class="space-y-3">${subjectResults.map(r => `<div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950"><div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3"><div class="min-w-0"><div class="font-black text-sm truncate">${escapeHtml(r.examTitle || 'امتحان')}</div><div class="text-[11px] text-slate-500 mt-1 truncate">${escapeHtml(r.unitTitleAr || '')}${r.subunitTitleAr ? ' • ' + escapeHtml(r.subunitTitleAr) : ''} • ${escapeHtml(formatDate(r.createdAt))}</div></div><div class="flex flex-wrap gap-2"><span class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-black ${Number(r.score || 0) >= 50 ? 'text-brand-600' : 'text-rose-500'}">${escapeHtml(r.score)}%</span><button data-action="admin-view-attempt" data-attempt-id="${escapeHtml(r.resultId || r.id)}" class="px-4 py-2 rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-xs font-black">عرض النتيجة</button></div></div></div>`).join('') || '<div class="py-10 text-center text-sm text-slate-400 font-black">لا توجد محاولات</div>'}</div></div>`;
+}
+
+function renderAdminOperationsTab() {
+  const exams = state.data.exams || [];
+  return `
+    <div class="grid xl:grid-cols-[1.1fr,0.9fr] gap-4">
+      <div class="space-y-4">
+        <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <h3 class="text-lg font-black mb-4">Move / Copy / Reclassify</h3>
+          <div class="grid md:grid-cols-2 gap-3 mb-3">
+            <select id="op-exam-id" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+              <option value="">اختر امتحاناً</option>
+              ${exams.map(ex => `<option value="${escapeHtml(ex.id)}">${escapeHtml(ex.title)} — ${escapeHtml(ex.unitTitleAr || '')}${ex.subunitTitleAr ? ' / ' + escapeHtml(ex.subunitTitleAr) : ''}</option>`).join('')}
+            </select>
+            <input id="op-title" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="عنوان جديد اختياري">
+            <select id="op-subject-code" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+              ${CURRICULUM.subjects.map(s => `<option value="${s.code}">${escapeHtml(s.nameAr)}</option>`).join('')}
+            </select>
+            <input id="op-semester" type="number" min="0" max="3" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الفصل">
+            <input id="op-unit" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الوحدة">
+            <input id="op-lesson" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الدرس">
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button data-action="admin-run-move" class="px-4 py-3 rounded-xl bg-brand-600 text-white text-xs font-black">نقل الامتحان</button>
+            <button data-action="admin-run-copy" class="px-4 py-3 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-black">نسخ الامتحان</button>
+            <button data-action="admin-validate-selected" class="px-4 py-3 rounded-xl bg-amber-500 text-slate-900 text-xs font-black">فحص الامتحان</button>
+          </div>
+        </div>
+        <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <h3 class="text-lg font-black mb-4">Merge / Split</h3>
+          <textarea id="op-merge-ids" rows="4" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-bold mb-3" placeholder="ضع examId لكل امتحان في سطر مستقل للدمج"></textarea>
+          <div class="grid md:grid-cols-2 gap-3 mb-3">
+            <input id="op-merge-title" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="عنوان الامتحان المدموج">
+            <input id="op-split-size" type="number" min="1" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="عدد الأسئلة في كل جزء">
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button data-action="admin-run-merge" class="px-4 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black">دمج الامتحانات</button>
+            <button data-action="admin-run-split" class="px-4 py-3 rounded-xl bg-purple-600 text-white text-xs font-black">تقسيم الامتحان المحدد</button>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <h3 class="text-lg font-black mb-4">كشف التكرار الذكي</h3>
+          <div class="flex gap-2 mb-3">
+            <select id="dup-subject" class="flex-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+              <option value="">كل المواد</option>
+              ${CURRICULUM.subjects.map(s => `<option value="${s.code}">${escapeHtml(s.nameAr)}</option>`).join('')}
+            </select>
+            <button data-action="load-duplicates" class="px-4 py-3 rounded-xl bg-rose-500 text-white text-xs font-black">فحص التكرار</button>
+          </div>
+          <div class="space-y-3 max-h-[55vh] overflow-y-auto scroll-thin pr-1">
+            ${(state.admin.extra.duplicates || []).slice(0, 40).map(item => `<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800"><div class="font-black text-sm mb-1">${item.count} أسئلة متشابهة</div><div class="text-[11px] text-slate-500">${escapeHtml((item.rows && item.rows[0] && item.rows[0].questionText) || '')}</div></div>`).join('') || '<div class="py-8 text-center text-sm text-slate-400 font-black">اضغط فحص التكرار لعرض النتائج</div>'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAdminQuestionBankTab() {
+  const rows = state.admin.extra.questionBank || [];
+  return `
+    <div class="space-y-4">
+      <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div class="grid md:grid-cols-[1fr,1fr,1fr,1fr,auto] gap-3">
+          <input id="bank-search" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="ابحث في السؤال أو الخيارات">
+          <select id="bank-subject" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+            <option value="">كل المواد</option>
+            ${CURRICULUM.subjects.map(s => `<option value="${s.code}">${escapeHtml(s.nameAr)}</option>`).join('')}
+          </select>
+          <input id="bank-unit" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الوحدة">
+          <input id="bank-lesson" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" placeholder="الدرس">
+          <button data-action="bank-search-run" class="px-4 py-3 rounded-xl bg-brand-600 text-white text-xs font-black">بحث</button>
+        </div>
+      </div>
+      <div class="space-y-3">
+        ${rows.length ? rows.map(q => `<div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950"><div class="flex flex-col xl:flex-row xl:items-start justify-between gap-3"><div class="min-w-0"><div class="text-[10px] font-black text-slate-500 mb-1">${escapeHtml(q.subjectAr || '')} • ${escapeHtml(q.unitTitleAr || '')}${q.subunitTitleAr ? ' • ' + escapeHtml(q.subunitTitleAr) : ''}</div><div class="font-black text-sm leading-7 mb-3">${escapeHtml(q.text || '')}</div><div class="grid md:grid-cols-2 gap-2">${(q.options || []).map((opt, idx) => `<div class="p-2 rounded-xl ${Number(q.correctIndex)===idx ? 'bg-brand-50 dark:bg-brand-900/20 border-brand-200 dark:border-brand-900/30' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'} border text-xs font-bold">${String.fromCharCode(65+idx)}. ${escapeHtml(opt)}</div>`).join('')}</div><div class="grid md:grid-cols-2 gap-2 mt-3"><input data-meta="tags" data-exam-id="${escapeHtml(q.examId)}" data-question-id="${escapeHtml(q.questionId)}" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black" value="${escapeHtml((q.tags || []).join(', '))}" placeholder="وسوم مثل مهم, وزاري, صعب"><textarea data-meta="explanation" data-exam-id="${escapeHtml(q.examId)}" data-question-id="${escapeHtml(q.questionId)}" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black min-h-[84px]" placeholder="شرح الإجابة">${escapeHtml(q.explanation || '')}</textarea></div></div><div class="shrink-0 xl:w-44"><div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs font-black mb-2">محاولات ${q.attempts || 0}</div><div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 text-xs font-black mb-2">نسبة الخطأ ${q.wrongRate || 0}%</div><button data-action="save-question-meta" data-exam-id="${escapeHtml(q.examId)}" data-question-id="${escapeHtml(q.questionId)}" class="w-full px-4 py-3 rounded-xl bg-brand-600 text-white text-xs font-black">حفظ الوسوم والشرح</button></div></div></div>`).join('') : '<div class="py-10 text-center text-sm text-slate-400 font-black bg-white dark:bg-slate-950 rounded-[1.5rem] border border-slate-200 dark:border-slate-800">ابحث لعرض بنك الأسئلة</div>'}
+      </div>
+    </div>`;
+}
+
+function renderAdminBackupTab() {
+  return `
+    <div class="grid xl:grid-cols-[0.8fr,1.2fr] gap-4">
+      <div class="space-y-4">
+        <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <h3 class="text-lg font-black mb-4">نسخ احتياطي</h3>
+          <div class="space-y-3">
+            <button data-action="export-backup" class="w-full px-4 py-3 rounded-xl bg-brand-600 text-white text-sm font-black">تصدير نسخة احتياطية JSON</button>
+            <input id="backup-file" type="file" accept=".json,application/json" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-black">
+            <button data-action="restore-backup" class="w-full px-4 py-3 rounded-xl bg-rose-500 text-white text-sm font-black">استعادة النسخة من الملف</button>
+          </div>
+        </div>
+        <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <h3 class="text-lg font-black mb-4">الأدوار والصلاحيات</h3>
+          <div class="space-y-3 max-h-[50vh] overflow-y-auto scroll-thin pr-1">
+            ${(state.admin.extra.roles || []).map(role => `<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800"><div class="font-black text-sm truncate">${escapeHtml(role.userName || role.userId)}</div><div class="text-[11px] text-slate-500 mb-2">${escapeHtml(role.userId || '')}</div><div class="flex gap-2"><select data-role-user-id="${escapeHtml(role.userId)}" class="flex-1 p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs font-black"><option value="student" ${role.role==='student'?'selected':''}>Student</option><option value="reviewer" ${role.role==='reviewer'?'selected':''}>Reviewer</option><option value="teacher_admin" ${role.role==='teacher_admin'?'selected':''}>Teacher/Admin</option><option value="super_admin" ${role.role==='super_admin'?'selected':''}>Super Admin</option></select><button data-action="set-user-role" data-user-id="${escapeHtml(role.userId)}" data-user-name="${escapeHtml(role.userName || '')}" class="px-3 py-2 rounded-lg bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-black">حفظ</button></div></div>`).join('') || '<div class="py-8 text-center text-sm text-slate-400 font-black">لا توجد أدوار مخصصة بعد</div>'}
+          </div>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <div class="flex items-center justify-between gap-3 mb-4"><h3 class="text-lg font-black">سجل النشاط الكامل</h3><button data-action="refresh-activity" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black">تحديث</button></div>
+          <div class="space-y-3 max-h-[70vh] overflow-y-auto scroll-thin pr-1">
+            ${(state.admin.extra.activity || []).map(item => `<div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800"><div class="flex flex-wrap gap-2 mb-2"><span class="px-2 py-1 rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-[10px] font-black">${escapeHtml(item.actionType || '')}</span><span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black">${escapeHtml(item.entityType || '')}</span></div><div class="font-black text-sm truncate">${escapeHtml(item.entityId || '')}</div><div class="text-[11px] text-slate-500 mt-1">${escapeHtml(formatDate(item.createdAt))}</div></div>`).join('') || '<div class="py-10 text-center text-sm text-slate-400 font-black">لا توجد أنشطة مسجلة</div>'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+renderAdminRolesTab = function() { return renderAdminBackupTab(); };
+renderAdminActivityTab = function() { return renderAdminBackupTab(); };
+
+renderAdminModal = function() {
+  if (!state.admin.open) return '';
+  if (!state.admin.authenticated) return `<div class="fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-3 animate-enter"><div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl text-center border border-slate-200 dark:border-slate-800"><h3 class="text-2xl font-black mb-4">دخول الإدارة</h3><input type="password" id="admin-password-input" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl mb-5 text-center font-black tracking-[0.25em] outline-none" placeholder="••••••••"><div class="grid grid-cols-2 gap-3"><button data-action="close-admin" class="py-3 bg-slate-100 dark:bg-slate-800 rounded-xl font-black text-sm">إلغاء</button><button data-action="admin-login-submit" class="py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-sm">تأكيد</button></div></div></div>`;
+  let content = '';
+  if (state.admin.tab === 'upload') content = renderAdminUploadTab();
+  if (state.admin.tab === 'manage') content = renderAdminManageTab();
+  if (state.admin.tab === 'results') content = renderAdminResultsTab();
+  if (state.admin.tab === 'analytics') content = renderAdminAnalyticsTab();
+  if (state.admin.tab === 'edits') content = renderAdminEditsTab();
+  if (state.admin.tab === 'operations') content = renderAdminOperationsTab();
+  if (state.admin.tab === 'bank') content = renderAdminQuestionBankTab();
+  if (state.admin.tab === 'backup') content = renderAdminBackupTab();
+  const tabs = [['upload','رفع'],['manage','الإدارة'],['results','النتائج'],['analytics','الإحصاءات'],['edits','التعديلات'],['operations','العمليات'],['bank','بنك الأسئلة'],['backup','النسخ/الصلاحيات']];
+  return `<div class="fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-enter"><div class="bg-white dark:bg-slate-900 w-full max-w-[96vw] h-[95vh] sm:h-[92vh] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col"><div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex items-center justify-between gap-3"><div class="flex gap-1.5 overflow-x-auto scroll-thin">${tabs.map(tab => `<button data-action="admin-tab" data-tab="${tab[0]}" class="px-3 py-2 rounded-xl text-xs font-black whitespace-nowrap ${state.admin.tab === tab[0] ? 'bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400' : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700'}">${escapeHtml(tab[1])}</button>`).join('')}</div><button data-action="close-admin" class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 font-black text-sm shrink-0">✕</button></div><div class="flex-1 overflow-y-auto p-4 sm:p-6 scroll-thin">${content}</div></div></div>`;
+};
+
+renderApp = function() {
+  if (!state.user) return renderLogin();
+  let main = '';
+  if (state.examSession) main = renderExamScreen();
+  else if (state.reviewAttempt) main = renderReviewScreen();
+  else if (state.subjectCode) main = renderSubjectScreen(state.subjectCode);
+  else main = renderHome();
+  return `<main class="w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-6 min-h-screen pb-24">${main}</main>${renderPrestartModal()}${renderAdminModal()}${renderEditorModal()}${renderEditDetailsModal()}${renderToast()}${renderLoading()}`;
+};
+
+async function adminSearchQuestionBank() {
+  const res = await api('listQuestionBankManager', {
+    adminPassword: CONFIG.ADMIN_PASSWORD,
+    subjectCode: document.getElementById('bank-subject') ? document.getElementById('bank-subject').value : '',
+    unitTitleAr: document.getElementById('bank-unit') ? document.getElementById('bank-unit').value.trim() : '',
+    subunitTitleAr: document.getElementById('bank-lesson') ? document.getElementById('bank-lesson').value.trim() : '',
+    search: document.getElementById('bank-search') ? document.getElementById('bank-search').value.trim() : '',
+    limit: 120
+  });
+  state.admin.extra.questionBank = res.questions || [];
+  render();
+}
+
+function downloadJsonFile(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 300);
+}
+
+document.addEventListener('click', async e => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.getAttribute('data-action');
+  try {
+    if (action === 'open-edit-details') {
+      const id = target.getAttribute('data-edit-id');
+      const item = (state.admin.insights.edits || []).find(x => String(x.editId || '') === String(id || ''));
+      if (item) { state.editDetails.open = true; state.editDetails.item = item; render(); }
+      return;
+    }
+    if (action === 'close-edit-details') { state.editDetails.open = false; state.editDetails.item = null; render(); return; }
+    if (action === 'bank-search-run') { setLoading(true); await adminSearchQuestionBank(); state.loading = false; render(); return; }
+    if (action === 'save-question-meta') {
+      const examId = target.getAttribute('data-exam-id');
+      const questionId = target.getAttribute('data-question-id');
+      const tagsEl = document.querySelector(`[data-meta="tags"][data-exam-id="${CSS.escape(examId)}"][data-question-id="${CSS.escape(questionId)}"]`);
+      const expEl = document.querySelector(`[data-meta="explanation"][data-exam-id="${CSS.escape(examId)}"][data-question-id="${CSS.escape(questionId)}"]`);
+      setLoading(true);
+      await api('saveQuestionMeta', { adminPassword: CONFIG.ADMIN_PASSWORD, examId, questionId, tags: (tagsEl ? tagsEl.value : '').split(',').map(x => x.trim()).filter(Boolean), explanation: expEl ? expEl.value : '' });
+      showToast('تم حفظ الوسوم والشرح');
+      state.loading = false; render();
+      return;
+    }
+    if (action === 'load-duplicates') {
+      setLoading(true);
+      const dup = await api('detectDuplicateQuestions', { adminPassword: CONFIG.ADMIN_PASSWORD, subjectCode: document.getElementById('dup-subject') ? document.getElementById('dup-subject').value : '' });
+      state.admin.extra.duplicates = dup.duplicates || [];
+      state.loading = false; render();
+      return;
+    }
+    if (action === 'admin-run-move') {
+      const payload = {
+        adminPassword: CONFIG.ADMIN_PASSWORD,
+        examId: document.getElementById('op-exam-id').value,
+        title: document.getElementById('op-title').value.trim(),
+        subjectCode: document.getElementById('op-subject-code').value,
+        subjectAr: (CURRICULUM.subjects.find(s => s.code === document.getElementById('op-subject-code').value) || {}).nameAr || '',
+        semester: Number(document.getElementById('op-semester').value || 0),
+        unitTitleAr: document.getElementById('op-unit').value.trim(),
+        subunitTitleAr: document.getElementById('op-lesson').value.trim(),
+        alsoResults: true
+      };
+      setLoading(true);
+      await api('moveExam', payload);
+      await refreshData(); await refreshAdminData();
+      showToast('تم نقل الامتحان وتحديث النتائج');
+      state.loading = false; render();
+      return;
+    }
+    if (action === 'admin-run-copy') {
+      const payload = {
+        adminPassword: CONFIG.ADMIN_PASSWORD,
+        examId: document.getElementById('op-exam-id').value,
+        title: document.getElementById('op-title').value.trim(),
+        subjectCode: document.getElementById('op-subject-code').value,
+        subjectAr: (CURRICULUM.subjects.find(s => s.code === document.getElementById('op-subject-code').value) || {}).nameAr || '',
+        semester: Number(document.getElementById('op-semester').value || 0),
+        unitTitleAr: document.getElementById('op-unit').value.trim(),
+        subunitTitleAr: document.getElementById('op-lesson').value.trim()
+      };
+      setLoading(true);
+      await api('copyExam', payload);
+      await refreshData(); await refreshAdminData();
+      showToast('تم نسخ الامتحان');
+      state.loading = false; render();
+      return;
+    }
+    if (action === 'admin-run-merge') {
+      const ids = (document.getElementById('op-merge-ids').value || '').split(/\n|,/).map(x => x.trim()).filter(Boolean);
+      setLoading(true);
+      await api('mergeExams', { adminPassword: CONFIG.ADMIN_PASSWORD, examIds: ids, title: document.getElementById('op-merge-title').value.trim() || 'امتحان مدموج' });
+      await refreshData(); await refreshAdminData();
+      showToast('تم دمج الامتحانات');
+      state.loading = false; render();
+      return;
+    }
+    if (action === 'admin-run-split') {
+      setLoading(true);
+      await api('splitExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examId: document.getElementById('op-exam-id').value, chunkSize: Number(document.getElementById('op-split-size').value || 20) });
+      await refreshData(); await refreshAdminData();
+      showToast('تم تقسيم الامتحان');
+      state.loading = false; render();
+      return;
+    }
+    if (action === 'admin-validate-selected') {
+      const examId = document.getElementById('op-exam-id').value;
+      if (!examId) return showToast('اختر امتحاناً أولاً', 'error');
+      setLoading(true);
+      const ex = await api('getExamBundle', { examId });
+      const res = await api('validateExamPayload', { adminPassword: CONFIG.ADMIN_PASSWORD, examJson: ex.exam });
+      state.loading = false; render();
+      const warnings = (res.summary.warnings || []).slice(0, 10).join('\n• ');
+      alert(`فحص الامتحان\n\nالعنوان: ${res.summary.title}\nعدد الأسئلة: ${res.summary.questionCount}\n\n${warnings ? 'ملاحظات:\n• ' + warnings : 'لا توجد ملاحظات أساسية'}`);
+      return;
+    }
+    if (action === 'export-backup') {
+      setLoading(true);
+      const res = await api('exportDatabaseBackup', { adminPassword: CONFIG.ADMIN_PASSWORD });
+      downloadJsonFile('Derasti_backup_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json', res.backup);
+      state.loading = false; render();
+      showToast('تم تصدير النسخة الاحتياطية');
+      return;
+    }
+    if (action === 'restore-backup') {
+      const file = document.getElementById('backup-file').files[0];
+      if (!file) return showToast('اختر ملف نسخة احتياطية أولاً', 'error');
+      const txt = await file.text();
+      if (!confirm('سيتم استبدال محتوى الشيتات بالنسخة الاحتياطية. هل أنت متأكد؟')) return;
+      setLoading(true);
+      await api('restoreDatabaseBackup', { adminPassword: CONFIG.ADMIN_PASSWORD, backupJson: txt });
+      await refreshData(); await refreshAdminData();
+      state.loading = false; render();
+      showToast('تمت استعادة النسخة الاحتياطية');
+      return;
+    }
+    if (action === 'set-user-role') {
+      const userId = target.getAttribute('data-user-id');
+      const userName = target.getAttribute('data-user-name');
+      const sel = document.querySelector(`[data-role-user-id="${CSS.escape(userId)}"]`);
+      setLoading(true);
+      await api('setUserRole', { adminPassword: CONFIG.ADMIN_PASSWORD, userId, userName, role: sel ? sel.value : 'student' });
+      await refreshAdminData();
+      state.loading = false; render();
+      showToast('تم حفظ الدور');
+      return;
+    }
+    if (action === 'refresh-activity') {
+      setLoading(true);
+      const res = await api('getActivityLog', { adminPassword: CONFIG.ADMIN_PASSWORD, limit: 50 });
+      state.admin.extra.activity = res.activity || [];
+      state.loading = false; render();
+      return;
+    }
+  } catch (err) {
+    state.loading = false; render(); showToast(err.message || String(err), 'error');
+  }
+});
+</script>
+
 </body>
 </html>
