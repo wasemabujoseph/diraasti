@@ -87,7 +87,7 @@ const state = {
     analytics: { profile: { badges: [] }, subjectMastery: [], unitMastery: [], weaknessRows: [], timeStats: { byUnit: [] }, dueReviewCount: 0, overallMastery: 0 },
     questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, byLessonKey: {}, subjects: [] },
     leaderboard: [],
-    syllabus: { subjects: SUBJECT_BLUEPRINTS, lessonBlueprints: {} }
+    syllabus: { subjects: {}, lessonBlueprints: {} }
   },
   subjectCode: null, subjectTab: 'units', unitKey: null, lessonKey: null,
   prestartExam: null, examSession: null, reviewAttempt: null, timerId: null,
@@ -135,6 +135,47 @@ function buildSubjectUnits(sc) {
 }
 function getExamsForSubject(sc) { return (state.data.exams || []).filter(e => e.subjectCode === sc); }
 function getExamsForUnit(sc, uk) { const info = parseUnitKey(uk); return getExamsForSubject(sc).filter(e => Number(e.semester || 0) === Number(info.semester || 0) && String(e.unitTitleAr || '').trim() === String(info.unitTitleAr || '').trim()); }
+
+function makeLessonKey(sc, sem, unitTitleAr, lessonTitleAr) { return [sc, Number(sem || 0), unitTitleAr || '', lessonTitleAr || ''].join('||'); }
+function parseLessonKey(lk) { const p = String(lk || '').split('||'); return { subjectCode: p[0] || '', semester: Number(p[1] || 0), unitTitleAr: p[2] || '', lessonTitleAr: p.slice(3).join('||') || '' }; }
+function getLessonBlueprintsForUnit(sc, sem, unitTitleAr) {
+  const bySubject = (((state.data || {}).syllabus || {}).lessonBlueprints || {})[sc] || {};
+  const rows = bySubject[`${Number(sem || 0)}|${unitTitleAr || ''}`] || [];
+  return rows.map((row, i) => ({ titleAr: row.titleAr || row.lessonTitleAr || `درس ${i + 1}`, weight: Number(row.weight || 0) }));
+}
+function getLessonsForUnit(sc, uk) {
+  const info = parseUnitKey(uk);
+  const exams = getExamsForUnit(sc, uk);
+  const questionMap = (state.data.questionBankSummary && state.data.questionBankSummary.byLessonKey) || {};
+  const names = [];
+  const seen = {};
+  getLessonBlueprintsForUnit(sc, info.semester, info.unitTitleAr).forEach(row => {
+    const name = String(row.titleAr || '').trim();
+    if (name && !seen[name]) { seen[name] = true; names.push(name); }
+  });
+  exams.forEach(ex => {
+    const name = String(ex.lessonTitleAr || ex.subunitTitleAr || '').trim();
+    if (name && !seen[name]) { seen[name] = true; names.push(name); }
+  });
+  return names.map((name, i) => {
+    const key = makeLessonKey(sc, info.semester, info.unitTitleAr, name);
+    return {
+      key,
+      subjectCode: sc,
+      semester: info.semester,
+      unitTitleAr: info.unitTitleAr,
+      lessonTitleAr: name,
+      examCount: exams.filter(ex => String(ex.lessonTitleAr || ex.subunitTitleAr || '').trim() === name).length,
+      questionCount: Number(questionMap[key] || 0),
+      weight: (getLessonBlueprintsForUnit(sc, info.semester, info.unitTitleAr).find(x => String(x.titleAr || '').trim() === name) || {}).weight || 0,
+      order: i
+    };
+  });
+}
+function getExamsForLesson(sc, uk, lk) {
+  const info = parseLessonKey(lk);
+  return getExamsForUnit(sc, uk).filter(ex => String(ex.lessonTitleAr || ex.subunitTitleAr || '').trim() === String(info.lessonTitleAr || '').trim());
+}
 function getQuestionCountForUnit(uk) { return Number((state.data.questionBankSummary.byUnitKey || {})[uk] || 0); }
 function getAttemptsForSubject(sc) { return (state.data.results || []).filter(r => r.subjectCode === sc); }
 function getSubjectAnalytics(sc) { return (state.data.analytics.subjectMastery || []).find(i => i.subjectCode === sc) || null; }
@@ -169,7 +210,7 @@ async function refreshData() {
     const boot = await api('getUserBootstrap', { userId: state.user.id });
     state.data.exams = boot.catalog && boot.catalog.exams ? boot.catalog.exams : [];
     state.data.questionBankSummary = boot.catalog && boot.catalog.questionBank ? boot.catalog.questionBank : { totalQuestions: 0, bySubject: {}, byUnitKey: {}, byLessonKey: {}, subjects: [] };
-    state.data.syllabus = boot.catalog && boot.catalog.syllabus ? boot.catalog.syllabus : { subjects: SUBJECT_BLUEPRINTS, lessonBlueprints: {} };
+    state.data.syllabus = boot.catalog && boot.catalog.syllabus ? boot.catalog.syllabus : { subjects: {}, lessonBlueprints: {} };
     state.data.results = boot.results || [];
     state.data.analytics = boot.analytics || { profile: { badges: [] }, timeStats: { byUnit: [] }, subjectMastery: [], unitMastery: [], weaknessRows: [], dueReviewCount: 0 };
     state.data.leaderboard = boot.leaderboard || [];
