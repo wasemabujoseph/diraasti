@@ -53,7 +53,7 @@ const CONFIG = {
   APP_SUBTITLE: 'منصة التدريب والتقييم الذكية، مع مراجعة يومية، تحفيز، وتحليل أداء متقدم',
   API_BASE: 'https://script.google.com/macros/s/AKfycbxbRTV0pYSXJDRQe2oTBzhVaNYkW9P-ILbB2FruLQp1Tgf7eJOM7OByJa6ioH7NK9Zalw/exec',
   ADMIN_PASSWORD: 'admin',
-  STORAGE_KEYS: { user: 'dirasti_user_v10', darkMode: 'dirasti_dark_v10', activeSession: 'dirasti_active_session_v10' }
+  STORAGE_KEYS: { user: 'dirasti_user_v11', darkMode: 'dirasti_dark_v11', activeSession: 'dirasti_active_session_v11' }
 };
 
 const CURRICULUM = {
@@ -80,19 +80,20 @@ function getTheme(index) { return THEMES[index % THEMES.length]; }
 const state = {
   user: loadLocal(CONFIG.STORAGE_KEYS.user, null),
   darkMode: loadLocal(CONFIG.STORAGE_KEYS.darkMode, false),
-  loading: false,
-  toast: null,
-  data: { exams: [], results: [], analytics: { profile: { badges: [] }, subjectMastery: [], unitMastery: [], weaknessRows: [], timeStats: { byUnit: [] }, dueReviewCount: 0, overallMastery: 0 }, questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] }, leaderboard: [] },
-  subjectCode: null,
-  subjectTab: 'units',
-  unitKey: null,
-  prestartExam: null,
-  examSession: null,
-  reviewAttempt: null,
-  timerId: null,
-  builder: { totalQuestions: 100, mode: 'weighted', selectedUnitKeys: [], explicitCounts: {}, selectedExamIds: [] },
-  admin: { open: false, authenticated: false, tab: 'upload', allResults: [], insights: { difficulty: [], leaderboard: [], edits: [] }, selectedUserId: null, selectedSubjectCode: null, form: { subjectCode: '', unitKey: '', editingExamId: null, pdfDataUrl: null, pdfFileName: '', jsonText: '' } },
-  editor: { open: false, questions: [], index: 0, draft: null, password: '', attemptId: '', editorRole: 'student' },
+  loading: false, toast: null,
+  data: {
+    exams: [],
+    results: [],
+    analytics: { profile: { badges: [] }, subjectMastery: [], unitMastery: [], weaknessRows: [], timeStats: { byUnit: [] }, dueReviewCount: 0, overallMastery: 0 },
+    questionBankSummary: { totalQuestions: 0, bySubject: {}, byUnitKey: {}, byLessonKey: {}, subjects: [] },
+    leaderboard: [],
+    syllabus: buildDefaultSyllabus()
+  },
+  subjectCode: null, subjectTab: 'units', unitKey: null, lessonKey: null,
+  prestartExam: null, examSession: null, reviewAttempt: null, timerId: null,
+  builder: { totalQuestions: 100, mode: 'unit', selectedUnitKeys: [], selectedLessonKeys: [], explicitCounts: {}, selectedExamIds: [] },
+  admin: { open: false, authenticated: false, tab: 'upload', allResults: [], insights: { difficulty: [], leaderboard: [], edits: [] }, selectedUserId: null, selectedSubjectCode: null, form: { subjectCode: '', unitKey: '', lessonKey: '', editingExamId: null, pdfDataUrl: null, pdfFileName: '', jsonText: '' } },
+  editor: { open: false, questions: [], drafts: [], index: 0, draft: null, password: '', attemptId: '', editorRole: 'student', viewMode: 'single' },
   resumeDraft: loadLocal(CONFIG.STORAGE_KEYS.activeSession, null)
 };
 
@@ -124,6 +125,40 @@ function getQuestionPdfSource(q, exam) { return q.sourcePdfBase64 || (exam && ex
 function getCurrentExamQuestion() { if (!state.examSession) return null; return (state.examSession.exam.questions || [])[state.examSession.currentIndex || 0] || null; }
 function getCurrentReviewQuestion() { if (!state.reviewAttempt) return null; return (state.reviewAttempt.examSnapshot.questions || [])[state.reviewAttempt.currentIndex || 0] || null; }
 
+
+function buildDefaultSyllabus() {
+  const subjects = {};
+  (CURRICULUM.subjects || []).forEach(s => { subjects[s.code] = { nameAr: s.nameAr, weights: s.weights || {} }; });
+  return { subjects, lessonBlueprints: {} };
+}
+function makeLessonKey(subjectCode, semester, unitTitleAr, lessonTitleAr) { return [subjectCode || '', Number(semester || 0), unitTitleAr || '', lessonTitleAr || ''].join('||'); }
+function parseLessonKey(key) { const p = String(key || '').split('||'); return { subjectCode: p[0] || '', semester: Number(p[1] || 0), unitTitleAr: p[2] || '', lessonTitleAr: p.slice(3).join('||') || '' }; }
+function getLessonBlueprintsForUnit(sc, semester, unitTitleAr) {
+  const bp = state.data && state.data.syllabus && state.data.syllabus.lessonBlueprints ? state.data.syllabus.lessonBlueprints : {};
+  return (bp[sc] && bp[sc][`${Number(semester || 0)}|${unitTitleAr || ''}`]) ? bp[sc][`${Number(semester || 0)}|${unitTitleAr || ''}`] : [];
+}
+function getLessonsForUnit(sc, unitKey) {
+  const info = parseUnitKey(unitKey);
+  const exams = getExamsForUnit(sc, unitKey);
+  const map = {};
+  exams.forEach(ex => {
+    const title = String(ex.lessonTitleAr || ex.subunitTitleAr || 'غير مصنف');
+    const key = makeLessonKey(sc, info.semester, info.unitTitleAr, title);
+    if (!map[key]) map[key] = { key, subjectCode: sc, semester: info.semester, unitTitleAr: info.unitTitleAr, lessonTitleAr: title, examCount: 0, questionCount: 0 };
+    map[key].examCount += 1;
+    map[key].questionCount += Number(ex.questionCount || 0);
+  });
+  getLessonBlueprintsForUnit(sc, info.semester, info.unitTitleAr).forEach(lesson => {
+    const title = String(lesson.titleAr || lesson.lessonTitleAr || 'غير مصنف');
+    const key = makeLessonKey(sc, info.semester, info.unitTitleAr, title);
+    if (!map[key]) map[key] = { key, subjectCode: sc, semester: info.semester, unitTitleAr: info.unitTitleAr, lessonTitleAr: title, examCount: 0, questionCount: 0, weight: lesson.weight || 0 };
+  });
+  return Object.values(map).sort((a, b) => String(a.lessonTitleAr).localeCompare(String(b.lessonTitleAr), 'ar'));
+}
+function getExamsForLesson(sc, unitKey, lessonKey) {
+  const lesson = parseLessonKey(lessonKey);
+  return getExamsForUnit(sc, unitKey).filter(ex => String(ex.lessonTitleAr || ex.subunitTitleAr || 'غير مصنف') === String(lesson.lessonTitleAr || ''));
+}
 function buildSubjectUnits(sc) {
   const sub = getSubject(sc); if (!sub) return [];
   const units = [];
@@ -158,41 +193,54 @@ function syncResumeDraftState() {
   } else state.resumeDraft = draft;
 }
 
+
 async function refreshData() {
   if (!state.user) return;
   syncResumeDraftState();
   try {
     setLoading(true);
-    const [catalog, results, analytics, leaderboard] = await Promise.all([ api('getCatalog'), api('getUserResults', { userId: state.user.id }), api('getUserAnalytics', { userId: state.user.id }), api('getLeaderboard') ]);
-    state.data.exams = catalog.exams || [];
-    state.data.questionBankSummary = catalog.questionBank || { totalQuestions: 0, bySubject: {}, byUnitKey: {}, subjects: [] };
-    state.data.results = results.results || [];
-    state.data.analytics = analytics.analytics || { profile: { badges: [] }, timeStats: { byUnit: [] }, subjectMastery: [], unitMastery: [], weaknessRows: [], dueReviewCount: 0 };
-    state.data.leaderboard = leaderboard.leaderboard || [];
+    const boot = await api('getUserBootstrap', { userId: state.user.id });
+    state.data.exams = boot.catalog && boot.catalog.exams ? boot.catalog.exams : [];
+    state.data.questionBankSummary = boot.catalog && boot.catalog.questionBank ? boot.catalog.questionBank : { totalQuestions: 0, bySubject: {}, byUnitKey: {}, byLessonKey: {}, subjects: [] };
+    state.data.syllabus = boot.catalog && boot.catalog.syllabus ? boot.catalog.syllabus : buildDefaultSyllabus();
+    state.data.results = boot.results || [];
+    state.data.analytics = boot.analytics || { profile: { badges: [] }, timeStats: { byUnit: [] }, subjectMastery: [], unitMastery: [], weaknessRows: [], dueReviewCount: 0 };
+    state.data.leaderboard = boot.leaderboard || [];
     render();
   } catch (err) { showToast('خطأ المزامنة: ' + err.message, 'error'); }
   finally { state.loading = false; render(); }
 }
 
+
+
 async function refreshAdminData() {
   if (!state.admin.authenticated) return;
-  const [allResults, insights] = await Promise.all([ api('listAllResults', { adminPassword: CONFIG.ADMIN_PASSWORD }), api('getAdminInsights', { adminPassword: CONFIG.ADMIN_PASSWORD }) ]);
-  state.admin.allResults = allResults.results || [];
-  state.admin.insights = insights || { difficulty: [], leaderboard: [], edits: [] };
+  const boot = await api('getAdminBootstrap', { adminPassword: CONFIG.ADMIN_PASSWORD, subjectCode: state.admin.selectedSubjectCode || '' });
+  state.admin.allResults = boot.results || [];
+  state.admin.insights = { difficulty: boot.difficulty || [], leaderboard: boot.leaderboard || [], edits: boot.edits || [] };
 }
+
+
 
 function resetBuilderForSubject(sc) {
   const units = buildSubjectUnits(sc).filter(u => !u.comprehensive);
-  state.builder.selectedUnitKeys = units.slice(0, Math.min(4, units.length)).map(u => u.key);
+  state.builder.selectedUnitKeys = units.slice(0, Math.min(3, units.length)).map(u => u.key);
+  state.builder.selectedLessonKeys = [];
   state.builder.selectedExamIds = [];
-  state.builder.selectedUnitKeys.forEach(uk => getExamsForUnit(sc, uk).forEach(e => { if (!state.builder.selectedExamIds.includes(e.id)) state.builder.selectedExamIds.push(e.id); }));
+  state.builder.selectedUnitKeys.forEach(unitKey => {
+    getLessonsForUnit(sc, unitKey).forEach(lesson => {
+      state.builder.selectedLessonKeys.push(lesson.key);
+      getExamsForLesson(sc, unitKey, lesson.key).forEach(ex => { if (!state.builder.selectedExamIds.includes(ex.id)) state.builder.selectedExamIds.push(ex.id); });
+    });
+  });
   state.builder.explicitCounts = {};
-  state.builder.mode = 'weighted';
+  state.builder.mode = 'unit';
   state.builder.totalQuestions = 100;
 }
 
-function openSubject(sc) { state.subjectCode = sc; state.subjectTab = 'units'; state.unitKey = null; resetBuilderForSubject(sc); render(); }
-function backToHome() { state.subjectCode = null; state.subjectTab = 'units'; state.unitKey = null; state.reviewAttempt = null; state.prestartExam = null; render(); }
+
+function openSubject(sc) { state.subjectCode = sc; state.subjectTab = 'units'; state.unitKey = null; state.lessonKey = null; resetBuilderForSubject(sc); render(); }
+function backToHome() { state.subjectCode = null; state.subjectTab = 'units'; state.unitKey = null; state.lessonKey = null; state.reviewAttempt = null; state.prestartExam = null; render(); }
 function persistActiveSession() { if (state.examSession) { state.examSession.userId = state.user ? state.user.id : ''; saveLocal(CONFIG.STORAGE_KEYS.activeSession, state.examSession); state.resumeDraft = clone(state.examSession); } else { removeLocal(CONFIG.STORAGE_KEYS.activeSession); state.resumeDraft = null; } }
 function clearExamTimer() { if (state.timerId) { clearInterval(state.timerId); state.timerId = null; } }
 
@@ -214,17 +262,22 @@ function prepareExamForStart(exam) { state.prestartExam = { exam }; render(); }
 function beginExam(exam) {
   state.prestartExam = null;
   state.reviewAttempt = null;
-  state.examSession = { userId: state.user.id, exam: exam, answers: {}, questionTimes: {}, timeSpent: 0, currentIndex: 0, startedAt: new Date().toISOString() };
+  state.examSession = { userId: state.user.id, exam: exam, answers: {}, questionTimes: {}, timeSpent: 0, currentIndex: 0, startedAt: new Date().toISOString(), viewMode: (exam.settings && exam.settings.defaultQuestionView) || 'single' };
   persistActiveSession();
   render();
   startExamTimer();
 }
-function resumeSavedSession() { syncResumeDraftState(); if (!state.resumeDraft || !state.user || state.resumeDraft.userId !== state.user.id) return; state.examSession = clone(state.resumeDraft); state.prestartExam = null; state.reviewAttempt = null; render(); startExamTimer(); }
+function resumeSavedSession() { syncResumeDraftState(); if (!state.resumeDraft || !state.user || state.resumeDraft.userId !== state.user.id) return; state.examSession = clone(state.resumeDraft); if (!state.examSession.viewMode) state.examSession.viewMode = ((state.examSession.exam && state.examSession.exam.settings && state.examSession.exam.settings.defaultQuestionView) || 'single'); state.prestartExam = null; state.reviewAttempt = null; render(); startExamTimer(); }
 function pauseExamAndExit() { if (!state.examSession) return; persistActiveSession(); clearExamTimer(); state.examSession = null; state.prestartExam = null; state.reviewAttempt = null; showToast('تم حفظ التقدم ويمكنك الإكمال لاحقاً'); render(); }
 function selectExamAnswer(questionId, index) { if (!state.examSession) return; state.examSession.answers[questionId] = Number(index); persistActiveSession(); render(); }
 function goToExamQuestion(index) { if (!state.examSession) return; const total = (state.examSession.exam.questions || []).length; state.examSession.currentIndex = Math.max(0, Math.min(total - 1, Number(index || 0))); persistActiveSession(); render(); }
 function goToReviewQuestion(index) { if (!state.reviewAttempt) return; const total = (state.reviewAttempt.examSnapshot.questions || []).length; state.reviewAttempt.currentIndex = Math.max(0, Math.min(total - 1, Number(index || 0))); render(); }
 async function loadExam(id) { const res = await api('getExamBundle', { examId: id }); return res.exam; }
+
+function setExamViewMode(mode) { if (!state.examSession) return; state.examSession.viewMode = mode === 'all' ? 'all' : 'single'; persistActiveSession(); render(); }
+function setReviewViewMode(mode) { if (!state.reviewAttempt) return; state.reviewAttempt.viewMode = mode === 'all' ? 'all' : 'single'; render(); }
+function setEditorViewMode(mode) { if (!state.editor.open) return; state.editor.viewMode = mode === 'all' ? 'all' : 'single'; render(); }
+
 
 async function submitExam() {
   if (!state.examSession) return;
@@ -254,6 +307,7 @@ async function openAttemptReview(id) {
     const res = await api('getAttemptReview', { attemptId: id });
     state.reviewAttempt = res.attempt;
     state.reviewAttempt.currentIndex = 0;
+    state.reviewAttempt.viewMode = 'single';
     state.examSession = null;
     clearExamTimer();
     render();
@@ -268,7 +322,7 @@ async function generateCustomExam() {
     if (!selected.length) return showToast('اختر وحدة واحدة على الأقل', 'error');
     if (state.builder.mode === 'manual' && !selected.some(k => Number(state.builder.explicitCounts[k] || 0) > 0)) return showToast('حدّد عدداً للوحدات المختارة', 'error');
     setLoading(true);
-    const res = await api('buildCustomExam', { subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), mode: state.builder.mode, selectedUnits: selected, selectedExamIds: state.builder.selectedExamIds, explicitUnitCounts: state.builder.explicitCounts, title: 'اختبار مخصص' });
+    const res = await api('buildCustomExam', { userId: state.user.id, subjectCode: state.subjectCode, totalQuestions: Number(state.builder.totalQuestions || 100), weightingMode: state.builder.mode, mode: state.builder.mode, selectedUnits: selected, selectedLessons: state.builder.selectedLessonKeys, selectedExamIds: state.builder.selectedExamIds, explicitUnitCounts: state.builder.explicitCounts, title: 'اختبار مخصص' });
     prepareExamForStart(res.exam);
   } catch (e) { showToast(e.message, 'error'); }
   finally { setLoading(false); render(); }
@@ -298,46 +352,74 @@ function questionTimingSummary(attempt) {
 function openEditorFromReview(role) {
   if (!state.reviewAttempt) return;
   const qs = state.reviewAttempt.examSnapshot.questions || [];
-  const index = Number(state.reviewAttempt.currentIndex || 0);
-  const q = qs[index];
-  if (!q) return;
+  const current = Number(state.reviewAttempt.currentIndex || 0);
   state.editor.open = true;
   state.editor.questions = qs.map((item, idx) => ({ index: idx, questionId: item.id, sourceExamId: item.sourceExamId || state.reviewAttempt.examId || '', question: clone(item) })).filter(item => item.sourceExamId);
-  const targetIndex = state.editor.questions.findIndex(item => item.questionId === q.id && item.sourceExamId === (q.sourceExamId || state.reviewAttempt.examId || ''));
+  state.editor.drafts = state.editor.questions.map(item => {
+    const q = clone(item.question);
+    const options = (q.options || []).slice();
+    while (options.length < 6) options.push('');
+    return { sourceExamId: item.sourceExamId, questionId: item.questionId, text: q.text || '', options: options.slice(0, 6), correctIndex: q.correctIndex == null ? '' : Number(q.correctIndex), explanation: q.explanation || '' };
+  });
+  const targetIndex = Math.max(0, state.editor.questions.findIndex(item => item.questionId === (qs[current] ? qs[current].id : '')));
   state.editor.index = targetIndex > -1 ? targetIndex : 0;
   state.editor.editorRole = role || 'student';
   state.editor.attemptId = state.reviewAttempt.id || state.reviewAttempt.resultId || '';
   state.editor.password = '';
+  state.editor.viewMode = 'single';
   hydrateEditorDraft();
   render();
 }
 function hydrateEditorDraft() {
-  const item = state.editor.questions[state.editor.index];
-  if (!item) { state.editor.draft = null; return; }
-  const q = clone(item.question);
-  const options = (q.options || []).slice();
-  while (options.length < 6) options.push('');
-  state.editor.draft = { sourceExamId: item.sourceExamId, questionId: item.questionId, text: q.text || '', options: options.slice(0,6), correctIndex: q.correctIndex == null ? '' : Number(q.correctIndex), explanation: q.explanation || '' };
+  const item = state.editor.drafts[state.editor.index];
+  state.editor.draft = item || null;
 }
-function closeEditor() { state.editor.open = false; state.editor.questions = []; state.editor.index = 0; state.editor.draft = null; state.editor.password = ''; render(); }
+function closeEditor() { state.editor.open = false; state.editor.questions = []; state.editor.drafts = []; state.editor.index = 0; state.editor.draft = null; state.editor.password = ''; state.editor.viewMode = 'single'; render(); }
 function nextEditorQuestion(step) { if (!state.editor.questions.length) return; state.editor.index = Math.max(0, Math.min(state.editor.questions.length - 1, state.editor.index + step)); hydrateEditorDraft(); render(); }
+function validateEditorDrafts_(drafts) {
+  const cleaned = drafts.map(d => {
+    const draft = clone(d);
+    draft.options = (draft.options || []).map(v => String(v || '').trim());
+    while (draft.options.length && !draft.options[draft.options.length - 1]) draft.options.pop();
+    return draft;
+  });
+  for (const draft of cleaned) {
+    if (!draft.text.trim()) throw new Error('اكتب نص كل سؤال قبل الحفظ');
+    if (draft.options.filter(Boolean).length < 2) throw new Error('كل سؤال يجب أن يحتوي خيارين على الأقل');
+    if (draft.correctIndex === '' || draft.correctIndex === null || draft.correctIndex === undefined) throw new Error('اختر الإجابة الصحيحة لكل سؤال');
+  }
+  return cleaned;
+}
 async function saveEditorQuestion() {
   if (!state.editor.draft) return;
-  const draft = clone(state.editor.draft);
-  draft.options = (draft.options || []).map(v => String(v || '').trim());
-  while (draft.options.length && !draft.options[draft.options.length - 1]) draft.options.pop();
-  if (!draft.text.trim()) return showToast('اكتب نص السؤال', 'error');
-  if (draft.options.filter(Boolean).length < 2) return showToast('يجب توفير خيارين على الأقل', 'error');
-  if (draft.correctIndex === '' || draft.correctIndex === null || draft.correctIndex === undefined) return showToast('اختر الإجابة الصحيحة', 'error');
   try {
+    const cleaned = validateEditorDrafts_([state.editor.draft]);
     setLoading(true);
-    await api('applyQuestionEdit', { password: state.editor.password, sourceExamId: draft.sourceExamId, questionId: draft.questionId, patch: { text: draft.text, options: draft.options, correctIndex: Number(draft.correctIndex), explanation: draft.explanation }, editorRole: state.editor.editorRole || 'student', editorId: state.user ? state.user.id : '', editorName: state.user ? state.user.name : '' });
+    await api('applyQuestionEdit', { password: state.editor.password, sourceExamId: cleaned[0].sourceExamId, questionId: cleaned[0].questionId, patch: { text: cleaned[0].text, options: cleaned[0].options, correctIndex: Number(cleaned[0].correctIndex), explanation: cleaned[0].explanation }, editorRole: state.editor.editorRole || 'student', editorId: state.user ? state.user.id : '', editorName: state.user ? state.user.name : '' });
     await refreshData();
     const attemptId = state.editor.attemptId;
     closeEditor();
     if (attemptId) await openAttemptReview(attemptId);
     if (state.admin.authenticated) await refreshAdminData();
     showToast('تم حفظ التعديل وتطبيقه على كل النتائج');
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { setLoading(false); render(); }
+}
+async function saveAllEditorQuestions() {
+  if (!state.editor.drafts.length) return;
+  try {
+    const cleaned = validateEditorDrafts_(state.editor.drafts);
+    setLoading(true);
+    await api('applyBulkQuestionEdits', {
+      password: state.editor.password,
+      edits: cleaned.map(d => ({ sourceExamId: d.sourceExamId, questionId: d.questionId, patch: { text: d.text, options: d.options, correctIndex: Number(d.correctIndex), explanation: d.explanation }, editorRole: state.editor.editorRole || 'student', editorId: state.user ? state.user.id : '', editorName: state.user ? state.user.name : '' }))
+    });
+    await refreshData();
+    const attemptId = state.editor.attemptId;
+    closeEditor();
+    if (attemptId) await openAttemptReview(attemptId);
+    if (state.admin.authenticated) await refreshAdminData();
+    showToast('تم حفظ جميع التعديلات دفعة واحدة');
   } catch (e) { showToast(e.message, 'error'); }
   finally { setLoading(false); render(); }
 }
@@ -362,6 +444,7 @@ async function adminEditExam(examId) {
     state.admin.form.editingExamId = ex.id;
     state.admin.form.subjectCode = ex.subjectCode;
     state.admin.form.unitKey = makeUnitKey(ex.subjectCode, ex.semester, ex.unitTitleAr);
+    state.admin.form.lessonKey = ex.lessonKey || makeLessonKey(ex.subjectCode, ex.semester, ex.unitTitleAr, ex.lessonTitleAr || ex.subunitTitleAr || '');
     const c = clone(ex); delete c.id; if (c.sourcePdf && c.sourcePdf.base64) delete c.sourcePdf.base64;
     state.admin.form.jsonText = JSON.stringify(c, null, 2);
     render();
@@ -372,22 +455,25 @@ async function adminDeleteExam(examId) {
   if (!confirm('هل تريد حذف الامتحان نهائياً؟')) return;
   try { setLoading(true); await api('deleteExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examId }); await refreshData(); await refreshAdminData(); showToast('تم حذف الامتحان'); } catch (e) { showToast(e.message, 'error'); } finally { setLoading(false); render(); }
 }
+
 async function adminUploadExam() {
   if (!state.admin.form.subjectCode || !state.admin.form.unitKey) return showToast('اختر المادة والوحدة', 'error');
   if (!state.admin.form.jsonText.trim()) return showToast('الصق JSON أو ارفع ملفاً', 'error');
   let examJson; try { examJson = JSON.parse(state.admin.form.jsonText); } catch (e) { return showToast('JSON غير صالح', 'error'); }
   const sub = getSubject(state.admin.form.subjectCode);
   const unit = parseUnitKey(state.admin.form.unitKey);
-  examJson.subjectCode = sub.code; examJson.subjectAr = sub.nameAr; examJson.semester = unit.semester; examJson.unitTitleAr = unit.unitTitleAr;
-  (examJson.questions || []).forEach(q => { q.subjectCode = sub.code; q.subjectAr = sub.nameAr; q.semester = unit.semester; q.unitTitleAr = unit.unitTitleAr; });
+  const lesson = state.admin.form.lessonKey ? parseLessonKey(state.admin.form.lessonKey) : null;
+  examJson.subjectCode = sub.code; examJson.subjectAr = sub.nameAr; examJson.semester = unit.semester; examJson.unitTitleAr = unit.unitTitleAr; examJson.subunitTitleAr = lesson ? lesson.lessonTitleAr : (examJson.subunitTitleAr || '');
+  (examJson.questions || []).forEach(q => { q.subjectCode = sub.code; q.subjectAr = sub.nameAr; q.semester = unit.semester; q.unitTitleAr = unit.unitTitleAr; if (lesson) q.subunitTitleAr = lesson.lessonTitleAr; });
   try {
     setLoading(true);
     await api('uploadExam', { adminPassword: CONFIG.ADMIN_PASSWORD, examJson: JSON.stringify(examJson), pdfDataUrl: state.admin.form.pdfDataUrl, pdfFileName: state.admin.form.pdfFileName, examId: state.admin.form.editingExamId });
-    state.admin.form.editingExamId = null; state.admin.form.jsonText = ''; state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = '';
+    state.admin.form.editingExamId = null; state.admin.form.jsonText = ''; state.admin.form.pdfDataUrl = null; state.admin.form.pdfFileName = ''; state.admin.form.lessonKey = '';
     await refreshData(); await refreshAdminData(); showToast('تم حفظ الامتحان');
   } catch (e) { showToast(e.message, 'error'); }
   finally { setLoading(false); render(); }
 }
+
 
 function parseCorrectCell(v) {
   const raw = String(v == null ? '' : v).trim();
@@ -599,21 +685,33 @@ function renderUnitCards(sc) {
   const units = buildSubjectUnits(sc);
   return `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${units.map((u, i) => { const active = state.unitKey === u.key; const t = getTheme(i); const exCount = u.comprehensive ? getExamsForSubject(sc).length : getExamsForUnit(sc, u.key).length; return `<button data-action="select-unit" data-unit-key="${escapeHtml(u.key)}" class="text-right p-5 rounded-[1.75rem] border-2 transition-all bg-white dark:bg-slate-900 ${active ? `${t.border} shadow-md` : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'}"><div class="text-[10px] font-black ${t.textMain} mb-1">${escapeHtml(u.semesterTitleAr)}</div><h4 class="text-base font-black text-slate-900 dark:text-white leading-snug mb-3 line-clamp-2">${escapeHtml(u.unitTitleAr)}</h4><div class="flex flex-wrap gap-2 text-[10px] font-bold"><span class="bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-full text-slate-600 dark:text-slate-300">${exCount} امتحان</span><span class="bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-full text-slate-600 dark:text-slate-300">${u.comprehensive ? (state.data.questionBankSummary.bySubject[sc] || 0) : getQuestionCountForUnit(u.key)} سؤال</span></div></button>`; }).join('')}</div>`;
 }
+
 function renderSelectedUnitPanel(sc) {
   if (!state.unitKey) return '';
   const info = parseUnitKey(state.unitKey);
-  const exams = info.semester === 0 ? getExamsForSubject(sc) : getExamsForUnit(sc, state.unitKey);
+  const lessons = getLessonsForUnit(sc, state.unitKey);
   return `
-    <div class="mt-6 p-5 sm:p-6 bg-brand-50/50 dark:bg-brand-900/10 rounded-[2rem] border border-brand-100 dark:border-brand-900/30 animate-enter">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-        <div><h3 class="text-xl font-black text-slate-900 dark:text-white">${escapeHtml(info.unitTitleAr || CURRICULUM.comprehensiveLabel)}</h3><p class="text-xs font-black text-brand-600 dark:text-brand-400 mt-1">اختر امتحاناً أو صدّر ملف PDF</p></div>
-        <button data-action="review-today" data-subject-code="${escapeHtml(sc)}" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-900/30 text-xs font-black">مراجعة اليوم للمادة</button>
+    <div class="mt-6 space-y-5 animate-enter">
+      <div class="p-5 sm:p-6 bg-brand-50/50 dark:bg-brand-900/10 rounded-[2rem] border border-brand-100 dark:border-brand-900/30">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-900 dark:text-white">${escapeHtml(info.unitTitleAr)}</h3>
+            <p class="text-xs font-black text-brand-600 mt-1">اختر الدرس ثم الامتحان</p>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          ${lessons.length ? lessons.map((lesson, idx) => {
+            const theme = getTheme(idx);
+            const active = state.lessonKey === lesson.key;
+            return `<button data-action="select-lesson" data-lesson-key="${escapeHtml(lesson.key)}" class="text-right p-4 rounded-2xl border-2 transition-all ${active ? theme.border + ' shadow-sm bg-white dark:bg-slate-900' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'}"><div class="text-[10px] font-black ${theme.textMain} mb-2">درس</div><div class="font-black text-sm leading-7 line-clamp-2 mb-3">${escapeHtml(lesson.lessonTitleAr)}</div><div class="flex gap-2 text-[10px] font-black text-slate-500"><span class="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-950">${lesson.examCount || 0} امتحان</span><span class="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-950">${lesson.questionCount || 0} سؤال</span></div></button>`;
+          }).join('') : `<div class="col-span-full p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center text-sm text-slate-400 font-black">لا توجد دروس مصنفة بعد لهذه الوحدة</div>`}
+        </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        ${exams.length ? exams.map(ex => { const att = (state.data.results || []).filter(r => r.examId === ex.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0]; return `<div class="bg-white dark:bg-slate-900 p-5 rounded-[1.75rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col min-w-0"><h5 class="font-black text-base text-slate-900 dark:text-white mb-3 line-clamp-2">${escapeHtml(ex.title)}</h5><div class="flex flex-wrap gap-2 text-[10px] font-bold text-slate-500 mb-4"><span class="px-2.5 py-1 rounded-full bg-slate-50 dark:bg-slate-950">${ex.questionCount || 0} سؤال</span><span class="px-2.5 py-1 rounded-full bg-slate-50 dark:bg-slate-950">وقت مفتوح</span></div>${att ? `<div class="mb-4 p-3 rounded-xl ${Number(att.score) >= 50 ? 'bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-900/30 text-brand-700 dark:text-brand-300' : 'bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/30 text-rose-700 dark:text-rose-300'}"><div class="flex justify-between items-center gap-2"><div class="text-[10px] font-black">آخر نتيجة</div><button data-action="review-attempt" data-attempt-id="${escapeHtml(att.id || att.resultId)}" class="text-[10px] font-black underline">مراجعة</button></div><div class="font-black text-2xl mt-1">${att.score}%</div></div>` : '<div class="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-xs font-black text-slate-400">لم تختبر هذا الامتحان بعد</div>'}<div class="mt-auto grid grid-cols-2 gap-2"><button data-action="prepare-exam" data-exam-id="${escapeHtml(ex.id)}" class="py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-black text-sm">${att ? 'إعادة' : 'بدء'}</button><button data-action="export-exam-pdf" data-exam-id="${escapeHtml(ex.id)}" class="py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm">PDF</button></div></div>`; }).join('') : '<div class="col-span-full py-10 text-center text-sm text-slate-400 font-black bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">لا توجد امتحانات في هذه الوحدة حالياً</div>'}
-      </div>
-    </div>`;
+      ${state.lessonKey ? `<div class="p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-soft"><div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5"><div><h4 class="text-lg font-black">${escapeHtml(parseLessonKey(state.lessonKey).lessonTitleAr)}</h4><p class="text-xs font-black text-slate-500 mt-1">الامتحانات داخل هذا الدرس</p></div></div><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">${getExamsForLesson(sc, state.unitKey, state.lessonKey).map(ex => `<div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex flex-col"><div class="font-black text-sm mb-2 line-clamp-2">${escapeHtml(ex.title)}</div><div class="text-[11px] font-semibold text-slate-500 mb-4">${escapeHtml(ex.lessonTitleAr || ex.subunitTitleAr || 'درس')}</div><div class="mt-auto grid grid-cols-2 gap-2"><button data-action="prepare-exam" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-xs">ابدأ</button><button data-action="export-exam-pdf" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-xs">PDF</button></div></div>`).join('') || `<div class="col-span-full text-center text-sm text-slate-400 font-black py-8">لا توجد امتحانات داخل هذا الدرس حالياً</div>`}</div></div>` : ''}
+    </div>
+  `;
 }
+
 function computeBuilderPreview(sc) {
   const selected = buildSubjectUnits(sc).filter(u => state.builder.selectedUnitKeys.includes(u.key) && !u.comprehensive);
   if (!selected.length) return [];
@@ -621,26 +719,78 @@ function computeBuilderPreview(sc) {
   const weights = selected.map(u => Number(getSubject(sc).weights[`${u.semester}|${u.unitTitleAr}`] || 1)); const totalW = weights.reduce((s, v) => s + v, 0) || 1;
   return selected.map((u, idx) => ({ unitTitleAr: u.unitTitleAr, available: getQuestionCountForUnit(u.key), requested: Math.round((weights[idx] / totalW) * Number(state.builder.totalQuestions || 0)) }));
 }
+
 function renderBuilder(sc) {
   const units = buildSubjectUnits(sc).filter(u => !u.comprehensive);
-  const preview = computeBuilderPreview(sc);
+  const mode = state.builder.mode;
   return `
-    <div class="grid xl:grid-cols-[1fr,320px] gap-6 animate-enter">
+    <div class="grid xl:grid-cols-[1.45fr,360px] gap-6 animate-enter">
       <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-soft space-y-6">
-        <h3 class="text-xl font-black">ابنِ امتحانك الخاص</h3>
         <div class="grid sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">نظام التوزيع</label><select data-builder-field="mode" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-black text-sm"><option value="weighted" ${state.builder.mode === 'weighted' ? 'selected' : ''}>أوزان الوزارة</option><option value="manual" ${state.builder.mode === 'manual' ? 'selected' : ''}>توزيع يدوي</option></select></div>
-          <div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">إجمالي الأسئلة</label><input data-builder-field="totalQuestions" type="number" min="1" value="${state.builder.totalQuestions}" ${state.builder.mode === 'manual' ? 'disabled' : ''} class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-black text-brand-600 text-sm ${state.builder.mode === 'manual' ? 'opacity-50' : ''}" /></div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">طريقة البناء</label>
+            <select data-builder-field="mode" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-black text-sm">
+              <option value="unit" ${mode === 'unit' ? 'selected' : ''}>حسب نسب الوحدات</option>
+              <option value="lesson" ${mode === 'lesson' ? 'selected' : ''}>حسب نسب الدروس</option>
+              <option value="manual" ${mode === 'manual' ? 'selected' : ''}>تحديد يدوي للوحدات</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-2">إجمالي الأسئلة</label>
+            <input data-builder-field="totalQuestions" type="number" min="1" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-black text-brand-600 text-sm" value="${state.builder.totalQuestions}" ${mode === 'manual' ? 'disabled opacity-50' : ''} />
+          </div>
         </div>
-        <div><label class="block text-sm font-black text-slate-700 dark:text-slate-300 mb-3">الوحدات المستهدفة</label><div class="grid sm:grid-cols-2 gap-3">${units.map(u => { const selected = state.builder.selectedUnitKeys.includes(u.key); return `<div class="p-3 rounded-xl border-2 ${selected ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/10' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950'}"><label class="flex items-start gap-2 cursor-pointer"><input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(u.key)}" ${selected ? 'checked' : ''} class="mt-1 w-4 h-4 accent-brand-600"><div class="min-w-0"><div class="font-black text-sm text-slate-900 dark:text-white line-clamp-2">${escapeHtml(u.unitTitleAr)}</div><div class="text-[10px] text-slate-500 mt-1">المتاح ${getQuestionCountForUnit(u.key)} سؤال</div></div></label>${selected && state.builder.mode === 'manual' ? `<input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(u.key)}" class="mt-2 w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-center text-sm font-black" value="${state.builder.explicitCounts[u.key] || ''}" placeholder="عدد الأسئلة">` : ''}</div>`; }).join('')}</div></div>
+        <div>
+          <div class="text-sm font-black mb-3">1) اختر الوحدات</div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            ${units.map(u => {
+              const selected = state.builder.selectedUnitKeys.includes(u.key);
+              return `<label class="p-4 rounded-2xl border-2 cursor-pointer transition-all ${selected ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950'}"><div class="flex items-start gap-3"><input type="checkbox" data-action="toggle-builder-unit" data-unit-key="${escapeHtml(u.key)}" ${selected ? 'checked' : ''} class="mt-1 w-4 h-4 accent-brand-600"><div class="min-w-0"><div class="font-black text-sm leading-7">${escapeHtml(u.unitTitleAr)}</div><div class="text-[10px] font-semibold text-slate-500 mt-1">${getQuestionCountForUnit(u.key)} سؤال</div></div></div>${selected && mode === 'manual' ? `<input type="number" min="0" data-action="set-builder-unit-count" data-unit-key="${escapeHtml(u.key)}" class="mt-3 w-full p-2 text-center text-xs font-black rounded-xl border bg-white dark:bg-slate-900 dark:border-slate-700" placeholder="عدد أسئلة الوحدة" value="${state.builder.explicitCounts[u.key] || ''}">` : ''}</label>`;
+            }).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-black mb-3">2) اختر الدروس داخل الوحدات</div>
+          <div class="space-y-4">
+            ${state.builder.selectedUnitKeys.map(unitKey => {
+              const unit = parseUnitKey(unitKey);
+              const lessons = getLessonsForUnit(sc, unitKey);
+              return `<div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="font-black text-sm mb-3">${escapeHtml(unit.unitTitleAr)}</div><div class="grid sm:grid-cols-2 gap-3">${lessons.map(lesson => {
+                const selected = state.builder.selectedLessonKeys.includes(lesson.key);
+                return `<label class="p-3 rounded-xl border cursor-pointer ${selected ? 'border-brand-500 bg-white dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50'}"><div class="flex items-start gap-2"><input type="checkbox" data-action="toggle-builder-lesson" data-lesson-key="${escapeHtml(lesson.key)}" ${selected ? 'checked' : ''} class="mt-1 w-4 h-4 accent-brand-600"><div class="min-w-0"><div class="font-black text-xs leading-6">${escapeHtml(lesson.lessonTitleAr)}</div><div class="text-[10px] font-semibold text-slate-500 mt-1">${lesson.examCount || 0} امتحان</div></div></div></label>`;
+              }).join('') || `<div class="text-xs text-slate-400 font-black">لا توجد دروس متاحة</div>`}</div></div>`;
+            }).join('') || `<div class="text-xs text-slate-400 font-black">اختر الوحدات أولاً</div>`}
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-black mb-3">3) اختر الامتحانات داخل الدروس</div>
+          <div class="space-y-4 max-h-[50vh] overflow-y-auto scroll-thin pr-1">
+            ${state.builder.selectedLessonKeys.map(lessonKey => {
+              const lesson = parseLessonKey(lessonKey);
+              const exams = getExamsForLesson(sc, makeUnitKey(sc, lesson.semester, lesson.unitTitleAr), lessonKey);
+              return `<div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="font-black text-sm mb-3">${escapeHtml(lesson.lessonTitleAr)}</div><div class="grid md:grid-cols-2 gap-3">${exams.map(ex => {
+                const selected = state.builder.selectedExamIds.includes(ex.id);
+                return `<label class="p-3 rounded-xl border cursor-pointer ${selected ? 'border-brand-500 bg-white dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50'}"><div class="flex items-start gap-2"><input type="checkbox" data-action="toggle-builder-exam" data-exam-id="${escapeHtml(ex.id)}" ${selected ? 'checked' : ''} class="mt-1 w-4 h-4 accent-brand-600"><div class="min-w-0"><div class="font-black text-xs line-clamp-2">${escapeHtml(ex.title)}</div><div class="text-[10px] font-semibold text-slate-500 mt-1">${ex.questionCount || 0} سؤال</div></div></div></label>`;
+              }).join('') || `<div class="text-xs text-slate-400 font-black">لا توجد امتحانات تحت هذا الدرس</div>`}</div></div>`;
+            }).join('') || `<div class="text-xs text-slate-400 font-black">اختر الدروس أولاً</div>`}
+          </div>
+        </div>
       </div>
       <div class="bg-slate-900 text-white dark:bg-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-soft h-fit sticky top-4">
-        <h4 class="font-black text-lg mb-4">ملخص البناء</h4>
-        <div class="space-y-2 mb-5 max-h-[40vh] overflow-y-auto scroll-thin pr-1">${preview.length ? preview.map(r => `<div class="p-3 bg-white/10 rounded-xl"><div class="font-black text-sm line-clamp-2">${escapeHtml(r.unitTitleAr)}</div><div class="flex justify-between text-[11px] font-semibold mt-1 opacity-80"><span>مطلوب: ${r.requested}</span><span>متاح: ${r.available}</span></div></div>`).join('') : '<div class="text-white/50 text-sm font-black text-center py-8">اختر وحداتك أولاً</div>'}</div>
-        <button data-action="build-custom-exam" class="w-full py-3.5 bg-brand-500 hover:bg-brand-400 text-slate-900 rounded-xl font-black text-sm shadow-sm">بناء وبدء الامتحان</button>
+        <div class="font-black text-lg mb-2">ملخص البناء</div>
+        <div class="text-sm text-white/70 leading-7 mb-4">الإصدار التالي سيتجنب الأسئلة التي تم حلها سابقاً في نفس تركيبة الامتحان المخصص، ما أمكن ذلك.</div>
+        <div class="space-y-2 text-xs font-black mb-6">
+          <div class="p-3 rounded-xl bg-white/10">الوحدات المختارة: ${state.builder.selectedUnitKeys.length}</div>
+          <div class="p-3 rounded-xl bg-white/10">الدروس المختارة: ${state.builder.selectedLessonKeys.length}</div>
+          <div class="p-3 rounded-xl bg-white/10">الامتحانات المختارة: ${state.builder.selectedExamIds.length}</div>
+          <div class="p-3 rounded-xl bg-white/10">النظام: ${mode === 'unit' ? 'نسب الوحدات' : mode === 'lesson' ? 'نسب الدروس' : 'تحديد يدوي'}</div>
+        </div>
+        <button data-action="build-custom-exam" class="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-900 font-black text-sm">بناء الامتحان المخصص</button>
       </div>
-    </div>`;
+    </div>
+  `;
 }
+
 function renderSubjectOverview(sc) {
   const analytics = getSubjectAnalytics(sc);
   const units = getUnitAnalytics(sc);
@@ -703,44 +853,47 @@ function renderQuestionCard(q, index, exam, mode) {
       ${isReview ? `<div class="mt-5 grid sm:grid-cols-2 gap-3"><div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">إجابتك</div><div class="font-black ${Number(answer) === Number(q.correctIndex) ? 'text-brand-600 dark:text-brand-400' : 'text-rose-500'}">${answer == null ? 'لم تجب' : escapeHtml(q.options[answer])}</div></div><div class="p-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-900/30"><div class="text-[11px] font-black text-brand-600 dark:text-brand-400 mb-1">الإجابة الصحيحة</div><div class="font-black text-brand-700 dark:text-brand-300">${q.correctIndex == null ? '-' : escapeHtml(q.options[q.correctIndex])}</div></div></div>${q.explanation ? `<div class="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">الشرح</div><div class="font-semibold leading-7">${escapeHtml(q.explanation)}</div></div>` : ''}` : ''}
     </div>`;
 }
+
 function renderExamScreen() {
   const s = state.examSession, ex = s.exam, total = (ex.questions || []).length || 0, current = Number(s.currentIndex || 0), q = getCurrentExamQuestion();
   const answered = Object.keys(s.answers || {}).length, progress = percent(answered, total || 1);
-  return `<div class="max-w-5xl mx-auto animate-enter"><div class="sticky top-2 z-30 glass-panel rounded-[2rem] p-4 mb-5 shadow-soft"><div class="flex flex-col gap-4"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"><div class="min-w-0"><div class="text-[11px] font-black text-brand-600 dark:text-brand-400 mb-1">${escapeHtml(ex.subjectAr || '')} • ${escapeHtml(ex.unitTitleAr || '')}</div><h2 class="text-lg sm:text-xl font-black truncate">${escapeHtml(ex.title)}</h2><div class="flex flex-wrap gap-2 mt-2 text-[11px] font-black text-slate-500"><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">${current + 1} / ${total}</span><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">المجاب ${answered}</span><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">الوقت <span id="exam-timer-display">${formatDuration(s.timeSpent || 0)}</span></span><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">هذا السؤال <span id="question-timer-display">${formatDuration((s.questionTimes || {})[q ? q.id : ''] || 0)}</span></span></div></div><div class="grid grid-cols-2 sm:flex gap-2"><button data-action="pause-exam" class="px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black">حفظ وإكمال لاحقاً</button><button data-action="export-current-exam-pdf" class="px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black">PDF</button><button data-action="submit-exam" class="px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-black shadow-sm col-span-2 sm:col-span-1">تسليم الامتحان</button></div></div><div><div class="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-brand-500 rounded-full transition-all" style="width:${progress}%"></div></div><div class="text-[11px] font-black text-slate-500 mt-2">أُنجز ${progress}%</div></div>${renderQuestionNavigator(total, current, 'exam')}</div></div>${q ? renderQuestionCard(q, current, ex, 'exam') : ''}<div class="mt-5 grid grid-cols-2 gap-3"><button data-action="prev-exam-question" class="py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-sm ${current <= 0 ? 'opacity-50 pointer-events-none' : ''}">السابق</button><button data-action="next-exam-question" class="py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm ${current >= total - 1 ? 'opacity-50 pointer-events-none' : ''}">التالي</button></div><div class="mt-4 text-center text-xs text-slate-500 font-black">التقدّم محفوظ تلقائياً كل عدة ثوانٍ وعند كل إجابة</div></div>`;
+  const viewMode = s.viewMode || 'single';
+  const viewToggle = ex.settings && ex.settings.allowSwitchView !== false ? `<div class="flex gap-2"><button data-action="set-exam-view" data-view="single" class="px-3 py-2 rounded-xl text-xs font-black ${viewMode === 'single' ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700'}">واحد واحد</button><button data-action="set-exam-view" data-view="all" class="px-3 py-2 rounded-xl text-xs font-black ${viewMode === 'all' ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700'}">عرض كل الأسئلة</button></div>` : '';
+  return `<div class="max-w-6xl mx-auto animate-enter"><div class="sticky top-2 z-30 glass-panel rounded-[2rem] p-4 mb-5 shadow-soft"><div class="flex flex-col gap-4"><div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4"><div class="min-w-0"><div class="text-[11px] font-black text-brand-600 dark:text-brand-400 mb-1">${escapeHtml(ex.subjectAr || '')} • ${escapeHtml(ex.unitTitleAr || '')}</div><h2 class="text-lg sm:text-xl font-black truncate">${escapeHtml(ex.title)}</h2><div class="flex flex-wrap gap-2 mt-2 text-[11px] font-black text-slate-500"><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">${current + 1} / ${total}</span><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">المجاب ${answered}</span><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">الوقت <span id="exam-timer-display">${formatDuration(s.timeSpent || 0)}</span></span><span class="px-2 py-1 rounded-full bg-white/60 dark:bg-slate-900">هذا السؤال <span id="question-timer-display">${formatDuration((s.questionTimes || {})[q ? q.id : ''] || 0)}</span></span></div></div><div class="flex flex-wrap gap-2">${viewToggle}<button data-action="pause-exam" class="px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black">حفظ وإكمال لاحقاً</button><button data-action="export-current-exam-pdf" class="px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black">PDF</button><button data-action="submit-exam" class="px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-black shadow-sm">تسليم الامتحان</button></div></div><div><div class="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-brand-500 rounded-full transition-all" style="width:${progress}%"></div></div><div class="text-[11px] font-black text-slate-500 mt-2">أُنجز ${progress}%</div></div>${viewMode === 'single' ? renderQuestionNavigator(total, current, 'exam') : ''}</div></div>${viewMode === 'all' ? `<div class="space-y-4">${(ex.questions || []).map((question, idx) => renderQuestionCard(question, idx, ex, 'exam')).join('')}</div>` : `${q ? renderQuestionCard(q, current, ex, 'exam') : ''}<div class="mt-5 grid grid-cols-2 gap-3"><button data-action="prev-exam-question" class="py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-sm ${current <= 0 ? 'opacity-50 pointer-events-none' : ''}">السابق</button><button data-action="next-exam-question" class="py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm ${current >= total - 1 ? 'opacity-50 pointer-events-none' : ''}">التالي</button></div>`}<div class="mt-4 text-center text-xs text-slate-500 font-black">التقدّم محفوظ تلقائياً كل عدة ثوانٍ وعند كل إجابة</div></div>`;
 }
+
+
 function renderReviewScreen() {
   const att = state.reviewAttempt, exam = att.examSnapshot || { questions: [] }, total = (exam.questions || []).length || 0, current = Number(att.currentIndex || 0), q = getCurrentReviewQuestion(), stats = questionTimingSummary(att);
-  return `<div class="max-w-5xl mx-auto animate-enter">${renderBackButton('العودة')}<div class="bg-slate-900 text-white p-5 sm:p-6 rounded-[2rem] mb-5 shadow-soft"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"><div class="min-w-0"><div class="text-xs font-black text-white/60 mb-1">مراجعة المحاولة</div><h2 class="text-2xl sm:text-3xl font-black truncate">${escapeHtml(att.examTitle || exam.title || '')}</h2><div class="flex flex-wrap gap-2 mt-3 text-[11px] font-black text-white/70"><span class="px-2.5 py-1 rounded-full bg-white/10">الوقت ${formatDuration(att.durationSec || 0)}</span><span class="px-2.5 py-1 rounded-full bg-white/10">${formatDate(att.createdAt)}</span><span class="px-2.5 py-1 rounded-full bg-white/10">${att.correctCount || 0} / ${att.totalMcq || 0}</span></div></div><div class="text-6xl font-black text-brand-400">${att.score}%</div></div></div><div class="grid xl:grid-cols-[1fr,330px] gap-5 mb-5"><div class="bg-white dark:bg-slate-900 rounded-[2rem] p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="flex flex-wrap gap-2">${Number(att.score) < 100 ? `<button data-action="redo-attempt" data-attempt-id="${escapeHtml(att.id || att.resultId)}" class="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-black">إعادة الأخطاء فقط</button>` : ''}<button data-action="review-edit-question" class="px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 text-xs font-black">تعديل السؤال/الإجابة (1234)</button><button data-action="export-attempt-pdf" data-attempt-id="${escapeHtml(att.id || att.resultId)}" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs font-black">PDF</button></div><div class="mt-4 text-xs text-slate-500 font-black">أي تعديل يتم حفظه ويُطبّق على كل النتائج السابقة واللاحقة لنفس السؤال.</div></div><div class="bg-white dark:bg-slate-900 rounded-[2rem] p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-soft"><h3 class="font-black mb-4">تحليل الوقت</h3><div class="space-y-3"><div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">الزمن الكلي</div><div class="font-black text-xl">${formatDuration(stats.totalSec)}</div></div>${(stats.slowUnits || []).map(item => `<div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30"><div class="font-black text-sm line-clamp-2">${escapeHtml(item.unitTitleAr)}</div><div class="text-[11px] font-semibold text-slate-500 mt-1">متوسط ${item.avgSec} ثانية</div></div>`).join('') || '<div class="text-xs text-slate-400 font-black">لا توجد بيانات سرعة كافية</div>'}</div></div></div>${renderQuestionNavigator(total, current, 'review')}<div class="mt-5">${q ? renderQuestionCard(q, current, exam, 'review') : ''}</div><div class="mt-5 grid grid-cols-2 gap-3"><button data-action="prev-review-question" class="py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-sm ${current <= 0 ? 'opacity-50 pointer-events-none' : ''}">السابق</button><button data-action="next-review-question" class="py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm ${current >= total - 1 ? 'opacity-50 pointer-events-none' : ''}">التالي</button></div></div>`;
+  const viewMode = att.viewMode || 'single';
+  return `<div class="max-w-6xl mx-auto animate-enter">${renderBackButton('العودة')}<div class="bg-slate-900 text-white p-5 sm:p-6 rounded-[2rem] mb-5 shadow-soft"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"><div class="min-w-0"><div class="text-xs font-black text-white/60 mb-1">مراجعة المحاولة</div><h2 class="text-2xl sm:text-3xl font-black truncate">${escapeHtml(att.examTitle || exam.title || '')}</h2><div class="flex flex-wrap gap-2 mt-3 text-[11px] font-black text-white/70"><span class="px-2.5 py-1 rounded-full bg-white/10">الوقت ${formatDuration(att.durationSec || 0)}</span><span class="px-2.5 py-1 rounded-full bg-white/10">${formatDate(att.createdAt)}</span><span class="px-2.5 py-1 rounded-full bg-white/10">${att.correctCount || 0} / ${att.totalMcq || 0}</span></div></div><div class="text-6xl font-black text-brand-400">${att.score}%</div></div></div><div class="grid xl:grid-cols-[1fr,330px] gap-5 mb-5"><div class="bg-white dark:bg-slate-900 rounded-[2rem] p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-soft"><div class="flex flex-wrap gap-2">${Number(att.score) < 100 ? `<button data-action="redo-attempt" data-attempt-id="${escapeHtml(att.id || att.resultId)}" class="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-black">إعادة الأخطاء فقط</button>` : ''}<button data-action="review-edit-question" class="px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 text-xs font-black">تعديل جماعي/فردي (1234)</button><button data-action="export-attempt-pdf" data-attempt-id="${escapeHtml(att.id || att.resultId)}" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs font-black">PDF</button><button data-action="set-review-view" data-view="single" class="px-4 py-2.5 rounded-xl text-xs font-black ${viewMode === 'single' ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700'}">واحد واحد</button><button data-action="set-review-view" data-view="all" class="px-4 py-2.5 rounded-xl text-xs font-black ${viewMode === 'all' ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700'}">كل الأسئلة</button></div><div class="mt-4 text-xs text-slate-500 font-black">أي تعديل يتم حفظه ويُطبّق على كل النتائج السابقة واللاحقة لنفس السؤال.</div></div><div class="bg-white dark:bg-slate-900 rounded-[2rem] p-4 sm:p-5 border border-slate-100 dark:border-slate-800 shadow-soft"><h3 class="font-black mb-4">تحليل الوقت</h3><div class="space-y-3"><div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="text-[11px] font-black text-slate-500 mb-1">الزمن الكلي</div><div class="font-black text-xl">${formatDuration(stats.totalSec)}</div></div>${(stats.slowUnits || []).map(item => `<div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30"><div class="font-black text-sm line-clamp-2">${escapeHtml(item.unitTitleAr)}</div><div class="text-[11px] font-semibold text-slate-500 mt-1">متوسط ${item.avgSec} ثانية</div></div>`).join('') || '<div class="text-xs text-slate-400 font-black">لا توجد بيانات سرعة كافية</div>'}</div></div></div>${viewMode === 'single' ? renderQuestionNavigator(total, current, 'review') : ''}<div class="mt-5">${viewMode === 'all' ? `<div class="space-y-4">${(exam.questions || []).map((question, idx) => renderQuestionCard(question, idx, exam, 'review')).join('')}</div>` : (q ? renderQuestionCard(q, current, exam, 'review') : '')}</div>${viewMode === 'single' ? `<div class="mt-5 grid grid-cols-2 gap-3"><button data-action="prev-review-question" class="py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-sm ${current <= 0 ? 'opacity-50 pointer-events-none' : ''}">السابق</button><button data-action="next-review-question" class="py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm ${current >= total - 1 ? 'opacity-50 pointer-events-none' : ''}">التالي</button></div>` : ''}</div>`;
 }
+
 function renderPrestartModal() {
   if (!state.prestartExam) return '';
   const ex = state.prestartExam.exam;
   return `<div class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 animate-enter"><div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2rem] p-6 shadow-2xl border border-slate-100 dark:border-slate-800 text-center"><div class="w-14 h-14 mx-auto rounded-2xl bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-2xl mb-4">✅</div><h3 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">${escapeHtml(ex.title)}</h3><p class="text-sm text-slate-500 font-semibold mb-6">${(ex.questions || []).length} سؤال • حفظ تلقائي • يمكنك الإيقاف والاستكمال لاحقاً</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button data-action="close-prestart" class="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-sm">إلغاء</button><button data-action="start-prepared-exam" class="py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-sm shadow-sm">ابدأ الآن</button></div></div></div>`;
 }
+
 function renderEditorModal() {
-  if (!state.editor.open || !state.editor.draft) return '';
-  const draft = state.editor.draft, total = state.editor.questions.length, idx = state.editor.index;
-  return `<div class="fixed inset-0 z-[70] bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-enter"><div class="bg-white dark:bg-slate-900 w-full max-w-3xl h-[95vh] sm:h-[90vh] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col"><div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center gap-3 bg-slate-50 dark:bg-slate-950/50"><div class="min-w-0"><div class="text-[11px] font-black text-amber-600 dark:text-amber-400">تعديل ذكي يطبّق على الجميع</div><div class="font-black text-base truncate">السؤال ${idx + 1} من ${total}</div></div><button data-action="close-editor" class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 font-black text-sm">✕</button></div><div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scroll-thin"><div class="grid grid-cols-2 gap-3"><button data-action="editor-prev" class="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-sm ${idx <= 0 ? 'opacity-50 pointer-events-none' : ''}">السابق</button><button data-action="editor-next" class="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-sm ${idx >= total - 1 ? 'opacity-50 pointer-events-none' : ''}">التالي</button></div><div><label class="block text-sm font-black mb-2">نص السؤال</label><textarea data-editor-field="text" rows="4" class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-bold leading-8">${escapeHtml(draft.text)}</textarea></div><div><div class="flex items-center justify-between gap-3 mb-2"><label class="block text-sm font-black">الخيارات</label><div class="text-[11px] font-black text-slate-500">اختر الصحيح بالضغط على الدائرة</div></div><div class="space-y-3">${(draft.options || []).map((opt, i) => `<div class="flex items-center gap-3"><button data-action="editor-set-correct" data-index="${i}" class="w-10 h-10 rounded-full shrink-0 border-2 font-black text-sm ${Number(draft.correctIndex) === i ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500'}">${alpha(i)}</button><input data-editor-option-index="${i}" value="${escapeHtml(opt)}" class="flex-1 min-w-0 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-bold text-sm" placeholder="الخيار ${alpha(i)}" /></div>`).join('')}</div></div><div><label class="block text-sm font-black mb-2">الشرح (اختياري)</label><textarea data-editor-field="explanation" rows="3" class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-bold leading-7">${escapeHtml(draft.explanation || '')}</textarea></div><div><label class="block text-sm font-black mb-2">كلمة مرور التعديل</label><input type="password" data-editor-field="password" value="${escapeHtml(state.editor.password || '')}" class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-black text-center tracking-[0.25em]" placeholder="1234" /></div><div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 text-sm font-black text-amber-700 dark:text-amber-300">أي تعديل هنا سيُحدّث بنك الأسئلة، ويُعيد حساب نتائج جميع الطلبة المرتبطة بهذا السؤال.</div></div><div class="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900"><button data-action="save-editor-question" class="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-sm shadow-sm">حفظ التعديل العام</button></div></div></div>`;
+  if (!state.editor.open || !state.editor.drafts.length) return '';
+  const total = state.editor.questions.length, idx = state.editor.index, draft = state.editor.draft, viewMode = state.editor.viewMode || 'single';
+  function renderDraftForm(item, draftItem, draftIndex) {
+    return `<div class="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800"><div class="flex items-center justify-between gap-3"><div class="font-black text-sm">السؤال ${draftIndex + 1}</div><div class="text-[11px] font-black text-slate-500">${escapeHtml(item.sourceExamId || '')}</div></div><div><label class="block text-sm font-black mb-2">نص السؤال</label><textarea data-editor-field="text" data-editor-draft-index="${draftIndex}" rows="3" class="w-full p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 outline-none font-bold leading-8">${escapeHtml(draftItem.text)}</textarea></div><div><div class="flex items-center justify-between gap-3 mb-2"><label class="block text-sm font-black">الخيارات</label><div class="text-[11px] font-black text-slate-500">اختر الصحيح</div></div><div class="space-y-3">${(draftItem.options || []).map((opt, i) => `<div class="flex items-center gap-3"><button data-action="editor-set-correct" data-editor-draft-index="${draftIndex}" data-index="${i}" class="w-10 h-10 rounded-full shrink-0 border-2 font-black text-sm ${Number(draftItem.correctIndex) === i ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-500'}">${alpha(i)}</button><input data-editor-option-index="${i}" data-editor-draft-index="${draftIndex}" value="${escapeHtml(opt)}" class="flex-1 min-w-0 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 outline-none font-bold text-sm" placeholder="الخيار ${alpha(i)}" /></div>`).join('')}</div></div><div><label class="block text-sm font-black mb-2">الشرح (اختياري)</label><textarea data-editor-field="explanation" data-editor-draft-index="${draftIndex}" rows="2" class="w-full p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 outline-none font-bold leading-7">${escapeHtml(draftItem.explanation || '')}</textarea></div></div>`;
+  }
+  return `<div class="fixed inset-0 z-[70] bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-enter"><div class="bg-white dark:bg-slate-900 w-full max-w-4xl h-[95vh] sm:h-[90vh] rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col"><div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center gap-3 bg-slate-50 dark:bg-slate-950/50"><div class="min-w-0"><div class="text-[11px] font-black text-amber-600 dark:text-amber-400">تعديل ذكي يطبّق على الجميع</div><div class="font-black text-base truncate">${viewMode === 'single' ? `السؤال ${idx + 1} من ${total}` : `تعديل كل الأسئلة (${total})`}</div></div><button data-action="close-editor" class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 font-black text-sm">✕</button></div><div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap gap-2 items-center">${viewMode === 'single' ? `<button data-action="editor-prev" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-xs ${idx <= 0 ? 'opacity-50 pointer-events-none' : ''}">السابق</button><button data-action="editor-next" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-xs ${idx >= total - 1 ? 'opacity-50 pointer-events-none' : ''}">التالي</button>` : ''}<button data-action="set-editor-view" data-view="single" class="px-4 py-2 rounded-xl text-xs font-black ${viewMode === 'single' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}">فردي</button><button data-action="set-editor-view" data-view="all" class="px-4 py-2 rounded-xl text-xs font-black ${viewMode === 'all' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}">تعديل الكل</button><div class="grow"></div><div class="w-full sm:w-auto"><input type="password" data-editor-field="password" value="${escapeHtml(state.editor.password || '')}" class="w-full sm:w-[220px] p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-black text-center tracking-[0.25em]" placeholder="1234" /></div></div><div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scroll-thin">${viewMode === 'single' ? renderDraftForm(state.editor.questions[idx], draft, idx) : state.editor.questions.map((item, draftIndex) => renderDraftForm(item, state.editor.drafts[draftIndex], draftIndex)).join('')}<div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 text-sm font-black text-amber-700 dark:text-amber-300">يمكنك تعديل سؤال واحد أو جميع الأسئلة ثم الحفظ مرة واحدة. أي تغيير هنا سيعيد حساب النتائج المرتبطة بهذا السؤال.</div></div><div class="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 grid sm:grid-cols-2 gap-3"><button data-action="save-editor-question" class="py-3.5 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-black text-sm shadow-sm">حفظ السؤال الحالي</button><button data-action="save-editor-all" class="py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-sm shadow-sm">حفظ كل التعديلات دفعة واحدة</button></div></div></div>`;
 }
+
+
 function renderAdminUploadTab() {
   const subjectCode = state.admin.form.subjectCode || (CURRICULUM.subjects[0] ? CURRICULUM.subjects[0].code : '');
-  return `<div class="max-w-3xl mx-auto space-y-4"><div class="grid sm:grid-cols-2 gap-3"><select id="admin-subject-select" class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-black text-sm outline-none">${CURRICULUM.subjects.map(s => `<option value="${escapeHtml(s.code)}" ${s.code === subjectCode ? 'selected' : ''}>${escapeHtml(s.nameAr)}</option>`).join('')}</select><select id="admin-unit-select" class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-black text-sm outline-none"><option value="">-- اختر الوحدة --</option>${buildSubjectUnits(subjectCode).filter(u => !u.comprehensive).map(u => `<option value="${escapeHtml(u.key)}" ${u.key === state.admin.form.unitKey ? 'selected' : ''}>${escapeHtml(u.unitTitleAr)}</option>`).join('')}</select></div><div class="grid sm:grid-cols-3 gap-3"><label class="p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 cursor-pointer text-center"><div class="font-black text-sm mb-1">JSON</div><div class="text-[11px] text-slate-500 font-semibold">ارفع ملف JSON</div><input type="file" id="admin-json-file" accept=".json,application/json" class="hidden"></label><label class="p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 cursor-pointer text-center"><div class="font-black text-sm mb-1">Excel / CSV</div><div class="text-[11px] text-slate-500 font-semibold">تحويل تلقائي إلى JSON</div><input type="file" id="admin-excel-file" accept=".xlsx,.xls,.csv" class="hidden"></label><label class="p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 cursor-pointer text-center"><div class="font-black text-sm mb-1">PDF</div><div class="text-[11px] text-slate-500 font-semibold">${state.admin.form.pdfFileName ? escapeHtml(state.admin.form.pdfFileName) : 'اختياري'}</div><input type="file" id="admin-pdf-file" accept="application/pdf" class="hidden"></label></div><div class="p-4 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 text-xs font-black text-brand-700 dark:text-brand-300">رؤوس الأعمدة المدعومة في Excel/CSV: question أو text، option1..option4، correct أو correctIndex، explanation.</div><div><label class="block text-sm font-black mb-2">${state.admin.form.editingExamId ? 'تعديل JSON' : 'JSON الامتحان'}</label><textarea id="admin-json-input" rows="16" class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-mono text-[12px] leading-6" dir="ltr" placeholder='{"title":"...","questions":[...]}'>${escapeHtml(state.admin.form.jsonText || '')}</textarea></div><button data-action="admin-upload-submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-black text-sm shadow-sm">${state.admin.form.editingExamId ? 'حفظ التعديلات' : 'رفع الامتحان'}</button></div>`;
+  const lessons = state.admin.form.unitKey ? getLessonsForUnit(subjectCode, state.admin.form.unitKey) : [];
+  return `<div class="max-w-3xl mx-auto space-y-4"><div class="grid sm:grid-cols-3 gap-3"><select id="admin-subject-select" class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-black text-sm outline-none">${CURRICULUM.subjects.map(s => `<option value="${escapeHtml(s.code)}" ${s.code === subjectCode ? 'selected' : ''}>${escapeHtml(s.nameAr)}</option>`).join('')}</select><select id="admin-unit-select" class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-black text-sm outline-none"><option value="">-- اختر الوحدة --</option>${buildSubjectUnits(subjectCode).filter(u => !u.comprehensive).map(u => `<option value="${escapeHtml(u.key)}" ${u.key === state.admin.form.unitKey ? 'selected' : ''}>${escapeHtml(u.unitTitleAr)}</option>`).join('')}</select><select id="admin-lesson-select" class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-black text-sm outline-none"><option value="">-- اختر الدرس (اختياري) --</option>${lessons.map(lesson => `<option value="${escapeHtml(lesson.key)}" ${lesson.key === state.admin.form.lessonKey ? 'selected' : ''}>${escapeHtml(lesson.lessonTitleAr)}</option>`).join('')}</select></div><div class="grid sm:grid-cols-3 gap-3"><label class="p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 cursor-pointer text-center"><div class="font-black text-sm mb-1">JSON</div><div class="text-[11px] text-slate-500 font-semibold">ارفع ملف JSON</div><input type="file" id="admin-json-file" accept=".json,application/json" class="hidden"></label><label class="p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 cursor-pointer text-center"><div class="font-black text-sm mb-1">Excel / CSV</div><div class="text-[11px] text-slate-500 font-semibold">تحويل تلقائي إلى JSON</div><input type="file" id="admin-excel-file" accept=".xlsx,.xls,.csv" class="hidden"></label><label class="p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 cursor-pointer text-center"><div class="font-black text-sm mb-1">PDF</div><div class="text-[11px] text-slate-500 font-semibold">${state.admin.form.pdfFileName ? escapeHtml(state.admin.form.pdfFileName) : 'اختياري'}</div><input type="file" id="admin-pdf-file" accept="application/pdf" class="hidden"></label></div><div class="p-4 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 text-xs font-black text-brand-700 dark:text-brand-300">رؤوس الأعمدة المدعومة في Excel/CSV: question أو text، option1..option4، correct أو correctIndex، explanation.</div><div><label class="block text-sm font-black mb-2">${state.admin.form.editingExamId ? 'تعديل JSON' : 'JSON الامتحان'}</label><textarea id="admin-json-input" rows="16" class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none font-mono text-[12px] leading-6" dir="ltr" placeholder='{"title":"...","questions":[...]}'>${escapeHtml(state.admin.form.jsonText || '')}</textarea></div><button data-action="admin-upload-submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-black text-sm shadow-sm">${state.admin.form.editingExamId ? 'حفظ التعديلات' : 'رفع الامتحان'}</button></div>`;
 }
-function renderAdminManageTab() { return `<div class="grid lg:grid-cols-2 gap-4">${(state.data.exams || []).map(ex => `<div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm flex flex-col min-w-0"><div class="font-black text-base mb-1 line-clamp-2">${escapeHtml(ex.title)}</div><div class="text-[11px] font-semibold text-slate-500 mb-4 truncate">${escapeHtml(ex.subjectAr)} • ${escapeHtml(ex.unitTitleAr)}</div><div class="grid grid-cols-3 gap-2 mt-auto"><button data-action="admin-edit-exam" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-xs">تعديل</button><button data-action="export-exam-pdf" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-xs">PDF</button><button data-action="admin-delete-exam" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 font-black text-xs">حذف</button></div></div>`).join('') || '<div class="col-span-full py-10 text-center text-sm text-slate-400 font-black">لا توجد امتحانات بعد</div>'}</div>`; }
-function renderAdminResultsTab() {
-  if (!state.admin.selectedUserId) {
-    const users = {}; (state.admin.allResults || []).forEach(r => { if (!users[r.userId]) users[r.userId] = { name: r.userName, count: 0 }; users[r.userId].count++; });
-    return `<div><h3 class="text-lg font-black mb-4">الطلاب المسجلون</h3><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">${Object.keys(users).map(uid => `<button data-action="admin-select-user" data-uid="${escapeHtml(uid)}" class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-right hover:border-brand-500 transition-colors"><div class="font-black text-sm text-brand-600 dark:text-brand-400 truncate">${escapeHtml(users[uid].name)}</div><div class="text-[11px] text-slate-500 mt-1 font-semibold">محاولات: ${users[uid].count}</div></button>`).join('')}</div></div>`;
-  }
-  if (!state.admin.selectedSubjectCode) {
-    const userResults = (state.admin.allResults || []).filter(r => r.userId === state.admin.selectedUserId), subMap = {};
-    userResults.forEach(r => { if (!subMap[r.subjectCode]) subMap[r.subjectCode] = { name: r.subjectAr, count: 0 }; subMap[r.subjectCode].count++; });
-    return `<div><div class="flex items-center gap-3 mb-4"><button data-action="admin-select-user" data-uid="" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-xs">عودة</button><h3 class="text-lg font-black truncate">مواد الطالب: <span class="text-brand-600">${escapeHtml(userResults[0] ? userResults[0].userName : '')}</span></h3></div><div class="grid md:grid-cols-2 gap-3">${Object.keys(subMap).map(sc => `<button data-action="admin-select-subject" data-sc="${escapeHtml(sc)}" class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-right hover:border-brand-500 transition-colors"><div class="font-black text-sm truncate">${escapeHtml(subMap[sc].name)}</div><div class="text-[11px] text-slate-500 mt-1 font-semibold">امتحانات: ${subMap[sc].count}</div></button>`).join('')}</div></div>`;
-  }
-  const filtered = (state.admin.allResults || []).filter(r => r.userId === state.admin.selectedUserId && r.subjectCode === state.admin.selectedSubjectCode), units = {};
-  filtered.forEach(r => { if (!units[r.unitTitleAr]) units[r.unitTitleAr] = []; units[r.unitTitleAr].push(r); });
-  return `<div><div class="flex items-center gap-3 mb-4"><button data-action="admin-select-subject" data-sc="" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-xs">عودة</button><h3 class="text-lg font-black truncate">امتحانات الطالب المنجزة</h3></div><div class="space-y-4">${Object.keys(units).map(unit => `<div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40"><h4 class="font-black text-sm mb-3 text-brand-600 dark:text-brand-400 truncate">${escapeHtml(unit)}</h4><div class="space-y-2">${units[unit].map(r => `<div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><div class="font-black text-sm truncate">${escapeHtml(r.examTitle)}</div><div class="text-[10px] text-slate-500 mt-1 font-semibold">${escapeHtml(formatDate(r.createdAt))}</div></div><div class="flex items-center gap-2"><span class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 font-black text-sm ${Number(r.score) >= 50 ? 'text-brand-600' : 'text-rose-500'}">${r.score}%</span><button data-action="admin-view-attempt" data-attempt-id="${escapeHtml(r.id || r.resultId)}" class="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black">عرض</button></div></div></div>`).join('')}</div></div>`).join('')}</div></div>`;
-}
+
+
+function renderAdminManageTab() { return `<div class="grid lg:grid-cols-2 gap-4">${(state.data.exams || []).map(ex => `<div class="p-4 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm flex flex-col min-w-0"><div class="font-black text-base mb-1 line-clamp-2">${escapeHtml(ex.title)}</div><div class="text-[11px] font-semibold text-slate-500 mb-1 truncate">${escapeHtml(ex.subjectAr)} • ${escapeHtml(ex.unitTitleAr)}</div><div class="text-[11px] font-black text-brand-600 dark:text-brand-400 mb-4 truncate">${escapeHtml(ex.lessonTitleAr || ex.subunitTitleAr || 'غير مصنف')}</div><div class="grid grid-cols-3 gap-2 mt-auto"><button data-action="admin-edit-exam" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-black text-xs">تعديل</button><button data-action="export-exam-pdf" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-black text-xs">PDF</button><button data-action="admin-delete-exam" data-exam-id="${escapeHtml(ex.id)}" class="py-2.5 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 font-black text-xs">حذف</button></div></div>`).join('') || '<div class="col-span-full py-10 text-center text-sm text-slate-400 font-black">لا توجد امتحانات بعد</div>'}</div>`; }
+
 function renderAdminAnalyticsTab() {
   const difficulty = state.admin.insights.difficulty || [], leaderboard = state.admin.insights.leaderboard || [];
   return `<div class="grid xl:grid-cols-[1.3fr,1fr] gap-4"><div class="bg-slate-50 dark:bg-slate-950 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800"><h3 class="text-lg font-black mb-4">أصعب الأسئلة عالمياً</h3><div class="space-y-3 max-h-[60vh] overflow-y-auto scroll-thin pr-1">${difficulty.length ? difficulty.map(row => `<div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><div class="flex items-start justify-between gap-3 mb-2"><div class="min-w-0"><div class="text-[10px] font-black text-rose-500">${escapeHtml(row.subjectAr)} • ${escapeHtml(row.unitTitleAr)}</div><div class="font-black text-sm line-clamp-3">${escapeHtml(row.questionText || 'بدون نص')}</div></div><div class="text-right shrink-0"><div class="font-black text-rose-600 dark:text-rose-400">${row.wrongRate}%</div><div class="text-[10px] text-slate-500 font-semibold">${row.attempts} محاولة</div></div></div><div class="h-2 bg-rose-200 dark:bg-rose-950 rounded-full overflow-hidden"><div class="h-full bg-rose-500 rounded-full" style="width:${Math.max(0, Math.min(100, row.wrongRate))}%"></div></div></div>`).join('') : '<div class="py-10 text-center text-sm text-slate-400 font-black">ستظهر الإحصاءات بعد وجود بيانات محاولات</div>'}</div></div><div class="bg-slate-50 dark:bg-slate-950 rounded-[1.5rem] p-4 border border-slate-100 dark:border-slate-800"><h3 class="text-lg font-black mb-4">لوحة الأوائل</h3><div class="space-y-3">${leaderboard.slice(0, 10).map((row, idx) => `<div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><div class="flex items-center gap-3 min-w-0"><div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black shrink-0">${idx + 1}</div><div class="min-w-0"><div class="font-black text-sm truncate">${escapeHtml(row.maskedName || row.userName)}</div><div class="text-[10px] text-slate-500 font-semibold">محاولات ${row.totalAttempts}</div></div></div><div class="font-black text-brand-600 dark:text-brand-400 shrink-0">${row.totalCorrect}</div></div>`).join('') || '<div class="py-10 text-center text-sm text-slate-400 font-black">لا توجد بيانات بعد</div>'}</div></div></div>`;
@@ -798,7 +951,8 @@ document.addEventListener('click', async e => {
     if (action === 'admin-login-submit') { await adminLogin(document.getElementById('admin-password-input')?.value || ''); return; }
     if (action === 'open-subject') { openSubject(target.getAttribute('data-subject-code')); return; }
     if (action === 'subject-tab') { state.subjectTab = target.getAttribute('data-tab'); render(); return; }
-    if (action === 'select-unit') { state.unitKey = target.getAttribute('data-unit-key'); render(); return; }
+    if (action === 'select-unit') { state.unitKey = target.getAttribute('data-unit-key'); state.lessonKey = null; render(); return; }
+    if (action === 'select-lesson') { state.lessonKey = target.getAttribute('data-lesson-key'); render(); return; }
     if (action === 'go-home') { backToHome(); return; }
     if (action === 'prepare-exam') { setLoading(true); const ex = await loadExam(target.getAttribute('data-exam-id')); prepareExamForStart(ex); state.loading = false; render(); return; }
     if (action === 'close-prestart') { state.prestartExam = null; render(); return; }
@@ -819,16 +973,56 @@ document.addEventListener('click', async e => {
     if (action === 'redo-by-subject') { await generateRedo({ subjectCode: target.getAttribute('data-subject-code') }); return; }
     if (action === 'review-today') { await reviewToday(target.getAttribute('data-subject-code') || ''); return; }
     if (action === 'build-custom-exam') { await generateCustomExam(); return; }
-    if (action === 'toggle-builder-unit') { const unitKey = target.getAttribute('data-unit-key'); if (target.checked) { if (!state.builder.selectedUnitKeys.includes(unitKey)) state.builder.selectedUnitKeys.push(unitKey); getExamsForUnit(state.subjectCode, unitKey).forEach(ex => { if (!state.builder.selectedExamIds.includes(ex.id)) state.builder.selectedExamIds.push(ex.id); }); } else { state.builder.selectedUnitKeys = state.builder.selectedUnitKeys.filter(k => k !== unitKey); delete state.builder.explicitCounts[unitKey]; const examIds = getExamsForUnit(state.subjectCode, unitKey).map(x => x.id); state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => !examIds.includes(id)); } render(); return; }
+    if (action === 'toggle-builder-unit') {
+      const unitKey = target.getAttribute('data-unit-key');
+      if (target.checked) {
+        if (!state.builder.selectedUnitKeys.includes(unitKey)) state.builder.selectedUnitKeys.push(unitKey);
+        getLessonsForUnit(state.subjectCode, unitKey).forEach(lesson => {
+          if (!state.builder.selectedLessonKeys.includes(lesson.key)) state.builder.selectedLessonKeys.push(lesson.key);
+          getExamsForLesson(state.subjectCode, unitKey, lesson.key).forEach(ex => { if (!state.builder.selectedExamIds.includes(ex.id)) state.builder.selectedExamIds.push(ex.id); });
+        });
+      } else {
+        state.builder.selectedUnitKeys = state.builder.selectedUnitKeys.filter(k => k !== unitKey);
+        delete state.builder.explicitCounts[unitKey];
+        const lessonKeys = getLessonsForUnit(state.subjectCode, unitKey).map(x => x.key);
+        state.builder.selectedLessonKeys = state.builder.selectedLessonKeys.filter(k => !lessonKeys.includes(k));
+        const examIds = lessonKeys.flatMap(lk => getExamsForLesson(state.subjectCode, unitKey, lk).map(x => x.id));
+        state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => !examIds.includes(id));
+      }
+      render(); return;
+    }
+    if (action === 'toggle-builder-lesson') {
+      const lessonKey = target.getAttribute('data-lesson-key');
+      const lesson = parseLessonKey(lessonKey);
+      if (target.checked) {
+        if (!state.builder.selectedLessonKeys.includes(lessonKey)) state.builder.selectedLessonKeys.push(lessonKey);
+        getExamsForLesson(state.subjectCode, makeUnitKey(state.subjectCode, lesson.semester, lesson.unitTitleAr), lessonKey).forEach(ex => { if (!state.builder.selectedExamIds.includes(ex.id)) state.builder.selectedExamIds.push(ex.id); });
+      } else {
+        state.builder.selectedLessonKeys = state.builder.selectedLessonKeys.filter(k => k !== lessonKey);
+        const examIds = getExamsForLesson(state.subjectCode, makeUnitKey(state.subjectCode, lesson.semester, lesson.unitTitleAr), lessonKey).map(x => x.id);
+        state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => !examIds.includes(id));
+      }
+      render(); return;
+    }
+    if (action === 'toggle-builder-exam') {
+      const examId = target.getAttribute('data-exam-id');
+      if (target.checked) { if (!state.builder.selectedExamIds.includes(examId)) state.builder.selectedExamIds.push(examId); }
+      else state.builder.selectedExamIds = state.builder.selectedExamIds.filter(id => id !== examId);
+      render(); return;
+    }
     if (action === 'export-exam-pdf') { await downloadExamPdf({ examId: target.getAttribute('data-exam-id'), includeAnswerKey: true }, 'exam.pdf'); return; }
     if (action === 'export-current-exam-pdf') { if (state.examSession) await downloadExamPdf({ examJson: stripBase64Exam(state.examSession.exam), includeAnswerKey: true }, 'exam.pdf'); return; }
     if (action === 'export-attempt-pdf') { await downloadExamPdf({ attemptId: target.getAttribute('data-attempt-id'), includeAnswerKey: true }, 'attempt.pdf'); return; }
     if (action === 'review-edit-question') { openEditorFromReview(state.admin.authenticated ? 'admin' : 'student'); return; }
+    if (action === 'set-exam-view') { setExamViewMode(target.getAttribute('data-view')); return; }
+    if (action === 'set-review-view') { setReviewViewMode(target.getAttribute('data-view')); return; }
+    if (action === 'set-editor-view') { setEditorViewMode(target.getAttribute('data-view')); return; }
     if (action === 'close-editor') { closeEditor(); return; }
     if (action === 'editor-prev') { nextEditorQuestion(-1); return; }
     if (action === 'editor-next') { nextEditorQuestion(1); return; }
-    if (action === 'editor-set-correct') { state.editor.draft.correctIndex = Number(target.getAttribute('data-index')); render(); return; }
+    if (action === 'editor-set-correct') { const draftIndex = Number(target.getAttribute('data-editor-draft-index') || state.editor.index || 0); if (state.editor.drafts[draftIndex]) state.editor.drafts[draftIndex].correctIndex = Number(target.getAttribute('data-index')); hydrateEditorDraft(); render(); return; }
     if (action === 'save-editor-question') { await saveEditorQuestion(); return; }
+    if (action === 'save-editor-all') { await saveAllEditorQuestions(); return; }
     if (action === 'admin-tab') { state.admin.tab = target.getAttribute('data-tab'); if (state.admin.tab !== 'results') { state.admin.selectedUserId = null; state.admin.selectedSubjectCode = null; } render(); return; }
     if (action === 'admin-select-user') { state.admin.selectedUserId = target.getAttribute('data-uid') || null; state.admin.selectedSubjectCode = null; render(); return; }
     if (action === 'admin-select-subject') { state.admin.selectedSubjectCode = target.getAttribute('data-sc') || null; render(); return; }
@@ -845,13 +1039,25 @@ document.addEventListener('input', e => {
   if (e.target.getAttribute('data-action') === 'set-builder-unit-count') { state.builder.explicitCounts[e.target.getAttribute('data-unit-key')] = Number(e.target.value || 0); render(); return; }
   if (e.target.id === 'admin-json-input') { state.admin.form.jsonText = e.target.value; return; }
   const editorField = e.target.getAttribute('data-editor-field');
-  if (editorField && state.editor.draft) { if (editorField === 'password') state.editor.password = e.target.value; else state.editor.draft[editorField] = e.target.value; return; }
+  if (editorField && state.editor.open) {
+    const draftIndex = Number(e.target.getAttribute('data-editor-draft-index') || state.editor.index || 0);
+    if (editorField === 'password') state.editor.password = e.target.value;
+    else if (state.editor.drafts[draftIndex]) state.editor.drafts[draftIndex][editorField] = e.target.value;
+    hydrateEditorDraft();
+    return;
+  }
   const optionIndex = e.target.getAttribute('data-editor-option-index');
-  if (optionIndex != null && state.editor.draft) { state.editor.draft.options[Number(optionIndex)] = e.target.value; return; }
+  if (optionIndex != null && state.editor.open) {
+    const draftIndex = Number(e.target.getAttribute('data-editor-draft-index') || state.editor.index || 0);
+    if (state.editor.drafts[draftIndex]) state.editor.drafts[draftIndex].options[Number(optionIndex)] = e.target.value;
+    hydrateEditorDraft();
+    return;
+  }
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'admin-subject-select') { state.admin.form.subjectCode = e.target.value; state.admin.form.unitKey = ''; render(); return; }
-  if (e.target.id === 'admin-unit-select') { state.admin.form.unitKey = e.target.value; render(); return; }
+  if (e.target.id === 'admin-subject-select') { state.admin.form.subjectCode = e.target.value; state.admin.form.unitKey = ''; state.admin.form.lessonKey = ''; render(); return; }
+  if (e.target.id === 'admin-unit-select') { state.admin.form.unitKey = e.target.value; state.admin.form.lessonKey = ''; render(); return; }
+  if (e.target.id === 'admin-lesson-select') { state.admin.form.lessonKey = e.target.value; render(); return; }
   if (e.target.id === 'admin-json-file') { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => { state.admin.form.jsonText = String(ev.target.result || ''); render(); }; reader.readAsText(file, 'utf-8'); return; }
   if (e.target.id === 'admin-excel-file') { const file = e.target.files[0]; if (file) loadExcelOrCsv(file); return; }
   if (e.target.id === 'admin-pdf-file') { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => { state.admin.form.pdfDataUrl = ev.target.result; state.admin.form.pdfFileName = file.name; render(); }; reader.readAsDataURL(file); return; }
